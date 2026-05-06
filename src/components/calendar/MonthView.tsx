@@ -6,7 +6,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameM
 import { zhCN } from 'date-fns/locale';
 import { getLunarInfo } from '../../domain/lunar';
 
-const WEEKDAY_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
+const WEEKDAY_NAMES = ['一', '二', '三', '四', '五', '六', '日'];
 
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
@@ -18,8 +18,8 @@ export const MonthView: React.FC = () => {
   const monthEnd = endOfMonth(currentMonth);
 
   // Get calendar days (including days from previous/next month to fill the grid)
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   const today = new Date();
