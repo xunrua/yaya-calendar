@@ -1,0 +1,272 @@
+import { Solar, Lunar, SolarMonth } from 'lunar-javascript';
+import { LunarDate, SolarTerm, Holiday } from '../domain/types';
+
+// ============================================================================
+// Lunar Calendar Service
+// ============================================================================
+
+/**
+ * Convert a Gregorian date to Chinese lunar date
+ */
+export const toLunarDate = (date: Date): LunarDate => {
+  const solar = Solar.fromDate(date);
+  const lunar = solar.getLunar();
+
+  return {
+    year: lunar.getYear(),
+    month: lunar.getMonth(),
+    day: lunar.getDay(),
+    isLeapMonth: lunar.getMonth() < 0, // Negative month indicates leap month
+    monthName: lunar.getMonthInChinese(),
+    dayName: lunar.getDayInChinese(),
+    yearGanZhi: lunar.getYearInGanZhi(),
+    monthGanZhi: lunar.getMonthInGanZhi(),
+    dayGanZhi: lunar.getDayInGanZhi(),
+    yearShengXiao: lunar.getYearShengXiao(),
+  };
+};
+
+/**
+ * Convert a Chinese lunar date to Gregorian date
+ */
+export const toSolarDate = (lunarYear: number, lunarMonth: number, lunarDay: number, isLeapMonth = false): Date => {
+  const lunar = Lunar.fromYmd(lunarYear, isLeapMonth ? -lunarMonth : lunarMonth, lunarDay);
+  const solar = lunar.getSolar();
+  return solar.getDate();
+};
+
+/**
+ * Get lunar day display text for calendar view
+ * - First day of month: show month name (e.g., "正月")
+ * - Other days: show day name (e.g., "初二", "十五")
+ */
+export const getLunarDayDisplay = (date: Date): string => {
+  const lunar = toLunarDate(date);
+  if (lunar.day === 1) {
+    return lunar.monthName;
+  }
+  return lunar.dayName;
+};
+
+// ============================================================================
+// Solar Terms (二十四节气)
+// ============================================================================
+
+/**
+ * Get the solar term for a specific date (if any)
+ */
+export const getSolarTerm = (date: Date): SolarTerm | null => {
+  const solar = Solar.fromDate(date);
+  const lunar = solar.getLunar();
+  const jieQi = lunar.getJieQi();
+
+  if (jieQi) {
+    return {
+      name: jieQi,
+      date: date.toISOString().split('T')[0],
+      index: lunar.getJieQiIndex(),
+    };
+  }
+  return null;
+};
+
+/**
+ * Get all solar terms for a year
+ */
+export const getSolarTermsForYear = (year: number): SolarTerm[] => {
+  const terms: SolarTerm[] = [];
+  const solarTermsNames = [
+    '小寒', '大寒', '立春', '雨水', '惊蛰', '春分',
+    '清明', '谷雨', '立夏', '小满', '芒种', '夏至',
+    '小暑', '大暑', '立秋', '处暑', '白露', '秋分',
+    '寒露', '霜降', '立冬', '小雪', '大雪', '冬至',
+  ];
+
+  // Iterate through the year to find solar terms
+  for (let month = 0; month < 12; month++) {
+    const solarMonth = SolarMonth.fromYm(year, month + 1);
+    const days = solarMonth.getDays();
+    for (const day of days) {
+      const lunar = day.getLunar();
+      const jieQi = lunar.getJieQi();
+      if (jieQi) {
+        terms.push({
+          name: jieQi,
+          date: day.toString(),
+          index: solarTermsNames.indexOf(jieQi),
+        });
+      }
+    }
+  }
+
+  return terms.sort((a, b) => a.index - b.index);
+};
+
+// ============================================================================
+// Holidays and Festivals
+// ============================================================================
+
+/**
+ * Get holidays/festivals for a specific date
+ */
+export const getHolidays = (date: Date): Holiday[] => {
+  const solar = Solar.fromDate(date);
+  const lunar = solar.getLunar();
+  const holidays: Holiday[] = [];
+
+  // Check lunar festivals (traditional Chinese holidays)
+  const lunarFestivals = lunar.getFestivals();
+  for (const festival of lunarFestivals) {
+    holidays.push({
+      name: festival,
+      date: date.toISOString().split('T')[0],
+      type: 'traditional',
+      isHoliday: isTraditionalHoliday(festival),
+    });
+  }
+
+  // Check solar festivals
+  const solarFestivals = solar.getFestivals();
+  for (const festival of solarFestivals) {
+    holidays.push({
+      name: festival,
+      date: date.toISOString().split('T')[0],
+      type: 'statutory',
+      isHoliday: isStatutoryHoliday(festival),
+    });
+  }
+
+  // Check solar term
+  const jieQi = lunar.getJieQi();
+  if (jieQi) {
+    holidays.push({
+      name: jieQi,
+      date: date.toISOString().split('T')[0],
+      type: 'solar_term',
+      isHoliday: false,
+    });
+  }
+
+  return holidays;
+};
+
+/**
+ * Traditional Chinese holidays that are days off
+ */
+const TRADITIONAL_HOLIDAYS = [
+  '春节', '元宵节', '清明节', '端午节', '中秋节', '重阳节', '除夕',
+];
+
+const isTraditionalHoliday = (name: string): boolean => {
+  return TRADITIONAL_HOLIDAYS.includes(name);
+};
+
+/**
+ * Statutory holidays in China
+ */
+const STATUTORY_HOLIDAYS = [
+  '元旦', '春节', '清明节', '劳动节', '端午节', '中秋节', '国庆节',
+];
+
+const isStatutoryHoliday = (name: string): boolean => {
+  return STATUTORY_HOLIDAYS.includes(name);
+};
+
+/**
+ * Check if a date is a holiday (day off)
+ */
+export const isHoliday = (date: Date): boolean => {
+  const holidays = getHolidays(date);
+  return holidays.some(h => h.isHoliday);
+};
+
+/**
+ * Check if a date is a solar term
+ */
+export const isSolarTermDay = (date: Date): boolean => {
+  const solar = Solar.fromDate(date);
+  const lunar = solar.getLunar();
+  return lunar.getJieQi() !== null;
+};
+
+/**
+ * Get the primary holiday/festival name for display
+ */
+export const getHolidayDisplay = (date: Date): string | null => {
+  const holidays = getHolidays(date);
+  // Prioritize traditional holidays and statutory holidays over solar terms
+  const priorityHolidays = holidays.filter(h => h.type !== 'solar_term');
+  if (priorityHolidays.length > 0) {
+    return priorityHolidays[0].name;
+  }
+  // Then show solar term if no other holiday
+  const solarTermHoliday = holidays.find(h => h.type === 'solar_term');
+  if (solarTermHoliday) {
+    return solarTermHoliday.name;
+  }
+  return null;
+};
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Get comprehensive lunar info for a date (for calendar cell display)
+ */
+export const getLunarInfo = (date: Date): {
+  lunarDay: string;
+  solarTerm?: string;
+  holiday?: string;
+  isHoliday: boolean;
+  isSolarTerm: boolean;
+} => {
+  const lunarDay = getLunarDayDisplay(date);
+  const solarTerm = getSolarTerm(date);
+  const holiday = getHolidayDisplay(date);
+  const isHolidayDay = isHoliday(date);
+  const isSolarTermDayFlag = isSolarTermDay(date);
+
+  return {
+    lunarDay,
+    solarTerm: solarTerm?.name,
+    holiday,
+    isHoliday: isHolidayDay,
+    isSolarTerm: isSolarTermDayFlag,
+  };
+};
+
+/**
+ * Get Gan-Zhi (干支) representation for a date
+ */
+export const getGanZhi = (date: Date): { year: string; month: string; day: string } => {
+  const lunar = toLunarDate(date);
+  return {
+    year: lunar.yearGanZhi,
+    month: lunar.monthGanZhi,
+    day: lunar.dayGanZhi,
+  };
+};
+
+/**
+ * Get ShengXiao (生肖) for a year
+ */
+export const getShengXiao = (year: number): string => {
+  const lunar = Lunar.fromYmd(year, 1, 1);
+  return lunar.getYearShengXiao();
+};
+
+export default {
+  toLunarDate,
+  toSolarDate,
+  getLunarDayDisplay,
+  getSolarTerm,
+  getSolarTermsForYear,
+  getHolidays,
+  isHoliday,
+  isSolarTermDay,
+  getHolidayDisplay,
+  getLunarInfo,
+  getGanZhi,
+  getShengXiao,
+};
