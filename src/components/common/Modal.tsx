@@ -33,13 +33,22 @@ export const Modal: React.FC<ModalProps> = ({
   const { theme } = useTheme();
   const [slideAnim] = React.useState(new Animated.Value(SCREEN_HEIGHT));
   const [fadeAnim] = React.useState(new Animated.Value(0));
+  const [overlayAnim] = React.useState(new Animated.Value(0));
 
   React.useEffect(() => {
     if (visible) {
+      // Fade in overlay
+      Animated.timing(overlayAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+
       if (animationType === 'slide') {
-        Animated.timing(slideAnim, {
+        Animated.spring(slideAnim, {
           toValue: 0,
-          duration: 300,
+          tension: 65,
+          friction: 11,
           useNativeDriver: true,
         }).start();
       } else {
@@ -50,10 +59,17 @@ export const Modal: React.FC<ModalProps> = ({
         }).start();
       }
     } else {
+      // Fade out overlay
+      Animated.timing(overlayAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+
       if (animationType === 'slide') {
         Animated.timing(slideAnim, {
           toValue: SCREEN_HEIGHT,
-          duration: 300,
+          duration: 250,
           useNativeDriver: true,
         }).start();
       } else {
@@ -64,12 +80,14 @@ export const Modal: React.FC<ModalProps> = ({
         }).start();
       }
     }
-  }, [visible, animationType, slideAnim, fadeAnim]);
+  }, [visible, animationType, slideAnim, fadeAnim, overlayAnim]);
 
   const animatedStyle =
     animationType === 'slide'
       ? { transform: [{ translateY: slideAnim }] }
       : { opacity: fadeAnim };
+
+  const overlayStyle = { opacity: overlayAnim };
 
   return (
     <RNModal
@@ -79,7 +97,7 @@ export const Modal: React.FC<ModalProps> = ({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay}>
+        <Animated.View style={[styles.overlay, overlayStyle]}>
           <TouchableWithoutFeedback>
             <Animated.View
               style={[
@@ -115,7 +133,7 @@ export const Modal: React.FC<ModalProps> = ({
               )}
             </Animated.View>
           </TouchableWithoutFeedback>
-        </View>
+        </Animated.View>
       </TouchableWithoutFeedback>
     </RNModal>
   );
