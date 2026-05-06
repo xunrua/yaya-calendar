@@ -1,16 +1,19 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Platform, Text } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { useTheme } from '../../stores/themeStore';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React from "react";
+import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
+import { useTheme } from "../../stores/themeStore";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface FloatingNavBarProps {
   onMenuPress: () => void;
   onAddPress: () => void;
-  activeTab: 'calendar' | 'todo';
-  onTabChange: (tab: 'calendar' | 'todo') => void;
+  activeTab: "calendar" | "todo";
+  onTabChange: (tab: "calendar" | "todo") => void;
   menuOpen?: boolean;
 }
 
@@ -25,17 +28,17 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
   const insets = useSafeAreaInsets();
 
   // Animation values for segmented control
-  const indicatorPosition = useSharedValue(activeTab === 'calendar' ? 0 : 1);
+  const indicatorPosition = useSharedValue(activeTab === "calendar" ? 0 : 1);
 
   React.useEffect(() => {
-    indicatorPosition.value = withSpring(activeTab === 'calendar' ? 0 : 1, {
+    indicatorPosition.value = withSpring(activeTab === "calendar" ? 0 : 1, {
       damping: 15,
       stiffness: 150,
     });
   }, [activeTab, indicatorPosition]);
 
   const animatedIndicatorStyle = useAnimatedStyle(() => {
-    const segmentWidth = 70;
+    const segmentWidth = 64;
     const gap = 8;
     const totalOffset = indicatorPosition.value * (segmentWidth + gap);
     return {
@@ -43,7 +46,7 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
     };
   });
 
-  const handleTabPress = (tab: 'calendar' | 'todo') => {
+  const handleTabPress = (tab: "calendar" | "todo") => {
     if (tab !== activeTab) {
       onTabChange(tab);
     }
@@ -53,60 +56,25 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
     onMenuPress();
   };
 
-  const renderGlassBackground = () => {
-    if (Platform.OS === 'web') {
-      return (
-        <View
-          style={[
-            styles.webGlass,
-            {
-              backgroundColor: theme.mode === 'dark'
-                ? 'rgba(44, 44, 46, 0.85)'
-                : 'rgba(250, 250, 250, 0.85)',
-              borderColor: theme.colors.border,
-            },
-          ]}
-        />
-      );
-    }
-
-    return (
-      <BlurView
-        intensity={40}
-        tint={theme.mode === 'dark' ? 'dark' : 'light'}
-        style={[
-          styles.glass,
-          {
-            backgroundColor: theme.mode === 'dark'
-              ? 'rgba(44, 44, 46, 0.7)'
-              : 'rgba(250, 250, 250, 0.7)',
-            borderColor: theme.colors.border,
-          },
-        ]}
-      />
-    );
-  };
-
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 8 }]}>
-      {renderGlassBackground()}
-
       <View style={styles.content}>
         {/* Menu Button */}
         <TouchableOpacity
           style={[
             styles.circleButton,
             {
-              backgroundColor: theme.mode === 'dark'
-                ? 'rgba(58, 58, 60, 0.8)'
-                : 'rgba(235, 235, 235, 0.8)',
+              backgroundColor:
+                theme.mode === "dark"
+                  ? "rgba(58, 58, 60, 0.8)"
+                  : "rgba(235, 235, 235, 0.8)",
             },
           ]}
           onPress={handleMenuPress}
           activeOpacity={0.7}
         >
           <Ionicons
-            name={menuOpen ? 'close' : 'menu'}
+            name={menuOpen ? "close" : "menu"}
             size={24}
             color={theme.colors.text}
           />
@@ -117,9 +85,10 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
           style={[
             styles.segmentedContainer,
             {
-              backgroundColor: theme.mode === 'dark'
-                ? 'rgba(58, 58, 60, 0.6)'
-                : 'rgba(235, 235, 235, 0.6)',
+              backgroundColor:
+                theme.mode === "dark"
+                  ? "rgba(58, 58, 60, 0.6)"
+                  : "rgba(235, 235, 235, 0.6)",
               borderColor: theme.colors.border,
             },
           ]}
@@ -138,17 +107,20 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
           {/* Calendar Tab */}
           <TouchableOpacity
             style={styles.segment}
-            onPress={() => handleTabPress('calendar')}
+            onPress={() => handleTabPress("calendar")}
             activeOpacity={0.7}
           >
             <Text
               style={[
                 styles.segmentText,
                 {
-                  color: activeTab === 'calendar'
-                    ? theme.mode === 'dark' ? '#1C1C1E' : '#FAFAFA'
-                    : theme.colors.textSecondary,
-                  fontWeight: activeTab === 'calendar' ? '600' : '400',
+                  color:
+                    activeTab === "calendar"
+                      ? theme.mode === "dark"
+                        ? "#1C1C1E"
+                        : "#FAFAFA"
+                      : theme.colors.textSecondary,
+                  fontWeight: activeTab === "calendar" ? "600" : "400",
                 },
               ]}
             >
@@ -159,17 +131,20 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
           {/* Todo Tab */}
           <TouchableOpacity
             style={styles.segment}
-            onPress={() => handleTabPress('todo')}
+            onPress={() => handleTabPress("todo")}
             activeOpacity={0.7}
           >
             <Text
               style={[
                 styles.segmentText,
                 {
-                  color: activeTab === 'todo'
-                    ? theme.mode === 'dark' ? '#1C1C1E' : '#FAFAFA'
-                    : theme.colors.textSecondary,
-                  fontWeight: activeTab === 'todo' ? '600' : '400',
+                  color:
+                    activeTab === "todo"
+                      ? theme.mode === "dark"
+                        ? "#1C1C1E"
+                        : "#FAFAFA"
+                      : theme.colors.textSecondary,
+                  fontWeight: activeTab === "todo" ? "600" : "400",
                 },
               ]}
             >
@@ -192,7 +167,7 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
           <Ionicons
             name="add"
             size={28}
-            color={theme.mode === 'dark' ? '#1C1C1E' : '#FAFAFA'}
+            color={theme.mode === "dark" ? "#1C1C1E" : "#FAFAFA"}
           />
         </TouchableOpacity>
       </View>
@@ -202,69 +177,48 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     paddingHorizontal: 16,
     paddingTop: 12,
   },
-  glass: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 24,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  webGlass: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 24,
-    borderWidth: 1,
-    overflow: 'hidden',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-  } as any,
   content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 12,
   },
   circleButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   segmentedContainer: {
-    flexDirection: 'row',
-    borderRadius: 20,
+    flexDirection: "row",
+    borderRadius: 22,
     borderWidth: 1,
     padding: 4,
+    height: 44,
     gap: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   segmentedIndicator: {
-    position: 'absolute',
-    width: 70,
-    height: 32,
-    borderRadius: 16,
+    position: "absolute",
+    width: 64,
+    height: 36,
+    borderRadius: 18,
     top: 4,
     left: 4,
   },
   segment: {
-    width: 70,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 64,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 1,
   },
   segmentText: {
@@ -273,3 +227,4 @@ const styles = StyleSheet.create({
 });
 
 export default FloatingNavBar;
+
