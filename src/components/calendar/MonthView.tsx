@@ -135,7 +135,7 @@ export const MonthView: React.FC = () => {
             <MonthGrid
               year={prevMonth.getFullYear()}
               month={prevMonth.getMonth()}
-              fidelity="skeleton"
+              fidelity="full"
             />
           </Animated.View>
 
@@ -151,7 +151,7 @@ export const MonthView: React.FC = () => {
             <MonthGrid
               year={nextMonth.getFullYear()}
               month={nextMonth.getMonth()}
-              fidelity="skeleton"
+              fidelity="full"
             />
           </Animated.View>
         </View>
