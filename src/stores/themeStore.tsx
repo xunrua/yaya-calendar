@@ -1,10 +1,10 @@
-import React, { useEffect, ReactNode } from 'react';
+import React, { useEffect, ReactNode, useRef } from 'react';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeMode, Theme } from '../domain/types';
 import { createTheme, lightTheme } from '../styles/theme';
-import { useColorScheme, View, Appearance } from 'react-native';
+import { useColorScheme, View, Appearance, Animated, StyleSheet } from 'react-native';
 
 // ============================================================================
 // Theme Store State
@@ -94,7 +94,7 @@ export const useTheme = () => {
 };
 
 // ============================================================================
-// Theme Provider Component
+// Theme Provider Component with Animation
 // ============================================================================
 
 interface ThemeProviderProps {
@@ -103,7 +103,29 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const systemColorScheme = useColorScheme();
-  const { mode, setMode } = useThemeStore();
+  const { mode, setMode, theme } = useThemeStore();
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const prevModeRef = useRef(mode);
+
+  // Animate theme transition
+  useEffect(() => {
+    if (prevModeRef.current !== mode) {
+      // Fade out
+      Animated.timing(fadeAnim, {
+        toValue: 0.8,
+        duration: 100,
+        useNativeDriver: true,
+      }).start(() => {
+        // Fade in
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      });
+    }
+    prevModeRef.current = mode;
+  }, [mode, fadeAnim]);
 
   // Update theme when system preference changes
   useEffect(() => {
@@ -112,7 +134,19 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   }, [systemColorScheme, mode, setMode]);
 
-  return <View style={{ flex: 1 }}>{children}</View>;
+  return (
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        {children}
+      </View>
+    </Animated.View>
+  );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 
 export default useThemeStore;
