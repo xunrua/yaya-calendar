@@ -4,7 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
+  withTiming,
+  Easing,
 } from "react-native-reanimated";
 import { useTheme } from "../../stores/themeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -31,9 +32,9 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
   const indicatorPosition = useSharedValue(activeTab === "calendar" ? 0 : 1);
 
   React.useEffect(() => {
-    indicatorPosition.value = withSpring(activeTab === "calendar" ? 0 : 1, {
-      damping: 20,
-      stiffness: 300,
+    indicatorPosition.value = withTiming(activeTab === "calendar" ? 0 : 1, {
+      duration: 200,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     });
   }, [activeTab, indicatorPosition]);
 
