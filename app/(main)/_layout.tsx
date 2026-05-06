@@ -2,17 +2,14 @@ import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTheme } from '../../src/stores/themeStore';
-import { useEventStore } from '../../src/stores/eventStore';
 import { FloatingNavBar } from '../../src/components/common/FloatingNavBar';
 import { FloatingMenu } from '../../src/components/common/FloatingMenu';
-import { MonthView } from '../../src/components/calendar/MonthView';
 import { WeekView } from '../../src/components/calendar/WeekView';
 import { ScheduleView } from '../../src/components/calendar/ScheduleView';
-import EventsScreen from '../(tabs)/events';
 
 type MainView = 'calendar' | 'todo' | 'week' | 'schedule';
 
-function MainContent() {
+export default function MainLayout() {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<'calendar' | 'todo'>('calendar');
   const [currentView, setCurrentView] = useState<MainView>('calendar');
@@ -41,29 +38,37 @@ function MainContent() {
     setActiveTab('calendar');
   };
 
-  const renderContent = () => {
-    switch (currentView) {
-      case 'calendar':
-        return <MonthView />;
-      case 'todo':
-        return <EventsScreen />;
-      case 'week':
-        return <WeekView />;
-      case 'schedule':
-        return <ScheduleView />;
-      default:
-        return <MonthView />;
+  // Render overlay views (week, schedule) on top of the main content
+  const renderOverlay = () => {
+    if (currentView === 'week') {
+      return (
+        <View style={styles.overlay}>
+          <WeekView />
+        </View>
+      );
     }
+    if (currentView === 'schedule') {
+      return (
+        <View style={styles.overlay}>
+          <ScheduleView />
+        </View>
+      );
+    }
+    return null;
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Stack.Screen options={{ headerShown: false }} />
-
-      {/* Main Content */}
+      {/* Main content from child routes */}
       <View style={styles.content}>
-        {renderContent()}
+        <Stack.Screen options={{ headerShown: false }} />
+        {currentView === 'calendar' || currentView === 'todo' ? (
+          <Stack />
+        ) : null}
       </View>
+
+      {/* Overlay views */}
+      {renderOverlay()}
 
       {/* Floating Navigation Bar */}
       <FloatingNavBar
@@ -92,14 +97,11 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
 });
-
-export default function MainLayout() {
-  const { loadEvents } = useEventStore();
-
-  React.useEffect(() => {
-    loadEvents();
-  }, [loadEvents]);
-
-  return <MainContent />;
-}
