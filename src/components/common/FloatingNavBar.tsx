@@ -210,7 +210,8 @@ const styles = StyleSheet.create({
     width: 64,
     height: 36,
     borderRadius: 18,
-    top: 4,
+    top: "50%",
+    marginTop: -18,
     left: 4,
   },
   segment: {
