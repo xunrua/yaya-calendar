@@ -57,7 +57,7 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 8 }]}>
+    <View style={[styles.container, { bottom: Math.max(insets.bottom, 8), paddingBottom: 8 }]}>
       <View style={styles.content}>
         {/* Menu Button */}
         <TouchableOpacity
@@ -178,7 +178,6 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    bottom: 0,
     left: 0,
     right: 0,
     paddingHorizontal: 16,
