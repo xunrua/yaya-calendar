@@ -46,7 +46,7 @@ const EventBlock: React.FC<EventBlockProps> = ({ event, top, height, onPress }) 
 
 export const DayView: React.FC = () => {
   const { theme } = useTheme();
-  const { selectedDate, setSelectedDate } = useViewStore();
+  const { selectedDate } = useViewStore();
   const { getEventsForDate, selectEvent } = useEventStore();
 
   const currentDate = parseISO(selectedDate);

@@ -3,8 +3,8 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeMode, Theme } from '../domain/types';
-import { createTheme, lightTheme, darkTheme } from '../styles/theme';
-import { useColorScheme, View } from 'react-native';
+import { createTheme, lightTheme } from '../styles/theme';
+import { useColorScheme, View, Appearance } from 'react-native';
 
 // ============================================================================
 // Theme Store State
@@ -23,8 +23,7 @@ interface ThemeState {
 // ============================================================================
 
 const getSystemColorScheme = (): 'light' | 'dark' => {
-  // This will be called at runtime
-  const colorScheme = useColorScheme();
+  const colorScheme = Appearance.getColorScheme();
   return colorScheme === 'dark' ? 'dark' : 'light';
 };
 

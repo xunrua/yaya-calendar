@@ -6,15 +6,13 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Platform,
 } from 'react-native';
 import { useTheme } from '../../stores/themeStore';
 import { useEventStore } from '../../stores/eventStore';
 import { Button } from '../common/Button';
 import { GlassCard } from '../common/GlassCard';
 import { Event, RecurrenceRule } from '../../domain/types';
-import { format, parseISO, setHours, setMinutes } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { format, parseISO } from 'date-fns';
 
 interface EventFormProps {
   event?: Event;

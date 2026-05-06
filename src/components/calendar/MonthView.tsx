@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useTheme } from '../../stores/themeStore';
 import { useViewStore, useEventStore } from '../../stores/eventStore';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, getDay, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, getDay, startOfWeek, endOfWeek } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { getLunarInfo } from '../../domain/lunar';
 
@@ -11,7 +11,7 @@ const WEEKDAY_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
   const { selectedDate, setSelectedDate, setCurrentView } = useViewStore();
-  const { events, getEventsForDate } = useEventStore();
+  const { getEventsForDate } = useEventStore();
 
   const currentMonth = new Date(selectedDate);
   const monthStart = startOfMonth(currentMonth);
@@ -51,7 +51,6 @@ export const MonthView: React.FC = () => {
 
   const renderDay = (date: Date) => {
     const isToday = isSameDay(date, today);
-    const isSelected = isSameDay(date, currentMonth);
     const isCurrentMonth = isSameMonth(date, currentMonth);
     const isWeekend = getDay(date) === 0 || getDay(date) === 6;
 

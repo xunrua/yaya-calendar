@@ -10,7 +10,6 @@ import {
   Dimensions,
 } from 'react-native';
 import { useTheme } from '../../stores/themeStore';
-import { Button } from './Button';
 
 interface ModalProps {
   visible: boolean;
