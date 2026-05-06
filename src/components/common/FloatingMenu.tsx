@@ -4,8 +4,8 @@ import { BlurView } from 'expo-blur';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
+  Easing,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../stores/themeStore';
@@ -41,9 +41,9 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
   React.useEffect(() => {
     if (visible) {
-      scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+      scale.value = withTiming(1, { duration: 200, easing: Easing.bezier(0.4, 0, 0.2, 1) });
       opacity.value = withTiming(1, { duration: 200 });
-      translateY.value = withSpring(0, { damping: 15, stiffness: 150 });
+      translateY.value = withTiming(0, { duration: 200, easing: Easing.bezier(0.4, 0, 0.2, 1) });
     } else {
       scale.value = withTiming(0, { duration: 150 });
       opacity.value = withTiming(0, { duration: 150 });
