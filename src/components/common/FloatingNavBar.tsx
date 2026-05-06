@@ -223,6 +223,7 @@ const styles = StyleSheet.create({
   },
   segmentText: {
     fontSize: 14,
+    lineHeight: 14,
   },
 });
 
