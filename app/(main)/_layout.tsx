@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
-import { ThemeProvider, useTheme } from '../../src/stores/themeStore';
+import { useTheme } from '../../src/stores/themeStore';
 import { useEventStore } from '../../src/stores/eventStore';
 import { FloatingNavBar } from '../../src/components/common/FloatingNavBar';
 import { FloatingMenu } from '../../src/components/common/FloatingMenu';
@@ -101,9 +101,5 @@ export default function MainLayout() {
     loadEvents();
   }, [loadEvents]);
 
-  return (
-    <ThemeProvider>
-      <MainContent />
-    </ThemeProvider>
-  );
+  return <MainContent />;
 }
