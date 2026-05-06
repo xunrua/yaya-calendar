@@ -132,8 +132,8 @@ export const MonthView: React.FC = () => {
 
       {/* Swipeable month grids */}
       <GestureDetector gesture={panGesture}>
-        <View style={[styles.monthsContainer, { paddingBottom: insets.bottom + 64 }]}>
-          <Animated.View style={[styles.monthPanel, prevMonthStyle]}>
+        <View style={styles.monthsContainer}>
+          <Animated.View style={[styles.monthPanel, { bottom: insets.bottom + 64 }, prevMonthStyle]}>
             <MonthGrid
               year={prevMonth.getFullYear()}
               month={prevMonth.getMonth()}
@@ -141,7 +141,7 @@ export const MonthView: React.FC = () => {
             />
           </Animated.View>
 
-          <Animated.View style={[styles.monthPanel, animatedStyle]}>
+          <Animated.View style={[styles.monthPanel, { bottom: insets.bottom + 64 }, animatedStyle]}>
             <MonthGrid
               year={currentMonth.getFullYear()}
               month={currentMonth.getMonth()}
@@ -149,7 +149,7 @@ export const MonthView: React.FC = () => {
             />
           </Animated.View>
 
-          <Animated.View style={[styles.monthPanel, nextMonthStyle]}>
+          <Animated.View style={[styles.monthPanel, { bottom: insets.bottom + 64 }, nextMonthStyle]}>
             <MonthGrid
               year={nextMonth.getFullYear()}
               month={nextMonth.getMonth()}
@@ -195,7 +195,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     width: SCREEN_WIDTH,
-    height: "100%",
   },
 });
 
