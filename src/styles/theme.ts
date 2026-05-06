@@ -5,27 +5,27 @@ import { Theme, ThemeColors } from '../domain/types';
 // ============================================================================
 
 const lightColors: ThemeColors = {
-  primary: '#6366F1', // Indigo 500
-  primaryLight: '#818CF8', // Indigo 400
-  primaryDark: '#4F46E5', // Indigo 600
-  background: '#FFFFFF',
-  surface: '#F8FAFC', // Slate 50
-  surfaceVariant: '#F1F5F9', // Slate 100
-  text: '#0F172A', // Slate 900
-  textSecondary: '#475569', // Slate 600
-  textTertiary: '#94A3B8', // Slate 400
-  border: '#E2E8F0', // Slate 200
+  primary: '#8B5CF6', // Violet 500 - 柔和紫色
+  primaryLight: '#A78BFA', // Violet 400
+  primaryDark: '#7C3AED', // Violet 600
+  background: '#FAFAFA', // 米白色
+  surface: '#F5F5F5', // 更柔和的灰色
+  surfaceVariant: '#EBEBEB', // Gray 100
+  text: '#1F2937', // Gray 800 - 深灰文字
+  textSecondary: '#6B7280', // Gray 500
+  textTertiary: '#9CA3AF', // Gray 400
+  border: '#E5E7EB', // Gray 200
   error: '#EF4444', // Red 500
-  success: '#22C55E', // Green 500
+  success: '#10B981', // Emerald 500
   warning: '#F59E0B', // Amber 500
   // Calendar specific
-  todayBackground: '#EEF2FF', // Indigo 50
-  todayText: '#4F46E5', // Indigo 600
-  eventDefault: '#6366F1', // Indigo 500
+  todayBackground: '#EDE9FE', // Violet 100
+  todayText: '#7C3AED', // Violet 600
+  eventDefault: '#8B5CF6', // Violet 500
   weekendText: '#DC2626', // Red 600
-  lunarText: '#64748B', // Slate 500
+  lunarText: '#9CA3AF', // Gray 400 - 更淡的农历文字
   holidayText: '#DC2626', // Red 600
-  solarTermText: '#16A34A', // Green 600
+  solarTermText: '#059669', // Emerald 600
 };
 
 // ============================================================================
@@ -33,27 +33,27 @@ const lightColors: ThemeColors = {
 // ============================================================================
 
 const darkColors: ThemeColors = {
-  primary: '#818CF8', // Indigo 400
-  primaryLight: '#A5B4FC', // Indigo 300
-  primaryDark: '#6366F1', // Indigo 500
-  background: '#0F172A', // Slate 900
-  surface: '#1E293B', // Slate 800
-  surfaceVariant: '#334155', // Slate 700
-  text: '#F8FAFC', // Slate 50
-  textSecondary: '#CBD5E1', // Slate 300
-  textTertiary: '#64748B', // Slate 500
-  border: '#334155', // Slate 700
+  primary: '#A78BFA', // Violet 400 - 去饱和紫色
+  primaryLight: '#C4B5FD', // Violet 300
+  primaryDark: '#8B5CF6', // Violet 500
+  background: '#1C1C1E', // 深灰背景 (iOS 风格)
+  surface: '#2C2C2E', // 稍浅的灰色
+  surfaceVariant: '#3A3A3C', // 更浅的灰色
+  text: '#F5F5F5', // 柔白色文字
+  textSecondary: '#ABABAB', // 次要文字
+  textTertiary: '#6B6B6B', // 更淡的文字
+  border: '#38383A', // 边框色
   error: '#F87171', // Red 400
   success: '#4ADE80', // Green 400
   warning: '#FBBF24', // Amber 400
   // Calendar specific
-  todayBackground: '#312E81', // Indigo 900
-  todayText: '#A5B4FC', // Indigo 300
-  eventDefault: '#818CF8', // Indigo 400
-  weekendText: '#F87171', // Red 400
-  lunarText: '#94A3B8', // Slate 400
-  holidayText: '#F87171', // Red 400
-  solarTermText: '#4ADE80', // Green 400
+  todayBackground: '#3B2D5F', // Violet 900 去饱和
+  todayText: '#C4B5FD', // Violet 300
+  eventDefault: '#A78BFA', // Violet 400
+  weekendText: '#FCA5A5', // Red 300 - 去饱和
+  lunarText: '#6B6B6B', // 更淡的农历文字
+  holidayText: '#FCA5A5', // Red 300
+  solarTermText: '#6EE7B7', // Emerald 300
 };
 
 // ============================================================================
