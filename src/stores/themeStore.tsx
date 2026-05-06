@@ -1,9 +1,10 @@
+import React, { useEffect, ReactNode } from 'react';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeMode, Theme } from '../domain/types';
 import { createTheme, lightTheme, darkTheme } from '../styles/theme';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, View } from 'react-native';
 
 // ============================================================================
 // Theme Store State
@@ -97,15 +98,12 @@ export const useTheme = () => {
 // Theme Provider Component
 // ============================================================================
 
-import React, { useEffect, ReactNode } from 'react';
-import { useColorScheme as useRNColorScheme } from 'react-native';
-
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const systemColorScheme = useRNColorScheme();
+  const systemColorScheme = useColorScheme();
   const { mode, setMode } = useThemeStore();
 
   // Update theme when system preference changes
@@ -115,7 +113,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   }, [systemColorScheme, mode, setMode]);
 
-  return <>{children}</>;
+  return <View style={{ flex: 1 }}>{children}</View>;
 };
 
 export default useThemeStore;

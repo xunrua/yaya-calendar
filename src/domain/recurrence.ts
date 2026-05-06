@@ -1,55 +1,8 @@
-import { RRule, Frequency, ByWeekday } from 'rrule';
 import { RecurrenceRule, Event } from '../domain/types';
 
 // ============================================================================
 // Recurrence Service
 // ============================================================================
-
-/**
- * Convert our RecurrenceRule to RRule options
- */
-const toRRuleOptions = (rule: RecurrenceRule, startDate: Date): Partial<RRule.Options> => {
-  const freqMap: Record<string, Frequency> = {
-    daily: RRule.DAILY,
-    weekly: RRule.WEEKLY,
-    monthly: RRule.MONTHLY,
-    yearly: RRule.YEARLY,
-  };
-
-  const options: Partial<RRule.Options> = {
-    dtstart: startDate,
-    freq: freqMap[rule.frequency],
-    interval: rule.interval,
-  };
-
-  if (rule.endDate) {
-    options.until = new Date(rule.endDate);
-  }
-
-  if (rule.count) {
-    options.count = rule.count;
-  }
-
-  if (rule.byDay) {
-    // Convert day numbers (0=Sun, 6=Sat) to RRule weekdays
-    const weekdayMap: Record<number, ByWeekday> = {
-      0: RRule.SU,
-      1: RRule.MO,
-      2: RRule.TU,
-      3: RRule.WE,
-      4: RRule.TH,
-      5: RRule.FR,
-      6: RRule.SA,
-    };
-    options.byweekday = rule.byDay.map(d => weekdayMap[d]);
-  }
-
-  if (rule.byMonthDay) {
-    options.bymonthday = rule.byMonthDay;
-  }
-
-  return options;
-};
 
 /**
  * Expand a recurring event into individual occurrences within a date range
@@ -69,25 +22,50 @@ export const expandRecurrence = (
   }
 
   const startDate = new Date(event.startTime);
-  const options = toRRuleOptions(event.recurrenceRule, startDate);
+  const rule = event.recurrenceRule;
+  const dates: Date[] = [];
 
-  try {
-    const rrule = new RRule(options);
-    const dates = rrule.between(rangeStart, rangeEnd, true);
+  // Simple recurrence expansion without rrule library for now
+  const exceptions = new Set(
+    (event.recurrenceException ?? []).map(d => d.split('T')[0])
+  );
 
-    // Filter out exception dates
-    const exceptions = new Set(
-      (event.recurrenceException ?? []).map(d => d.split('T')[0])
-    );
+  let currentDate = new Date(startDate);
+  let count = 0;
+  const maxIterations = 1000; // Safety limit
 
-    return dates.filter(date => {
-      const dateStr = date.toISOString().split('T')[0];
-      return !exceptions.has(dateStr);
-    });
-  } catch (error) {
-    console.error('Failed to expand recurrence:', error);
-    return [];
+  while (currentDate < rangeEnd && count < maxIterations) {
+    if (currentDate >= rangeStart) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      if (!exceptions.has(dateStr)) {
+        dates.push(new Date(currentDate));
+      }
+    }
+
+    // Move to next occurrence
+    switch (rule.frequency) {
+      case 'daily':
+        currentDate.setDate(currentDate.getDate() + rule.interval);
+        break;
+      case 'weekly':
+        currentDate.setDate(currentDate.getDate() + 7 * rule.interval);
+        break;
+      case 'monthly':
+        currentDate.setMonth(currentDate.getMonth() + rule.interval);
+        break;
+      case 'yearly':
+        currentDate.setFullYear(currentDate.getFullYear() + rule.interval);
+        break;
+    }
+
+    // Check end conditions
+    if (rule.endDate && currentDate > new Date(rule.endDate)) break;
+    if (rule.count && dates.length >= rule.count) break;
+
+    count++;
   }
+
+  return dates;
 };
 
 /**
@@ -99,29 +77,8 @@ export const getNextOccurrence = (
 ): Date | null => {
   if (!event.recurrenceRule) return null;
 
-  const startDate = new Date(event.startTime);
-  const options = toRRuleOptions(event.recurrenceRule, startDate);
-
-  try {
-    const rrule = new RRule(options);
-    const dates = rrule.after(after, false);
-
-    // Check if it's an exception
-    if (dates) {
-      const exceptions = new Set(
-        (event.recurrenceException ?? []).map(d => d.split('T')[0])
-      );
-      const dateStr = dates.toISOString().split('T')[0];
-      if (exceptions.has(dateStr)) {
-        return getNextOccurrence(event, dates);
-      }
-    }
-
-    return dates;
-  } catch (error) {
-    console.error('Failed to get next occurrence:', error);
-    return null;
-  }
+  const occurrences = expandRecurrence(event, after, new Date(after.getTime() + 365 * 24 * 60 * 60 * 1000));
+  return occurrences.length > 0 ? occurrences[0] : null;
 };
 
 /**

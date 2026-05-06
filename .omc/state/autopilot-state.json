@@ -1,0 +1,21 @@
+{
+  "active": true,
+  "iteration": 0,
+  "max_iterations": 10,
+  "current_phase": "execution",
+  "task_description": "YAYA 日历应用 - 跨平台日历应用 (iOS/Android/Web)，支持事件管理、重复事件、四种视图、农历显示、暗色/亮色主题",
+  "plan_path": ".omc/plans/calendar-app.md",
+  "started_at": "2026-05-06T03:50:00Z",
+  "phase": "execution",
+  "spec_path": ".omc/specs/deep-interview-calendar-app.md",
+  "skipped_phases": [
+    "expansion",
+    "planning"
+  ],
+  "_meta": {
+    "mode": "autopilot",
+    "sessionId": null,
+    "updatedAt": "2026-05-06T05:37:36.589Z",
+    "updatedBy": "state_write_tool"
+  }
+}

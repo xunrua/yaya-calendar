@@ -229,8 +229,8 @@ export const getLunarInfo = (date: Date): {
 
   return {
     lunarDay,
-    solarTerm: solarTerm?.name,
-    holiday,
+    solarTerm: solarTerm?.name ?? undefined,
+    holiday: holiday ?? undefined,
     isHoliday: isHolidayDay,
     isSolarTerm: isSolarTermDayFlag,
   };
