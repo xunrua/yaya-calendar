@@ -18,8 +18,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate }) => {
   const sortedEvents = React.useMemo(() => {
     const allEvents = Object.values(events).flat();
     return allEvents.sort((a, b) => {
-      const dateA = new Date(a.startDate);
-      const dateB = new Date(b.startDate);
+      const dateA = new Date(a.startTime);
+      const dateB = new Date(b.startTime);
       return dateA.getTime() - dateB.getTime();
     });
   }, [events]);
@@ -28,7 +28,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate }) => {
   const eventsByDate = React.useMemo(() => {
     const grouped: { [date: string]: typeof sortedEvents } = {};
     sortedEvents.forEach((event) => {
-      const dateKey = format(new Date(event.startDate), 'yyyy-MM-dd');
+      const dateKey = format(new Date(event.startTime), 'yyyy-MM-dd');
       if (!grouped[dateKey]) {
         grouped[dateKey] = [];
       }
@@ -102,11 +102,11 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate }) => {
               >
                 <View style={styles.eventTimeContainer}>
                   <Text style={[styles.eventTime, { color: theme.colors.textSecondary }]}>
-                    {formatEventTime(event.startDate)}
+                    {formatEventTime(event.startTime)}
                   </Text>
-                  {event.endDate && (
+                  {event.endTime && (
                     <Text style={[styles.eventTimeEnd, { color: theme.colors.textTertiary }]}>
-                      - {formatEventTime(event.endDate)}
+                      - {formatEventTime(event.endTime)}
                     </Text>
                   )}
                 </View>
