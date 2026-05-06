@@ -132,7 +132,7 @@ export const MonthView: React.FC = () => {
 
       {/* Swipeable month grids */}
       <GestureDetector gesture={panGesture}>
-        <View style={styles.monthsContainer}>
+        <View style={[styles.monthsContainer, { paddingBottom: insets.bottom + 64 }]}>
           <Animated.View style={[styles.monthPanel, prevMonthStyle]}>
             <MonthGrid
               year={prevMonth.getFullYear()}
