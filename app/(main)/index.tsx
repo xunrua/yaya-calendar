@@ -67,6 +67,7 @@ export default function MainScreen() {
         onAddPress={handleAddPress}
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        menuOpen={menuVisible}
       />
 
       {/* Floating Menu */}

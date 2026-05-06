@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform, Text } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ interface FloatingNavBarProps {
   onAddPress: () => void;
   activeTab: 'calendar' | 'todo';
   onTabChange: (tab: 'calendar' | 'todo') => void;
+  menuOpen?: boolean;
 }
 
 export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
@@ -18,10 +19,10 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
   onAddPress,
   activeTab,
   onTabChange,
+  menuOpen = false,
 }) => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const [menuOpen, setMenuOpen] = useState(false);
 
   // Animation values for segmented control
   const indicatorPosition = useSharedValue(activeTab === 'calendar' ? 0 : 1);
@@ -49,7 +50,6 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
   };
 
   const handleMenuPress = () => {
-    setMenuOpen(!menuOpen);
     onMenuPress();
   };
 
