@@ -30,7 +30,8 @@ export default function MonthGrid({
   month,
   fidelity = "full",
 }: MonthGridProps) {
-  const { colors } = useTheme();
+  const { theme } = useTheme();
+  const c = theme.colors;
   const { selectedDate, setSelectedDate, setCurrentView } = useViewStore();
   const { getEventsForDate } = useEventStore();
 
@@ -51,20 +52,14 @@ export default function MonthGrid({
   const renderDayCell = (day: Date) => {
     const dateStr = format(day, "yyyy-MM-dd");
     const isCurrentMonth = isSameMonth(day, new Date(year, month, 1));
-    const isSelected =
-      selectedDate === dateStr || isSameDay(day, new Date(selectedDate));
+    const isSelected = selectedDate === dateStr;
     const isTodayDate = isToday(day);
     const dayOfWeek = day.getDay();
 
     if (!isCurrentMonth) {
       return (
         <View key={dateStr} style={styles.dayCell}>
-          <Text
-            style={[
-              styles.dayNumber,
-              { color: colors.textTertiary + "40" },
-            ]}
-          >
+          <Text style={[styles.dayNumber, { color: c.textTertiary + "40" }]}>
             {format(day, "d")}
           </Text>
         </View>
@@ -82,7 +77,7 @@ export default function MonthGrid({
         style={[
           styles.dayCell,
           isSelected && {
-            backgroundColor: colors.primary + "20",
+            backgroundColor: c.selectedBackground,
             borderRadius: 8,
           },
         ]}
@@ -92,14 +87,14 @@ export default function MonthGrid({
             styles.dayNumber,
             {
               color: isSelected
-                ? colors.primary
+                ? c.selectedText
                 : isWeekend
-                  ? colors.error
-                  : colors.text,
+                  ? c.weekendText
+                  : c.text,
             },
             isTodayDate &&
               !isSelected && {
-                color: colors.primary,
+                color: c.todayText,
                 fontWeight: "700",
               },
           ]}
@@ -112,31 +107,27 @@ export default function MonthGrid({
               styles.lunarText,
               {
                 color: isSelected
-                  ? colors.primary
+                  ? c.selectedText
                   : lunarInfo.isHoliday
-                    ? colors.holidayText
+                    ? c.holidayText
                     : lunarInfo.isSolarTerm
-                      ? colors.solarTermText
-                      : colors.textTertiary,
+                      ? c.solarTermText
+                      : c.lunarText,
               },
             ]}
             numberOfLines={1}
           >
-            {lunarInfo.holiday ||
-              lunarInfo.solarTerm ||
-              lunarInfo.lunarDay}
+            {lunarInfo.holiday || lunarInfo.solarTerm || lunarInfo.lunarDay}
           </Text>
         )}
         {fidelity === "full" && events.length > 0 && (
           <View style={styles.eventDots}>
-            {events.slice(0, 3).map((event, idx) => (
+            {events.slice(0, 3).map((event) => (
               <View
                 key={event.id}
                 style={[
                   styles.eventDot,
-                  {
-                    backgroundColor: event.color || colors.primary,
-                  },
+                  { backgroundColor: event.color || c.eventDefault },
                 ]}
               />
             ))}
@@ -154,9 +145,7 @@ export default function MonthGrid({
             key={day}
             style={[
               styles.weekdayText,
-              {
-                color: idx >= 5 ? colors.error : colors.textTertiary,
-              },
+              { color: idx >= 5 ? c.weekendText : c.textTertiary },
             ]}
           >
             {day}

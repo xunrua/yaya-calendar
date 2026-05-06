@@ -1,175 +1,164 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useTheme } from '../../stores/themeStore';
-import { useViewStore, useEventStore } from '../../stores/eventStore';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, getDay, startOfWeek, endOfWeek } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
-import { getLunarInfo } from '../../domain/lunar';
+import React, { useCallback, useMemo, useRef } from "react";
+import { View, Text, StyleSheet, Dimensions } from "react-native";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+  Easing,
+} from "react-native-reanimated";
+import { useTheme } from "../../stores/themeStore";
+import { useViewStore } from "../../stores/eventStore";
+import { format, addMonths, subMonths } from "date-fns";
+import { zhCN } from "date-fns/locale";
+import MonthGrid from "./MonthGrid";
 
-const WEEKDAY_NAMES = ['一', '二', '三', '四', '五', '六', '日'];
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const SWIPE_VELOCITY_THRESHOLD = 500;
+const SWIPE_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.3;
+const SPRING_CONFIG = { damping: 20, stiffness: 100 };
 
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
-  const { selectedDate, setSelectedDate, setCurrentView } = useViewStore();
-  const { getEventsForDate } = useEventStore();
+  const { selectedDate, goToPrevious, goToNext } = useViewStore();
 
   const currentMonth = new Date(selectedDate);
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
+  const translateX = useSharedValue(0);
+  const isAnimating = useSharedValue(false);
 
-  // Get calendar days (including days from previous/next month to fill the grid)
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  const prevMonth = useMemo(() => subMonths(currentMonth, 1), [selectedDate]);
+  const nextMonth = useMemo(() => addMonths(currentMonth, 1), [selectedDate]);
 
-  const today = new Date();
-
-  const handleDayPress = (date: Date) => {
-    setSelectedDate(format(date, 'yyyy-MM-dd'));
-    setCurrentView('day');
-  };
-
-  const renderWeekdayHeader = () => (
-    <View style={styles.weekdayHeader}>
-      {WEEKDAY_NAMES.map((name, index) => (
-        <Text
-          key={index}
-          style={[
-            styles.weekdayText,
-            {
-              color: index === 0 || index === 6
-                ? theme.colors.weekendText
-                : theme.colors.textSecondary,
-            },
-          ]}
-        >
-          {name}
-        </Text>
-      ))}
-    </View>
+  const handleMonthChange = useCallback(
+    (direction: number) => {
+      "worklet";
+      if (direction < 0) {
+        runOnJS(goToPrevious)();
+      } else {
+        runOnJS(goToNext)();
+      }
+    },
+    [goToPrevious, goToNext]
   );
 
-  const renderDay = (date: Date) => {
-    const isToday = isSameDay(date, today);
-    const isCurrentMonth = isSameMonth(date, currentMonth);
-    const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .failOffsetY([-20, 20])
+    .onUpdate((event) => {
+      if (isAnimating.value) return;
+      translateX.value = event.translationX;
+    })
+    .onEnd((event) => {
+      if (isAnimating.value) return;
 
-    const lunarInfo = getLunarInfo(date);
-    const dayEvents = getEventsForDate(format(date, 'yyyy-MM-dd'));
+      const { translationX, velocityX } = event;
+      const shouldSwipeLeft =
+        translationX < -SWIPE_DISTANCE_THRESHOLD ||
+        velocityX < -SWIPE_VELOCITY_THRESHOLD;
+      const shouldSwipeRight =
+        translationX > SWIPE_DISTANCE_THRESHOLD ||
+        velocityX > SWIPE_VELOCITY_THRESHOLD;
 
-    // Determine lunar text to display
-    const lunarText = lunarInfo.holiday || lunarInfo.solarTerm || lunarInfo.lunarDay;
-
-    // Determine text colors
-    const lunarTextColor = lunarInfo.isHoliday
-      ? theme.colors.holidayText
-      : lunarInfo.isSolarTerm
-        ? theme.colors.solarTermText
-        : theme.colors.lunarText;
-
-    return (
-      <TouchableOpacity
-        key={format(date, 'yyyy-MM-dd')}
-        style={styles.dayCell}
-        onPress={() => handleDayPress(date)}
-      >
-        {/* Day number with pill background for today */}
-        <View
-          style={[
-            styles.dayNumberContainer,
-            {
-              backgroundColor: isToday
-                ? theme.colors.todayBackground
-                : 'transparent',
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.dayNumber,
-              {
-                color: !isCurrentMonth
-                  ? theme.colors.textTertiary
-                  : isWeekend
-                    ? theme.colors.weekendText
-                    : isToday
-                      ? theme.colors.todayText
-                      : theme.colors.text,
-              },
-            ]}
-          >
-            {format(date, 'd')}
-          </Text>
-        </View>
-
-        {/* Lunar info */}
-        <Text
-          style={[
-            styles.lunarText,
-            { color: isCurrentMonth ? lunarTextColor : theme.colors.textTertiary },
-          ]}
-          numberOfLines={1}
-        >
-          {lunarText}
-        </Text>
-
-        {/* Event indicators */}
-        {dayEvents.length > 0 && (
-          <View style={styles.eventIndicators}>
-            {dayEvents.slice(0, 3).map((event, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.eventDot,
-                  { backgroundColor: event.color || theme.colors.eventDefault },
-                ]}
-              />
-            ))}
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
-
-  const renderMonthGrid = () => {
-    const weeks: Date[][] = [];
-    let currentWeek: Date[] = [];
-
-    calendarDays.forEach((day, index) => {
-      currentWeek.push(day);
-      if (index % 7 === 6 || index === calendarDays.length - 1) {
-        weeks.push(currentWeek);
-        currentWeek = [];
+      if (shouldSwipeLeft) {
+        isAnimating.value = true;
+        translateX.value = withTiming(
+          -SCREEN_WIDTH,
+          { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) },
+          (finished) => {
+            if (finished) {
+              handleMonthChange(-1);
+              translateX.value = 0;
+              isAnimating.value = false;
+            }
+          }
+        );
+      } else if (shouldSwipeRight) {
+        isAnimating.value = true;
+        translateX.value = withTiming(
+          SCREEN_WIDTH,
+          { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) },
+          (finished) => {
+            if (finished) {
+              handleMonthChange(1);
+              translateX.value = 0;
+              isAnimating.value = false;
+            }
+          }
+        );
+      } else {
+        translateX.value = withSpring(0, SPRING_CONFIG);
       }
     });
 
-    return weeks.map((week, weekIndex) => (
-      <View key={weekIndex} style={styles.weekRow}>
-        {week.map((day) => renderDay(day))}
-      </View>
-    ));
-  };
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const prevMonthStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value - SCREEN_WIDTH }],
+  }));
+
+  const nextMonthStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value + SCREEN_WIDTH }],
+  }));
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Month header */}
-      <View style={styles.monthHeader}>
-        <Text style={[styles.monthTitle, { color: theme.colors.text }]}>
-          {format(currentMonth, 'yyyy年M月', { locale: zhCN })}
-        </Text>
-      </View>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <GestureDetector gesture={panGesture}>
+        <View style={styles.gestureContainer}>
+          {/* Month header */}
+          <View style={styles.monthHeader}>
+            <Text style={[styles.monthTitle, { color: theme.colors.text }]}>
+              {format(currentMonth, "yyyy年M月", { locale: zhCN })}
+            </Text>
+          </View>
 
-      {/* Weekday header */}
-      {renderWeekdayHeader()}
+          {/* Three month grids */}
+          <View style={styles.monthsContainer}>
+            {/* Previous month */}
+            <Animated.View
+              style={[styles.monthPanel, prevMonthStyle]}
+            >
+              <MonthGrid
+                year={prevMonth.getFullYear()}
+                month={prevMonth.getMonth()}
+                fidelity="skeleton"
+              />
+            </Animated.View>
 
-      {/* Month grid */}
-      <View style={styles.monthGrid}>{renderMonthGrid()}</View>
-    </ScrollView>
+            {/* Current month */}
+            <Animated.View style={[styles.monthPanel, animatedStyle]}>
+              <MonthGrid
+                year={currentMonth.getFullYear()}
+                month={currentMonth.getMonth()}
+                fidelity="full"
+              />
+            </Animated.View>
+
+            {/* Next month */}
+            <Animated.View
+              style={[styles.monthPanel, nextMonthStyle]}
+            >
+              <MonthGrid
+                year={nextMonth.getFullYear()}
+                month={nextMonth.getMonth()}
+                fidelity="skeleton"
+              />
+            </Animated.View>
+          </View>
+        </View>
+      </GestureDetector>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  gestureContainer: {
     flex: 1,
   },
   monthHeader: {
@@ -179,55 +168,18 @@ const styles = StyleSheet.create({
   },
   monthTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
   },
-  weekdayHeader: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  weekdayText: {
+  monthsContainer: {
     flex: 1,
-    textAlign: 'center',
-    fontSize: 13,
-    fontWeight: '500',
+    overflow: "hidden",
   },
-  monthGrid: {
-    paddingHorizontal: 12,
-  },
-  weekRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  dayCell: {
-    flex: 1,
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 2,
-  },
-  dayNumberContainer: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999, // Pill shape
-  },
-  dayNumber: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  lunarText: {
-    fontSize: 9,
-    marginTop: 2,
-  },
-  eventIndicators: {
-    flexDirection: 'row',
-    marginTop: 4,
-    gap: 2,
-  },
-  eventDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+  monthPanel: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: SCREEN_WIDTH,
+    height: "100%",
   },
 });
 
