@@ -1,129 +1,22 @@
-import { Platform } from 'react-native';
 import { Event } from '../domain/types';
 import { v4 as uuidv4 } from 'uuid';
 
-// ============================================================================
-// Platform-specific database imports
-// ============================================================================
+// Web implementation using Dexie (IndexedDB)
 
-let nativeDb: any = null;
-let dexieDb: any = null;
+let db: any = null;
 
-// ============================================================================
-// Native SQLite Database (iOS/Android)
-// ============================================================================
-
-const initNativeDatabase = async (): Promise<void> => {
-  const SQLite = require('expo-sqlite');
-  nativeDb = await SQLite.openDatabaseAsync('yaya_calendar.db');
-
-  await nativeDb.execAsync(`
-    CREATE TABLE IF NOT EXISTS schema_version (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      version INTEGER NOT NULL,
-      migrated_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS events (
-      id TEXT PRIMARY KEY,
-      title TEXT NOT NULL,
-      description TEXT,
-      start_time TEXT NOT NULL,
-      end_time TEXT NOT NULL,
-      color TEXT NOT NULL DEFAULT '#6366F1',
-      recurrence_rule TEXT,
-      recurrence_exception TEXT,
-      timezone TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_events_start_time ON events(start_time);
-    CREATE INDEX IF NOT EXISTS idx_events_end_time ON events(end_time);
-  `);
-};
-
-const createNativeEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>): Promise<Event> => {
-  const now = new Date().toISOString();
-  const event: Event = {
-    ...eventData,
-    id: uuidv4(),
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  await nativeDb.runAsync(
-    `INSERT INTO events (id, title, description, start_time, end_time, color, recurrence_rule, recurrence_exception, timezone, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      event.id, event.title, event.description ?? null, event.startTime, event.endTime,
-      event.color, event.recurrenceRule ? JSON.stringify(event.recurrenceRule) : null,
-      event.recurrenceException ? JSON.stringify(event.recurrenceException) : null,
-      event.timezone ?? null, event.createdAt, event.updatedAt,
-    ]
-  );
-
-  return event;
-};
-
-const updateNativeEvent = async (id: string, updates: Partial<Event>): Promise<Event> => {
-  const existing = await getNativeEventById(id);
-  if (!existing) throw new Error(`Event not found: ${id}`);
-
-  const now = new Date().toISOString();
-  const updated = { ...existing, ...updates, id, updatedAt: now };
-
-  await nativeDb.runAsync(
-    `UPDATE events SET title = ?, description = ?, start_time = ?, end_time = ?, color = ?, recurrence_rule = ?, recurrence_exception = ?, timezone = ?, updated_at = ? WHERE id = ?`,
-    [
-      updated.title, updated.description ?? null, updated.startTime, updated.endTime, updated.color,
-      updated.recurrenceRule ? JSON.stringify(updated.recurrenceRule) : null,
-      updated.recurrenceException ? JSON.stringify(updated.recurrenceException) : null,
-      updated.timezone ?? null, updated.updatedAt, id,
-    ]
-  );
-
-  return updated;
-};
-
-const deleteNativeEvent = async (id: string): Promise<void> => {
-  await nativeDb.runAsync('DELETE FROM events WHERE id = ?', [id]);
-};
-
-const getNativeEventById = async (id: string): Promise<Event | null> => {
-  const row = await nativeDb.getFirstAsync('SELECT * FROM events WHERE id = ?', [id]);
-  return row ? mapRowToEvent(row) : null;
-};
-
-const getNativeEventsByDateRange = async (start: string, end: string): Promise<Event[]> => {
-  const rows = await nativeDb.getAllAsync(
-    'SELECT * FROM events WHERE start_time >= ? AND start_time < ? ORDER BY start_time ASC',
-    [start, end]
-  );
-  return rows.map(mapRowToEvent);
-};
-
-const getAllNativeEvents = async (): Promise<Event[]> => {
-  const rows = await nativeDb.getAllAsync('SELECT * FROM events ORDER BY start_time ASC');
-  return rows.map(mapRowToEvent);
-};
-
-// ============================================================================
-// Web IndexedDB Database (using Dexie)
-// ============================================================================
-
-const initWebDatabase = async (): Promise<void> => {
+const initDatabase = async (): Promise<void> => {
   const Dexie = require('dexie');
-  dexieDb = new Dexie('YayaCalendarDB');
+  db = new Dexie('YayaCalendarDB');
 
-  dexieDb.version(1).stores({
+  db.version(1).stores({
     events: 'id, startTime, endTime',
   });
 
-  await dexieDb.open();
+  await db.open();
 };
 
-const createWebEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>): Promise<Event> => {
+const createEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>): Promise<Event> => {
   const now = new Date().toISOString();
   const event: Event = {
     ...eventData,
@@ -132,131 +25,53 @@ const createWebEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updat
     updatedAt: now,
   };
 
-  await dexieDb.events.add(event);
+  await db.events.add(event);
   return event;
 };
 
-const updateWebEvent = async (id: string, updates: Partial<Event>): Promise<Event> => {
-  const existing = await getWebEventById(id);
+const updateEvent = async (id: string, updates: Partial<Event>): Promise<Event> => {
+  const existing = await getEventById(id);
   if (!existing) throw new Error(`Event not found: ${id}`);
 
   const now = new Date().toISOString();
   const updated = { ...existing, ...updates, id, updatedAt: now };
 
-  await dexieDb.events.update(id, updated);
+  await db.events.update(id, updated);
   return updated;
 };
 
-const deleteWebEvent = async (id: string): Promise<void> => {
-  await dexieDb.events.delete(id);
+const deleteEvent = async (id: string): Promise<void> => {
+  await db.events.delete(id);
 };
 
-const getWebEventById = async (id: string): Promise<Event | null> => {
-  return await dexieDb.events.get(id) ?? null;
+const getEventById = async (id: string): Promise<Event | null> => {
+  return await db.events.get(id) ?? null;
 };
 
-const getWebEventsByDateRange = async (start: string, end: string): Promise<Event[]> => {
-  return await dexieDb.events
+const getEventsByDateRange = async (start: string, end: string): Promise<Event[]> => {
+  return await db.events
     .where('startTime')
     .between(start, end, true, false)
     .toArray();
 };
 
-const getAllWebEvents = async (): Promise<Event[]> => {
-  return await dexieDb.events.toArray();
+const getAllEvents = async (): Promise<Event[]> => {
+  return await db.events.toArray();
 };
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-const mapRowToEvent = (row: any): Event => ({
-  id: row.id,
-  title: row.title,
-  description: row.description ?? undefined,
-  startTime: row.start_time,
-  endTime: row.end_time,
-  color: row.color,
-  recurrenceRule: row.recurrence_rule ? JSON.parse(row.recurrence_rule) : undefined,
-  recurrenceException: row.recurrence_exception ? JSON.parse(row.recurrence_exception) : undefined,
-  timezone: row.timezone ?? undefined,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-});
-
-// ============================================================================
-// Unified Database API
-// ============================================================================
-
-export const initDatabase = async (): Promise<void> => {
-  if (Platform.OS === 'web') {
-    await initWebDatabase();
-  } else {
-    await initNativeDatabase();
-  }
-};
-
-export const createEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>): Promise<Event> => {
-  if (Platform.OS === 'web') {
-    return createWebEvent(eventData);
-  }
-  return createNativeEvent(eventData);
-};
-
-export const updateEvent = async (id: string, updates: Partial<Event>): Promise<Event> => {
-  if (Platform.OS === 'web') {
-    return updateWebEvent(id, updates);
-  }
-  return updateNativeEvent(id, updates);
-};
-
-export const deleteEvent = async (id: string): Promise<void> => {
-  if (Platform.OS === 'web') {
-    return deleteWebEvent(id);
-  }
-  return deleteNativeEvent(id);
-};
-
-export const getEventById = async (id: string): Promise<Event | null> => {
-  if (Platform.OS === 'web') {
-    return getWebEventById(id);
-  }
-  return getNativeEventById(id);
-};
-
-export const getEventsByDateRange = async (start: string, end: string): Promise<Event[]> => {
-  if (Platform.OS === 'web') {
-    return getWebEventsByDateRange(start, end);
-  }
-  return getNativeEventsByDateRange(start, end);
-};
-
-export const getAllEvents = async (): Promise<Event[]> => {
-  if (Platform.OS === 'web') {
-    return getAllWebEvents();
-  }
-  return getAllNativeEvents();
-};
-
-export const exportDatabase = async (): Promise<string> => {
+const exportDatabase = async (): Promise<string> => {
   const events = await getAllEvents();
   return JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), events });
 };
 
-export const importDatabase = async (jsonData: string): Promise<void> => {
+const importDatabase = async (jsonData: string): Promise<void> => {
   const data = JSON.parse(jsonData);
   if (!data.events || !Array.isArray(data.events)) {
     throw new Error('Invalid backup data format');
   }
 
-  // Clear existing events
-  if (Platform.OS === 'web') {
-    await dexieDb.events.clear();
-  } else {
-    await nativeDb.runAsync('DELETE FROM events');
-  }
+  await db.events.clear();
 
-  // Import events
   for (const event of data.events as Event[]) {
     await createEvent({
       title: event.title,
@@ -272,6 +87,19 @@ export const importDatabase = async (jsonData: string): Promise<void> => {
 };
 
 export default {
+  initDatabase,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  getEventById,
+  getEventsByDateRange,
+  getAllEvents,
+  exportDatabase,
+  importDatabase,
+};
+
+// Named exports for direct import
+export {
   initDatabase,
   createEvent,
   updateEvent,
