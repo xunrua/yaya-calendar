@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../stores/themeStore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface MenuItem {
   id: string;
@@ -34,6 +35,7 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
   onScheduleView,
 }) => {
   const { theme, mode, setMode } = useTheme();
+  const insets = useSafeAreaInsets();
 
   // Animation values
   const scale = useSharedValue(0);
@@ -157,7 +159,7 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
       </Pressable>
 
       {/* Menu */}
-      <Animated.View style={[styles.container, animatedContainerStyle]}>
+      <Animated.View style={[styles.container, { bottom: Math.max(insets.bottom, 8) + 64 }, animatedContainerStyle]}>
         {renderGlassBackground()}
 
         <View style={styles.menuContent}>
@@ -211,7 +213,7 @@ const styles = StyleSheet.create({
   },
   container: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 0,
     left: 16,
     width: 200,
     borderRadius: 16,
