@@ -70,33 +70,37 @@ export const MonthView: React.FC = () => {
     return (
       <TouchableOpacity
         key={format(date, 'yyyy-MM-dd')}
-        style={[
-          styles.dayCell,
-          {
-            backgroundColor: isToday
-              ? theme.colors.todayBackground
-              : 'transparent',
-          },
-        ]}
+        style={styles.dayCell}
         onPress={() => handleDayPress(date)}
       >
-        {/* Day number */}
-        <Text
+        {/* Day number with pill background for today */}
+        <View
           style={[
-            styles.dayNumber,
+            styles.dayNumberContainer,
             {
-              color: !isCurrentMonth
-                ? theme.colors.textTertiary
-                : isWeekend
-                  ? theme.colors.weekendText
-                  : isToday
-                    ? theme.colors.todayText
-                    : theme.colors.text,
+              backgroundColor: isToday
+                ? theme.colors.todayBackground
+                : 'transparent',
             },
           ]}
         >
-          {format(date, 'd')}
-        </Text>
+          <Text
+            style={[
+              styles.dayNumber,
+              {
+                color: !isCurrentMonth
+                  ? theme.colors.textTertiary
+                  : isWeekend
+                    ? theme.colors.weekendText
+                    : isToday
+                      ? theme.colors.todayText
+                      : theme.colors.text,
+              },
+            ]}
+          >
+            {format(date, 'd')}
+          </Text>
+        </View>
 
         {/* Lunar info */}
         <Text
@@ -174,41 +178,45 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   monthTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
   },
   weekdayHeader: {
     flexDirection: 'row',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   weekdayText: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
   },
   monthGrid: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
   weekRow: {
     flexDirection: 'row',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   dayCell: {
     flex: 1,
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
     margin: 2,
   },
+  dayNumberContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999, // Pill shape
+  },
   dayNumber: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
   },
   lunarText: {
-    fontSize: 10,
+    fontSize: 9,
     marginTop: 2,
   },
   eventIndicators: {
