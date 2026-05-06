@@ -59,9 +59,11 @@ export default function MonthGrid({
     if (!isCurrentMonth) {
       return (
         <View key={dateStr} style={styles.dayCell}>
-          <Text style={[styles.dayNumber, { color: c.textTertiary + "40" }]}>
-            {format(day, "d")}
-          </Text>
+          <View style={styles.dayNumberContainer}>
+            <Text style={[styles.dayNumber, { color: c.textTertiary }]}>
+              {format(day, "d")}
+            </Text>
+          </View>
         </View>
       );
     }
@@ -74,40 +76,42 @@ export default function MonthGrid({
       <Pressable
         key={dateStr}
         onPress={() => handleDayPress(day)}
-        style={[
-          styles.dayCell,
-          isSelected && {
-            backgroundColor: c.selectedBackground,
-            borderRadius: 8,
-          },
-        ]}
+        style={styles.dayCell}
       >
-        <Text
+        <View
           style={[
-            styles.dayNumber,
+            styles.dayNumberContainer,
             {
-              color: isSelected
-                ? c.selectedText
-                : isWeekend
-                  ? c.weekendText
-                  : c.text,
+              backgroundColor: isTodayDate
+                ? c.todayBackground
+                : "transparent",
             },
-            isTodayDate &&
-              !isSelected && {
-                color: c.todayText,
-                fontWeight: "700",
-              },
           ]}
         >
-          {format(day, "d")}
-        </Text>
+          <Text
+            style={[
+              styles.dayNumber,
+              {
+                color: !isCurrentMonth
+                  ? c.textTertiary
+                  : isWeekend
+                    ? c.weekendText
+                    : isTodayDate
+                      ? c.todayText
+                      : c.text,
+              },
+            ]}
+          >
+            {format(day, "d")}
+          </Text>
+        </View>
         {fidelity === "full" && lunarInfo && (
           <Text
             style={[
               styles.lunarText,
               {
-                color: isSelected
-                  ? c.selectedText
+                color: !isCurrentMonth
+                  ? c.textTertiary
                   : lunarInfo.isHoliday
                     ? c.holidayText
                     : lunarInfo.isSolarTerm
@@ -183,6 +187,13 @@ const styles = {
     alignItems: "center" as const,
     justifyContent: "center" as const,
     paddingVertical: 2,
+  } as any,
+  dayNumberContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   } as any,
   dayNumber: {
     fontSize: 14,
