@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { useTheme } from '../../src/stores/themeStore';
 import { Ionicons } from '@expo/vector-icons';
+import { Platform } from 'react-native';
 
 export default function TabsLayout() {
   const { theme } = useTheme();
@@ -19,6 +20,15 @@ export default function TabsLayout() {
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textSecondary,
+        // Add animation for tab transitions
+        animation: 'shift',
+        // Platform-specific animation settings
+        ...(Platform.OS === 'ios' && {
+          tabBarStyle: {
+            backgroundColor: theme.colors.background,
+            borderTopColor: theme.colors.border,
+          },
+        }),
       }}
     >
       <Tabs.Screen
