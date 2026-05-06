@@ -33,8 +33,8 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
 
   React.useEffect(() => {
     indicatorPosition.value = withTiming(activeTab === "calendar" ? 0 : 1, {
-      duration: 200,
-      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+      duration: 250,
+      easing: Easing.bezier(0.4, 0, 0.2, 1),
     });
   }, [activeTab, indicatorPosition]);
 
