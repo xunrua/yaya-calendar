@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../stores/themeStore';
 import { useViewStore, useEventStore } from '../../stores/eventStore';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, parseISO, isSameDay, addDays } from 'date-fns';
@@ -12,6 +13,7 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 export const WeekView: React.FC = () => {
   const { theme } = useTheme();
+  const router = useRouter();
   const { selectedDate, setSelectedDate, setCurrentView } = useViewStore();
   const { getEventsForDateRange } = useEventStore();
 
@@ -116,7 +118,7 @@ export const WeekView: React.FC = () => {
                         backgroundColor: event.color || theme.colors.eventDefault,
                       },
                     ]}
-                    onPress={() => console.log('Event pressed:', event.id)}
+                    onPress={() => router.push(`/event/${event.id}` as const)}
                   >
                     <Text style={styles.eventTitle} numberOfLines={1}>
                       {event.title}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../stores/themeStore';
 import { useViewStore, useEventStore } from '../../stores/eventStore';
 import { format, parseISO, setHours, setMinutes, isSameDay, addHours } from 'date-fns';
@@ -46,8 +47,9 @@ const EventBlock: React.FC<EventBlockProps> = ({ event, top, height, onPress }) 
 
 export const DayView: React.FC = () => {
   const { theme } = useTheme();
+  const router = useRouter();
   const { selectedDate } = useViewStore();
-  const { getEventsForDate, selectEvent } = useEventStore();
+  const { getEventsForDate } = useEventStore();
 
   const currentDate = parseISO(selectedDate);
   const dayEvents = getEventsForDate(selectedDate);
@@ -70,7 +72,7 @@ export const DayView: React.FC = () => {
   };
 
   const handleEventPress = (event: Event) => {
-    selectEvent(event.id);
+    router.push(`/event/${event.id}` as const);
   };
 
   const handleTimeSlotPress = (hour: number) => {

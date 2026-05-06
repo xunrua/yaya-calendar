@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, SectionList, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/stores/themeStore';
 import { useEventStore } from '../../src/stores/eventStore';
 import { format, parseISO, isToday, isTomorrow } from 'date-fns';
@@ -52,6 +53,7 @@ const getDateSectionTitle = (date: Date): string => {
 
 export default function EventsScreen() {
   const { theme } = useTheme();
+  const router = useRouter();
   const { events } = useEventStore();
 
   // Group events by date
@@ -109,7 +111,7 @@ export default function EventsScreen() {
           sections={sections}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <EventItem event={item} onPress={() => console.log('Event pressed:', item.id)} />
+            <EventItem event={item} onPress={() => router.push(`/event/${item.id}` as const)} />
           )}
           renderSectionHeader={renderSectionHeader}
           contentContainerStyle={styles.listContent}
