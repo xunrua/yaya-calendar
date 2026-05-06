@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useRef } from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -25,6 +26,7 @@ const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
   const { selectedDate, goToPrevious, goToNext } = useViewStore();
+  const insets = useSafeAreaInsets();
 
   const currentMonth = new Date(selectedDate);
   const translateX = useSharedValue(0);
@@ -105,7 +107,7 @@ export const MonthView: React.FC = () => {
   }));
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
       {/* Month header */}
       <View style={styles.monthHeader}>
         <Text style={[styles.monthTitle, { color: theme.colors.text }]}>
