@@ -44,3 +44,6 @@ app-example
 
 # OMC (oh-my-claudecode)
 .omc/
+
+# VS Code
+.vscode/
