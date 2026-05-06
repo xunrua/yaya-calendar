@@ -32,8 +32,8 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
 
   React.useEffect(() => {
     indicatorPosition.value = withSpring(activeTab === "calendar" ? 0 : 1, {
-      damping: 15,
-      stiffness: 150,
+      damping: 20,
+      stiffness: 300,
     });
   }, [activeTab, indicatorPosition]);
 
