@@ -31,17 +31,13 @@ export const MonthView: React.FC = () => {
   const prevMonth = useMemo(() => subMonths(currentMonth, 1), [selectedDate]);
   const nextMonth = useMemo(() => addMonths(currentMonth, 1), [selectedDate]);
 
-  const handleMonthChange = useCallback(
-    (direction: number) => {
-      "worklet";
-      if (direction < 0) {
-        runOnJS(goToPrevious)();
-      } else {
-        runOnJS(goToNext)();
-      }
-    },
-    [goToPrevious, goToNext]
-  );
+  const goToPreviousJS = useCallback(() => {
+    goToPrevious();
+  }, [goToPrevious]);
+
+  const goToNextJS = useCallback(() => {
+    goToNext();
+  }, [goToNext]);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -68,9 +64,10 @@ export const MonthView: React.FC = () => {
           { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) },
           (finished) => {
             if (finished) {
-              handleMonthChange(-1);
-              translateX.value = 0;
-              isAnimating.value = false;
+              runOnJS(goToNextJS)();
+              translateX.value = withTiming(0, { duration: 0 }, () => {
+                isAnimating.value = false;
+              });
             }
           }
         );
@@ -81,9 +78,10 @@ export const MonthView: React.FC = () => {
           { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) },
           (finished) => {
             if (finished) {
-              handleMonthChange(1);
-              translateX.value = 0;
-              isAnimating.value = false;
+              runOnJS(goToPreviousJS)();
+              translateX.value = withTiming(0, { duration: 0 }, () => {
+                isAnimating.value = false;
+              });
             }
           }
         );
