@@ -1,0 +1,257 @@
+import React from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, Platform, Pressable } from 'react-native';
+import { BlurView } from 'expo-blur';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../stores/themeStore';
+
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+}
+
+interface FloatingMenuProps {
+  visible: boolean;
+  onClose: () => void;
+  onThemeToggle: () => void;
+  onWeekView: () => void;
+  onScheduleView: () => void;
+}
+
+export const FloatingMenu: React.FC<FloatingMenuProps> = ({
+  visible,
+  onClose,
+  onThemeToggle,
+  onWeekView,
+  onScheduleView,
+}) => {
+  const { theme, mode, setMode } = useTheme();
+
+  // Animation values
+  const scale = useSharedValue(0);
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(20);
+
+  React.useEffect(() => {
+    if (visible) {
+      scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+      opacity.value = withTiming(1, { duration: 200 });
+      translateY.value = withSpring(0, { damping: 15, stiffness: 150 });
+    } else {
+      scale.value = withTiming(0, { duration: 150 });
+      opacity.value = withTiming(0, { duration: 150 });
+      translateY.value = withTiming(20, { duration: 150 });
+    }
+  }, [visible, scale, opacity, translateY]);
+
+  const animatedContainerStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: scale.value },
+      { translateY: translateY.value },
+    ],
+    opacity: opacity.value,
+  }));
+
+  const animatedBackdropStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value * 0.5,
+  }));
+
+  const handleThemeToggle = () => {
+    // Cycle through: light -> dark -> system -> light
+    if (mode === 'light') {
+      setMode('dark');
+    } else if (mode === 'dark') {
+      setMode('system');
+    } else {
+      setMode('light');
+    }
+    onClose();
+  };
+
+  const handleSettings = () => {
+    onClose();
+    // Navigate to settings (TODO: create settings page)
+  };
+
+  const handleAbout = () => {
+    onClose();
+    // Navigate to about (TODO: create about page)
+  };
+
+  const handleWeekView = () => {
+    onWeekView();
+    onClose();
+  };
+
+  const handleScheduleView = () => {
+    onScheduleView();
+    onClose();
+  };
+
+  const menuItems: MenuItem[] = [
+    { id: 'settings', label: '设置', icon: 'settings-outline', onPress: handleSettings },
+    {
+      id: 'theme',
+      label: `主题: ${mode === 'light' ? '浅色' : mode === 'dark' ? '深色' : '跟随系统'}`,
+      icon: mode === 'light' ? 'sunny-outline' : mode === 'dark' ? 'moon-outline' : 'phone-portrait-outline',
+      onPress: handleThemeToggle,
+    },
+    { id: 'about', label: '关于', icon: 'information-circle-outline', onPress: handleAbout },
+    { id: 'week', label: '周视图', icon: 'calendar-outline', onPress: handleWeekView },
+    { id: 'schedule', label: '日程视图', icon: 'list-outline', onPress: handleScheduleView },
+  ];
+
+  const renderGlassBackground = () => {
+    if (Platform.OS === 'web') {
+      return (
+        <View
+          style={[
+            styles.webGlass,
+            {
+              backgroundColor: theme.mode === 'dark'
+                ? 'rgba(44, 44, 46, 0.95)'
+                : 'rgba(250, 250, 250, 0.95)',
+              borderColor: theme.colors.border,
+            },
+          ]}
+        />
+      );
+    }
+
+    return (
+      <BlurView
+        intensity={50}
+        tint={theme.mode === 'dark' ? 'dark' : 'light'}
+        style={[
+          styles.glass,
+          {
+            backgroundColor: theme.mode === 'dark'
+              ? 'rgba(44, 44, 46, 0.8)'
+              : 'rgba(250, 250, 250, 0.8)',
+            borderColor: theme.colors.border,
+          },
+        ]}
+      />
+    );
+  };
+
+  if (!visible) return null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Animated.View style={[styles.backdropFill, animatedBackdropStyle]} />
+      </Pressable>
+
+      {/* Menu */}
+      <Animated.View style={[styles.container, animatedContainerStyle]}>
+        {renderGlassBackground()}
+
+        <View style={styles.menuContent}>
+          {menuItems.map((item, index) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.menuItem,
+                {
+                  borderBottomColor: theme.colors.border,
+                },
+                index === menuItems.length - 1 && { borderBottomWidth: 0 },
+              ]}
+              onPress={item.onPress}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={item.icon}
+                size={22}
+                color={theme.colors.text}
+                style={styles.menuIcon}
+              />
+              <Text style={[styles.menuLabel, { color: theme.colors.text }]}>
+                {item.label}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={theme.colors.textTertiary}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Animated.View>
+    </>
+  );
+};
+
+const styles = StyleSheet.create({
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 99,
+  },
+  backdropFill: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  container: {
+    position: 'absolute',
+    bottom: 100,
+    left: 16,
+    width: 200,
+    borderRadius: 16,
+    overflow: 'hidden',
+    zIndex: 100,
+  },
+  glass: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  webGlass: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+  } as any,
+  menuContent: {
+    paddingVertical: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  menuIcon: {
+    marginRight: 12,
+  },
+  menuLabel: {
+    flex: 1,
+    fontSize: 16,
+  },
+});
+
+export default FloatingMenu;
