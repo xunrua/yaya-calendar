@@ -23,8 +23,6 @@ interface MonthGridProps {
   fidelity?: Fidelity;
 }
 
-const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
-
 export default function MonthGrid({
   year,
   month,
@@ -142,41 +140,13 @@ export default function MonthGrid({
   };
 
   return (
-    <View style={styles.gridContainer}>
-      <View style={styles.weekdayHeader}>
-        {WEEKDAYS.map((day, idx) => (
-          <Text
-            key={day}
-            style={[
-              styles.weekdayText,
-              { color: idx >= 5 ? c.weekendText : c.textTertiary },
-            ]}
-          >
-            {day}
-          </Text>
-        ))}
-      </View>
-      <View style={styles.daysGrid}>
-        {calendarDays.map((day) => renderDayCell(day))}
-      </View>
+    <View style={styles.daysGrid}>
+      {calendarDays.map((day) => renderDayCell(day))}
     </View>
   );
 }
 
 const styles = {
-  gridContainer: {
-    flex: 1,
-  } as any,
-  weekdayHeader: {
-    flexDirection: "row" as const,
-    justifyContent: "space-around" as const,
-    paddingVertical: 8,
-  } as any,
-  weekdayText: {
-    fontSize: 12,
-    textAlign: "center" as const,
-    width: "14.28%",
-  } as any,
   daysGrid: {
     flexDirection: "row" as const,
     flexWrap: "wrap" as const,

@@ -20,6 +20,8 @@ const SWIPE_VELOCITY_THRESHOLD = 500;
 const SWIPE_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.3;
 const SPRING_CONFIG = { damping: 20, stiffness: 100 };
 
+const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
+
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
   const { selectedDate, goToPrevious, goToNext } = useViewStore();
@@ -104,48 +106,54 @@ export const MonthView: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Month header */}
+      <View style={styles.monthHeader}>
+        <Text style={[styles.monthTitle, { color: theme.colors.text }]}>
+          {format(currentMonth, "yyyy年M月", { locale: zhCN })}
+        </Text>
+      </View>
+
+      {/* Fixed weekday header */}
+      <View style={styles.weekdayHeader}>
+        {WEEKDAYS.map((day, idx) => (
+          <Text
+            key={day}
+            style={[
+              styles.weekdayText,
+              { color: idx >= 5 ? theme.colors.weekendText : theme.colors.textTertiary },
+            ]}
+          >
+            {day}
+          </Text>
+        ))}
+      </View>
+
+      {/* Swipeable month grids */}
       <GestureDetector gesture={panGesture}>
-        <View style={styles.gestureContainer}>
-          {/* Month header */}
-          <View style={styles.monthHeader}>
-            <Text style={[styles.monthTitle, { color: theme.colors.text }]}>
-              {format(currentMonth, "yyyy年M月", { locale: zhCN })}
-            </Text>
-          </View>
+        <View style={styles.monthsContainer}>
+          <Animated.View style={[styles.monthPanel, prevMonthStyle]}>
+            <MonthGrid
+              year={prevMonth.getFullYear()}
+              month={prevMonth.getMonth()}
+              fidelity="skeleton"
+            />
+          </Animated.View>
 
-          {/* Three month grids */}
-          <View style={styles.monthsContainer}>
-            {/* Previous month */}
-            <Animated.View
-              style={[styles.monthPanel, prevMonthStyle]}
-            >
-              <MonthGrid
-                year={prevMonth.getFullYear()}
-                month={prevMonth.getMonth()}
-                fidelity="skeleton"
-              />
-            </Animated.View>
+          <Animated.View style={[styles.monthPanel, animatedStyle]}>
+            <MonthGrid
+              year={currentMonth.getFullYear()}
+              month={currentMonth.getMonth()}
+              fidelity="full"
+            />
+          </Animated.View>
 
-            {/* Current month */}
-            <Animated.View style={[styles.monthPanel, animatedStyle]}>
-              <MonthGrid
-                year={currentMonth.getFullYear()}
-                month={currentMonth.getMonth()}
-                fidelity="full"
-              />
-            </Animated.View>
-
-            {/* Next month */}
-            <Animated.View
-              style={[styles.monthPanel, nextMonthStyle]}
-            >
-              <MonthGrid
-                year={nextMonth.getFullYear()}
-                month={nextMonth.getMonth()}
-                fidelity="skeleton"
-              />
-            </Animated.View>
-          </View>
+          <Animated.View style={[styles.monthPanel, nextMonthStyle]}>
+            <MonthGrid
+              year={nextMonth.getFullYear()}
+              month={nextMonth.getMonth()}
+              fidelity="skeleton"
+            />
+          </Animated.View>
         </View>
       </GestureDetector>
     </View>
@@ -156,9 +164,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  gestureContainer: {
-    flex: 1,
-  },
   monthHeader: {
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -167,6 +172,17 @@ const styles = StyleSheet.create({
   monthTitle: {
     fontSize: 28,
     fontWeight: "700",
+  },
+  weekdayHeader: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  weekdayText: {
+    fontSize: 12,
+    textAlign: "center",
+    width: "14.28%",
   },
   monthsContainer: {
     flex: 1,
