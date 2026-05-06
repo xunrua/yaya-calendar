@@ -66,10 +66,6 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
     opacity: opacity.value,
   }));
 
-  const animatedBackdropStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value * 0.5,
-  }));
-
   const handleThemeToggle = () => {
     // Cycle through: light -> dark -> system -> light
     if (mode === 'light') {
@@ -153,10 +149,8 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
   return (
     <>
-      {/* Backdrop */}
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Animated.View style={[styles.backdropFill, animatedBackdropStyle]} />
-      </Pressable>
+      {/* Backdrop - transparent tap-to-close area */}
+      <Pressable style={styles.backdrop} onPress={onClose} />
 
       {/* Menu */}
       <Animated.View style={[styles.container, { bottom: Math.max(insets.bottom, 8) + 64 }, animatedContainerStyle]}>
@@ -207,18 +201,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 99,
   },
-  backdropFill: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
   container: {
     position: 'absolute',
-    bottom: 0,
     left: 16,
     width: 200,
     borderRadius: 16,
-    overflow: 'hidden',
     zIndex: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   glass: {
     position: 'absolute',
