@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   Easing,
+  runOnJS,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../stores/themeStore';
@@ -38,15 +39,19 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
   const scale = useSharedValue(0);
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     if (visible) {
+      setMounted(true);
       scale.value = withTiming(1, { duration: 200, easing: Easing.bezier(0.4, 0, 0.2, 1) });
       opacity.value = withTiming(1, { duration: 200 });
       translateY.value = withTiming(0, { duration: 200, easing: Easing.bezier(0.4, 0, 0.2, 1) });
-    } else {
+    } else if (mounted) {
       scale.value = withTiming(0, { duration: 150 });
-      opacity.value = withTiming(0, { duration: 150 });
+      opacity.value = withTiming(0, { duration: 150 }, (finished) => {
+        if (finished) runOnJS(setMounted)(false);
+      });
       translateY.value = withTiming(20, { duration: 150 });
     }
   }, [visible, scale, opacity, translateY]);
@@ -142,7 +147,7 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
     );
   };
 
-  if (!visible) return null;
+  if (!mounted) return null;
 
   return (
     <>
