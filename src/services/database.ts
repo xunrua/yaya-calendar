@@ -1,18 +1,29 @@
 import { Event } from '../domain/types';
 import { v4 as uuidv4 } from 'uuid';
+import Dexie, { Table } from 'dexie';
 
 // Web implementation using Dexie (IndexedDB)
 
-let db: any = null;
+class YayaDatabase extends Dexie {
+  events!: Table<Event, string>;
+
+  constructor() {
+    super('YayaCalendarDB');
+    this.version(1).stores({
+      events: 'id, startTime, endTime',
+    });
+  }
+}
+
+let db: YayaDatabase | null = null;
+
+const getDb = (): YayaDatabase => {
+  if (!db) throw new Error('Database not initialized. Call initDatabase() first.');
+  return db;
+};
 
 const initDatabase = async (): Promise<void> => {
-  const Dexie = require('dexie');
-  db = new Dexie('YayaCalendarDB');
-
-  db.version(1).stores({
-    events: 'id, startTime, endTime',
-  });
-
+  db = new YayaDatabase();
   await db.open();
 };
 
@@ -25,7 +36,7 @@ const createEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updatedA
     updatedAt: now,
   };
 
-  await db.events.add(event);
+  await getDb().events.add(event);
   return event;
 };
 
@@ -36,27 +47,27 @@ const updateEvent = async (id: string, updates: Partial<Event>): Promise<Event> 
   const now = new Date().toISOString();
   const updated = { ...existing, ...updates, id, updatedAt: now };
 
-  await db.events.update(id, updated);
+  await getDb().events.update(id, updated);
   return updated;
 };
 
 const deleteEvent = async (id: string): Promise<void> => {
-  await db.events.delete(id);
+  await getDb().events.delete(id);
 };
 
 const getEventById = async (id: string): Promise<Event | null> => {
-  return await db.events.get(id) ?? null;
+  return await getDb().events.get(id) ?? null;
 };
 
 const getEventsByDateRange = async (start: string, end: string): Promise<Event[]> => {
-  return await db.events
+  return await getDb().events
     .where('startTime')
     .between(start, end, true, false)
     .toArray();
 };
 
 const getAllEvents = async (): Promise<Event[]> => {
-  return await db.events.toArray();
+  return await getDb().events.toArray();
 };
 
 const exportDatabase = async (): Promise<string> => {
@@ -70,7 +81,7 @@ const importDatabase = async (jsonData: string): Promise<void> => {
     throw new Error('Invalid backup data format');
   }
 
-  await db.events.clear();
+  await getDb().events.clear();
 
   for (const event of data.events as Event[]) {
     await createEvent({

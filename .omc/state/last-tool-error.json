@@ -1,7 +1,0 @@
-{
-  "tool_name": "WebFetch",
-  "tool_input_preview": "{\"url\":\"https://expo.dev/challenges/sdk54\",\"prompt\":\"What version of expo-sqlite is in SDK 54? List the package versions.\"}",
-  "error": "Request failed with status code 404",
-  "timestamp": "2026-05-06T03:42:05.507Z",
-  "retry_count": 4
-}

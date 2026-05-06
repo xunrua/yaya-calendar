@@ -52,6 +52,14 @@ export const getLunarDayDisplay = (date: Date): string => {
 // Solar Terms (二十四节气)
 // ============================================================================
 
+// Solar terms in order (二十四节气)
+const SOLAR_TERMS = [
+  '小寒', '大寒', '立春', '雨水', '惊蛰', '春分',
+  '清明', '谷雨', '立夏', '小满', '芒种', '夏至',
+  '小暑', '大暑', '立秋', '处暑', '白露', '秋分',
+  '寒露', '霜降', '立冬', '小雪', '大雪', '冬至',
+];
+
 /**
  * Get the solar term for a specific date (if any)
  */
@@ -64,7 +72,7 @@ export const getSolarTerm = (date: Date): SolarTerm | null => {
     return {
       name: jieQi,
       date: date.toISOString().split('T')[0],
-      index: lunar.getJieQiIndex(),
+      index: SOLAR_TERMS.indexOf(jieQi),
     };
   }
   return null;
