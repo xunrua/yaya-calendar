@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import {
   startOfMonth,
   endOfMonth,
@@ -146,43 +146,46 @@ export default function MonthGrid({
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   daysGrid: {
-    flexDirection: "row" as const,
-    flexWrap: "wrap" as const,
-  } as any,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    rowGap: 8,
+    margin: 0,
+    padding: 0,
+  },
   dayCell: {
     width: "14.28%",
     aspectRatio: 1,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    paddingVertical: 2,
-  } as any,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 6,
+  },
   dayNumberContainer: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  } as any,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   dayNumber: {
     fontSize: 14,
-    textAlign: "center" as const,
-  } as any,
+    textAlign: "center",
+  },
   lunarText: {
     fontSize: 8,
-    textAlign: "center" as const,
+    textAlign: "center",
     marginTop: 1,
-  } as any,
+  },
   eventDots: {
-    flexDirection: "row" as const,
-    justifyContent: "center" as const,
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 2,
     gap: 2,
-  } as any,
+  },
   eventDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-  } as any,
-};
+  },
+});

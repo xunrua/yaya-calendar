@@ -167,19 +167,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   monthHeader: {
-    paddingHorizontal: 20,
+    marginLeft: 16,
+    marginRight: 16,
     paddingTop: 16,
     paddingBottom: 12,
   },
   monthTitle: {
     fontSize: 28,
     fontWeight: "700",
+    marginLeft: "5%",
   },
   weekdayHeader: {
     flexDirection: "row",
     justifyContent: "space-around",
     paddingVertical: 8,
-    paddingHorizontal: 4,
+    marginLeft: 16,
+    marginRight: 16,
   },
   weekdayText: {
     fontSize: 12,
@@ -193,8 +196,8 @@ const styles = StyleSheet.create({
   monthPanel: {
     position: "absolute",
     top: 0,
-    left: 0,
-    width: SCREEN_WIDTH,
+    left: 16,
+    right: 16,
   },
 });
 
