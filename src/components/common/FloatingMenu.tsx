@@ -40,31 +40,41 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
   // Animation values
   const scale = useSharedValue(0);
   const opacity = useSharedValue(0);
-  const translateY = useSharedValue(20);
   const [mounted, setMounted] = React.useState(false);
+  const [menuHeight, setMenuHeight] = React.useState(0);
+  const menuWidth = 200; // Known width from styles
+
+  const handleLayout = React.useCallback((event: any) => {
+    const { height } = event.nativeEvent.layout;
+    setMenuHeight(height);
+  }, []);
 
   React.useEffect(() => {
     if (visible) {
       setMounted(true);
       scale.value = withTiming(1, { duration: 200, easing: Easing.bezier(0.4, 0, 0.2, 1) });
       opacity.value = withTiming(1, { duration: 200 });
-      translateY.value = withTiming(0, { duration: 200, easing: Easing.bezier(0.4, 0, 0.2, 1) });
     } else if (mounted) {
       scale.value = withTiming(0, { duration: 150 });
       opacity.value = withTiming(0, { duration: 150 }, (finished) => {
         if (finished) runOnJS(setMounted)(false);
       });
-      translateY.value = withTiming(20, { duration: 150 });
     }
-  }, [visible, scale, opacity, translateY]);
+  }, [visible, scale, opacity]);
 
-  const animatedContainerStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value },
-      { translateY: translateY.value },
-    ],
-    opacity: opacity.value,
-  }));
+  const animatedContainerStyle = useAnimatedStyle(() => {
+    // Scale from bottom-left corner (where the button is)
+    // Default scale origin is center, so we need to offset both X and Y
+    // When scale = 0, the bottom-left corner should stay at the same position
+    return {
+      transform: [
+        { translateX: -(1 - scale.value) * menuWidth / 2 },
+        { translateY: (1 - scale.value) * menuHeight / 2 },
+        { scale: scale.value },
+      ],
+      opacity: opacity.value,
+    };
+  });
 
   const handleThemeToggle = () => {
     // Cycle through: light -> dark -> system -> light
@@ -153,7 +163,7 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
       <Pressable style={styles.backdrop} onPress={onClose} />
 
       {/* Menu */}
-      <Animated.View style={[styles.container, { bottom: Math.max(insets.bottom, 8) + 80, backgroundColor: theme.colors.surface }, animatedContainerStyle]}>
+      <Animated.View style={[styles.container, { bottom: Math.max(insets.bottom, 8) + 80, backgroundColor: theme.colors.surface }, animatedContainerStyle]} onLayout={handleLayout}>
         {renderGlassBackground()}
 
         <View style={styles.menuContent}>
