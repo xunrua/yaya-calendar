@@ -153,7 +153,7 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
       <Pressable style={styles.backdrop} onPress={onClose} />
 
       {/* Menu */}
-      <Animated.View style={[styles.container, { bottom: Math.max(insets.bottom, 8) + 64, backgroundColor: theme.colors.surface }, animatedContainerStyle]}>
+      <Animated.View style={[styles.container, { bottom: Math.max(insets.bottom, 8) + 80, backgroundColor: theme.colors.surface }, animatedContainerStyle]}>
         {renderGlassBackground()}
 
         <View style={styles.menuContent}>
@@ -213,6 +213,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
+    marginLeft: '5%',
   },
   glass: {
     position: 'absolute',
