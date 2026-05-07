@@ -47,16 +47,16 @@ npx expo prebuild
 
 ## 已安装组件版本
 
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| JDK | 17.0.19 | OpenJDK |
-| Android SDK cmdline-tools | 20.0 | 命令行工具 |
-| platform-tools | 37.0.0 | adb、fastboot 等 |
-| platforms;android-36 | 2 | Android 16 API |
-| build-tools | 36.0.0 | 构建工具 |
-| NDK | 27.1.12297006 | 原生开发工具包 |
-| cmake | 4.3.2 | 构建系统 |
-| ninja | 1.13.2 | 构建系统 |
+| 组件                      | 版本          | 说明             |
+| ------------------------- | ------------- | ---------------- |
+| JDK                       | 17.0.19       | OpenJDK          |
+| Android SDK cmdline-tools | 20.0          | 命令行工具       |
+| platform-tools            | 37.0.0        | adb、fastboot 等 |
+| platforms;android-36      | 2             | Android 16 API   |
+| build-tools               | 36.0.0        | 构建工具         |
+| NDK                       | 27.1.12297006 | 原生开发工具包   |
+| cmake                     | 4.3.2         | 构建系统         |
+| ninja                     | 1.13.2        | 构建系统         |
 
 ## 构建命令
 
@@ -72,6 +72,7 @@ npm run build:android
 ```
 
 输出文件位置：
+
 - APK: `android/app/build/outputs/apk/release/app-release.apk`
 - AAB: `android/app/build/outputs/bundle/release/app-release.aab`
 
@@ -81,28 +82,34 @@ npm run build:android
 
 ```bash
 keytool -genkeypair -v -storetype PKCS12 \
-  -keystore android/app/yaya-release.keystore \
-  -alias yaya \
-  -keyalg RSA \
-  -keysize 2048 \
-  -validity 10000
+    -keystore android/app/yaya-release.keystore \
+    -alias yaya \
+    -keyalg RSA \
+    -keysize 2048 \
+    -validity 10000 \
+    -storepass $YAYA_KEYSTORE_PASSWORD \
+    -keypass $YAYA_KEY_PASSWORD \
+    -dname "CN=YAYA, OU=Development, O=Anonymous, L=Unknown, ST=Unknown, C=CN"
 ```
 
 ### 配置签名（环境变量方式）
 
 1. 在 `~/.config/fish/config.fish` 添加：
+
 ```fish
 set -gx YAYA_KEYSTORE_PASSWORD "你的密钥库密码"
 set -gx YAYA_KEY_PASSWORD "你的密钥密码"
 ```
 
 2. 在 `android/gradle.properties` 添加：
+
 ```properties
 MYAPP_RELEASE_STORE_FILE=yaya-release.keystore
 MYAPP_RELEASE_KEY_ALIAS=yaya
 ```
 
 3. 在 `android/app/build.gradle` 的 `android` 块中添加：
+
 ```gradle
 signingConfigs {
     release {
@@ -132,6 +139,7 @@ echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 ### Gradle 内存不足
 
 在 `android/gradle.properties` 添加：
+
 ```properties
 org.gradle.jvmargs=-Xmx4g -XX:+HeapDumpOnOutOfMemoryError
 org.gradle.daemon=true
