@@ -238,13 +238,13 @@ const styles = StyleSheet.create({
     WebkitBackdropFilter: 'blur(20px)',
   } as any,
   menuContent: {
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
   },
   menuIcon: {
