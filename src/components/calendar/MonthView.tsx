@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState, useLayoutEffect } from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
@@ -44,6 +44,13 @@ export const MonthView: React.FC = () => {
     setDisplayMonth((prev) => addMonths(prev, 1));
   }, []);
 
+  // 当 displayMonth 更新后，使用 useLayoutEffect 同步重置 translateX
+  // 这确保在浏览器绘制之前完成重置，避免闪烁
+  useLayoutEffect(() => {
+    translateX.value = 0;
+    isAnimating.value = false;
+  }, [displayMonth]);
+
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
     .failOffsetY([-20, 20])
@@ -69,10 +76,8 @@ export const MonthView: React.FC = () => {
           { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) },
           (finished) => {
             if (finished) {
+              // 只更新 React 状态，translateX 在 useEffect 中重置
               runOnJS(goToNextJS)();
-              translateX.value = withTiming(0, { duration: 0 }, () => {
-                isAnimating.value = false;
-              });
             }
           }
         );
@@ -83,10 +88,8 @@ export const MonthView: React.FC = () => {
           { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) },
           (finished) => {
             if (finished) {
+              // 只更新 React 状态，translateX 在 useEffect 中重置
               runOnJS(goToPreviousJS)();
-              translateX.value = withTiming(0, { duration: 0 }, () => {
-                isAnimating.value = false;
-              });
             }
           }
         );
