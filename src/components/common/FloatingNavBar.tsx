@@ -39,7 +39,7 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
   }, [activeTab, indicatorPosition]);
 
   const animatedIndicatorStyle = useAnimatedStyle(() => {
-    const segmentWidth = 64;
+    const segmentWidth = 80;
     const gap = 8;
     const totalOffset = indicatorPosition.value * (segmentWidth + gap);
     return {
@@ -212,14 +212,14 @@ const styles = StyleSheet.create({
   },
   segmentedIndicator: {
     position: "absolute",
-    width: 64,
+    width: 80,
     height: 36,
     borderRadius: 18,
     top: 4,
     left: 4,
   },
   segment: {
-    width: 64,
+    width: 80,
     height: 36,
     alignItems: "center",
     justifyContent: "center",
