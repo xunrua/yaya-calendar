@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTheme } from '../../src/stores/themeStore';
+import { useViewStore } from '../../src/stores/eventStore';
 import { FloatingNavBar } from '../../src/components/common/FloatingNavBar';
 import { FloatingMenu } from '../../src/components/common/FloatingMenu';
 import { MonthView } from '../../src/components/calendar/MonthView';
 import { WeekView } from '../../src/components/calendar/WeekView';
 import { ScheduleView } from '../../src/components/calendar/ScheduleView';
+import { DayView } from '../../src/components/calendar/DayView';
 import { EventList } from '../../src/components/calendar/EventList';
-
-type MainView = 'calendar' | 'todo' | 'week' | 'schedule';
 
 export default function MainScreen() {
   const { theme } = useTheme();
+  const { currentView, setCurrentView } = useViewStore();
   const [activeTab, setActiveTab] = useState<'calendar' | 'todo'>('calendar');
-  const [currentView, setCurrentView] = useState<MainView>('calendar');
   const [menuVisible, setMenuVisible] = useState(false);
 
   const handleMenuPress = () => {
@@ -26,7 +26,11 @@ export default function MainScreen() {
 
   const handleTabChange = (tab: 'calendar' | 'todo') => {
     setActiveTab(tab);
-    setCurrentView(tab);
+    if (tab === 'calendar') {
+      setCurrentView('month');
+    } else {
+      setCurrentView('events');
+    }
   };
 
   const handleWeekView = () => {
@@ -35,19 +39,19 @@ export default function MainScreen() {
   };
 
   const handleScheduleView = () => {
-    setCurrentView('schedule');
+    setCurrentView('events');
     setActiveTab('calendar');
   };
 
   const renderContent = () => {
     switch (currentView) {
-      case 'calendar':
+      case 'month':
         return <MonthView />;
-      case 'todo':
-        return <EventList />;
+      case 'day':
+        return <DayView />;
       case 'week':
         return <WeekView />;
-      case 'schedule':
+      case 'events':
         return <ScheduleView />;
       default:
         return <MonthView />;

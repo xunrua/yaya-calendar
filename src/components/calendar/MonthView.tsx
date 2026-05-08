@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
@@ -12,7 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useTheme } from "../../stores/themeStore";
 import { useViewStore } from "../../stores/eventStore";
-import { format, addMonths, subMonths, getISOWeek } from "date-fns";
+import { format, addMonths, subMonths, getISOWeek, startOfMonth } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import MonthGrid from "./MonthGrid";
 
@@ -25,23 +25,24 @@ const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
 
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
-  const { selectedDate, goToPrevious, goToNext } = useViewStore();
+  const { selectedDate } = useViewStore();
   const insets = useSafeAreaInsets();
 
-  const currentMonth = new Date(selectedDate);
+  // 独立的显示月份状态，不受 selectedDate 影响
+  const [displayMonth, setDisplayMonth] = useState(() => startOfMonth(new Date(selectedDate)));
   const translateX = useSharedValue(0);
   const isAnimating = useSharedValue(false);
 
-  const prevMonth = useMemo(() => subMonths(currentMonth, 1), [selectedDate]);
-  const nextMonth = useMemo(() => addMonths(currentMonth, 1), [selectedDate]);
+  const prevMonth = useMemo(() => subMonths(displayMonth, 1), [displayMonth]);
+  const nextMonth = useMemo(() => addMonths(displayMonth, 1), [displayMonth]);
 
   const goToPreviousJS = useCallback(() => {
-    goToPrevious();
-  }, [goToPrevious]);
+    setDisplayMonth((prev) => subMonths(prev, 1));
+  }, []);
 
   const goToNextJS = useCallback(() => {
-    goToNext();
-  }, [goToNext]);
+    setDisplayMonth((prev) => addMonths(prev, 1));
+  }, []);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -112,10 +113,10 @@ export const MonthView: React.FC = () => {
       <View style={styles.monthHeader}>
         <View style={styles.titleRow}>
           <Text style={[styles.monthTitle, { color: theme.colors.text }]}>
-            {format(currentMonth, "yyyy年M月", { locale: zhCN })}
+            {format(displayMonth, "yyyy年M月", { locale: zhCN })}
           </Text>
           <Text style={[styles.weekNumber, { color: theme.colors.textTertiary }]}>
-            第{getISOWeek(currentMonth)}周
+            第{getISOWeek(new Date(selectedDate))}周
           </Text>
         </View>
       </View>
@@ -148,8 +149,8 @@ export const MonthView: React.FC = () => {
 
           <Animated.View style={[styles.monthPanel, { bottom: insets.bottom + 64 }, animatedStyle]}>
             <MonthGrid
-              year={currentMonth.getFullYear()}
-              month={currentMonth.getMonth()}
+              year={displayMonth.getFullYear()}
+              month={displayMonth.getMonth()}
               fidelity="full"
             />
           </Animated.View>

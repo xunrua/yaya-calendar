@@ -62,6 +62,8 @@ export interface ThemeColors {
   // Calendar specific
   todayBackground: string;
   todayText: string;
+  selectedBackground: string;
+  selectedText: string;
   eventDefault: string;
   weekendText: string;
   lunarText: string;

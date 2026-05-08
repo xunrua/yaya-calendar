@@ -30,7 +30,8 @@ export default function MonthGrid({
 }: MonthGridProps) {
   const { theme } = useTheme();
   const c = theme.colors;
-  const { selectedDate, setSelectedDate, setCurrentView } = useViewStore();
+  const selectedDate = useViewStore((state) => state.selectedDate);
+  const setSelectedDate = useViewStore((state) => state.setSelectedDate);
   const { getEventsForDate } = useEventStore();
 
   const calendarDays = useMemo(() => {
@@ -43,14 +44,14 @@ export default function MonthGrid({
   }, [year, month]);
 
   const handleDayPress = (date: Date) => {
-    setSelectedDate(format(date, "yyyy-MM-dd"));
-    setCurrentView("day");
+    const dateStr = format(date, "yyyy-MM-dd");
+    setSelectedDate(dateStr);
   };
 
   const renderDayCell = (day: Date) => {
     const dateStr = format(day, "yyyy-MM-dd");
     const isCurrentMonth = isSameMonth(day, new Date(year, month, 1));
-    const isSelected = selectedDate === dateStr;
+    const isSelectedDate = selectedDate === dateStr;
     const isTodayDate = isToday(day);
     const dayOfWeek = day.getDay();
 
@@ -80,8 +81,8 @@ export default function MonthGrid({
           style={[
             styles.dayNumberContainer,
             {
-              backgroundColor: isTodayDate
-                ? c.todayBackground
+              backgroundColor: isSelectedDate
+                ? c.selectedBackground
                 : "transparent",
             },
           ]}
@@ -94,8 +95,8 @@ export default function MonthGrid({
                   ? c.textTertiary
                   : isWeekend
                     ? c.weekendText
-                    : isTodayDate
-                      ? c.todayText
+                    : isSelectedDate
+                      ? c.selectedText
                       : c.text,
               },
             ]}

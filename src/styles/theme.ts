@@ -21,6 +21,8 @@ const lightColors: ThemeColors = {
   // Calendar specific
   todayBackground: '#EDE9FE', // Violet 100
   todayText: '#7C3AED', // Violet 600
+  selectedBackground: '#F3E8FF', // Violet 50
+  selectedText: '#6D28D9', // Violet 700
   eventDefault: '#8B5CF6', // Violet 500
   weekendText: '#DC2626', // Red 600
   lunarText: '#9CA3AF', // Gray 400 - 更淡的农历文字
@@ -49,6 +51,8 @@ const darkColors: ThemeColors = {
   // Calendar specific
   todayBackground: '#3B2D5F', // Violet 900 去饱和
   todayText: '#C4B5FD', // Violet 300
+  selectedBackground: '#4C3A6E', // Violet 800 去饱和
+  selectedText: '#DDD6FE', // Violet 200
   eventDefault: '#A78BFA', // Violet 400
   weekendText: '#FCA5A5', // Red 300 - 去饱和
   lunarText: '#6B6B6B', // 更淡的农历文字
