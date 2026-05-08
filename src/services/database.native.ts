@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 let db: any = null;
 
 const initDatabase = async (): Promise<void> => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const SQLite = require('expo-sqlite');
   db = await SQLite.openDatabaseAsync('yaya_calendar.db');
 

@@ -8,8 +8,6 @@ import {
   endOfWeek,
   format,
   isSameMonth,
-  isSameDay,
-  isToday,
 } from "date-fns";
 import { getLunarInfo } from "../../domain/lunar";
 import { getWorkStatus } from "../../utils/workSchedule";
@@ -53,7 +51,6 @@ export default function MonthGrid({
     const dateStr = format(day, "yyyy-MM-dd");
     const isCurrentMonth = isSameMonth(day, new Date(year, month, 1));
     const isSelectedDate = selectedDate === dateStr;
-    const isTodayDate = isToday(day);
     const dayOfWeek = day.getDay();
 
     if (!isCurrentMonth) {

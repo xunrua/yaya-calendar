@@ -8,7 +8,6 @@ import { MonthView } from '../../src/components/calendar/MonthView';
 import { WeekView } from '../../src/components/calendar/WeekView';
 import { ScheduleView } from '../../src/components/calendar/ScheduleView';
 import { DayView } from '../../src/components/calendar/DayView';
-import { EventList } from '../../src/components/calendar/EventList';
 
 export default function MainScreen() {
   const { theme } = useTheme();

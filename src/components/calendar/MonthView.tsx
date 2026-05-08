@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState, useLayoutEffect } from "react";
+import React, { useCallback, useMemo, useState, useLayoutEffect } from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
@@ -58,7 +58,7 @@ export const MonthView: React.FC = () => {
   useLayoutEffect(() => {
     translateX.value = 0;
     isAnimating.value = false;
-  }, [displayMonth]);
+  }, [displayMonth, translateX, isAnimating]);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])

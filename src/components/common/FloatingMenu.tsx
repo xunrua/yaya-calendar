@@ -65,7 +65,7 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
         if (finished) runOnJS(setMounted)(false);
       });
     }
-  }, [visible, scale, opacity]);
+  }, [visible, mounted, scale, opacity]);
 
   const animatedContainerStyle = useAnimatedStyle(() => {
     // Scale from bottom-left corner (where the button is)

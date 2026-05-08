@@ -1,6 +1,6 @@
 import { Event } from '../domain/types';
 import { v4 as uuidv4 } from 'uuid';
-import Dexie, { Table } from 'dexie';
+import { default as Dexie, Table } from 'dexie';
 
 // Web implementation using Dexie (IndexedDB)
 
