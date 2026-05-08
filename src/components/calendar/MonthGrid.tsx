@@ -12,6 +12,7 @@ import {
   isToday,
 } from "date-fns";
 import { getLunarInfo } from "../../domain/lunar";
+import { getWorkStatus } from "../../utils/workSchedule";
 import { useEventStore, useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
 
@@ -70,6 +71,7 @@ export default function MonthGrid({
     const lunarInfo = fidelity === "full" ? getLunarInfo(day) : null;
     const events = fidelity === "full" ? getEventsForDate(dateStr) : [];
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const workStatus = fidelity === "full" ? getWorkStatus(day) : null;
 
     return (
       <Pressable
@@ -77,32 +79,46 @@ export default function MonthGrid({
         onPress={() => handleDayPress(day)}
         style={styles.dayCell}
       >
-        <View
-          style={[
-            styles.dayNumberContainer,
-            {
-              backgroundColor: isSelectedDate
-                ? c.selectedBackground
-                : "transparent",
-            },
-          ]}
-        >
-          <Text
+        <View style={styles.dayNumberWrapper}>
+          <View
             style={[
-              styles.dayNumber,
+              styles.dayNumberContainer,
               {
-                color: !isCurrentMonth
-                  ? c.textTertiary
-                  : isWeekend
-                    ? c.weekendText
-                    : isSelectedDate
-                      ? c.selectedText
-                      : c.text,
+                backgroundColor: isSelectedDate
+                  ? c.selectedBackground
+                  : "transparent",
               },
             ]}
           >
-            {format(day, "d")}
-          </Text>
+            <Text
+              style={[
+                styles.dayNumber,
+                {
+                  color: !isCurrentMonth
+                    ? c.textTertiary
+                    : isWeekend
+                      ? c.weekendText
+                      : isSelectedDate
+                        ? c.selectedText
+                        : c.text,
+                },
+              ]}
+            >
+              {format(day, "d")}
+            </Text>
+          </View>
+          {workStatus && (
+            <Text
+              style={[
+                styles.workStatusText,
+                {
+                  color: workStatus === "班" ? c.textTertiary : "#60A5FA",
+                },
+              ]}
+            >
+              {workStatus}
+            </Text>
+          )}
         </View>
         {fidelity === "full" && lunarInfo && (
           <Text
@@ -162,6 +178,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 6,
   },
+  dayNumberWrapper: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   dayNumberContainer: {
     width: 28,
     height: 28,
@@ -172,6 +193,13 @@ const styles = StyleSheet.create({
   dayNumber: {
     fontSize: 14,
     textAlign: "center",
+  },
+  workStatusText: {
+    position: "absolute",
+    top: -4,
+    right: -8,
+    fontSize: 8,
+    fontWeight: "500",
   },
   lunarText: {
     fontSize: 8,
