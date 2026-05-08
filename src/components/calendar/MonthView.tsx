@@ -12,7 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useTheme } from "../../stores/themeStore";
 import { useViewStore } from "../../stores/eventStore";
-import { format, addMonths, subMonths, getISOWeek, startOfMonth } from "date-fns";
+import { format, addMonths, subMonths, getISOWeek, startOfMonth, isSameMonth } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import MonthGrid from "./MonthGrid";
 
@@ -33,8 +33,17 @@ export const MonthView: React.FC = () => {
   const translateX = useSharedValue(0);
   const isAnimating = useSharedValue(false);
 
+  // 计算显示的周数：如果当前显示月份包含 selectedDate，显示 selectedDate 的周数；否则显示该月第一周的周数
   const prevMonth = useMemo(() => subMonths(displayMonth, 1), [displayMonth]);
   const nextMonth = useMemo(() => addMonths(displayMonth, 1), [displayMonth]);
+
+  // 计算显示的周数：如果当前显示月份包含 selectedDate，显示 selectedDate 的周数；否则显示该月第一周的周数
+  const displayWeekNumber = useMemo(() => {
+    if (isSameMonth(displayMonth, selectedDate)) {
+      return getISOWeek(new Date(selectedDate));
+    }
+    return getISOWeek(startOfMonth(displayMonth));
+  }, [displayMonth, selectedDate]);
 
   const goToPreviousJS = useCallback(() => {
     setDisplayMonth((prev) => subMonths(prev, 1));
@@ -119,7 +128,7 @@ export const MonthView: React.FC = () => {
             {format(displayMonth, "yyyy年M月", { locale: zhCN })}
           </Text>
           <Text style={[styles.weekNumber, { color: theme.colors.textTertiary }]}>
-            第{getISOWeek(new Date(selectedDate))}周
+            第{displayWeekNumber}周
           </Text>
         </View>
       </View>
