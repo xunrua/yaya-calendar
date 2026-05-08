@@ -1,6 +1,62 @@
-# Arch Linux 打包指南
+# macOS / Arch Linux 打包指南
 
-本文档记录在 Arch Linux 上为 YAYA 日历应用构建 Android 安装包的完整流程。
+本文档记录在 macOS 和 Arch Linux 上为 YAYA 日历应用构建 Android 安装包的完整流程。
+
+## macOS 环境搭建
+
+### 环境要求
+
+- macOS (Apple Silicon 或 Intel)
+- 磁盘空间：约 5GB
+- Homebrew 已安装
+
+### 一键安装依赖
+
+```bash
+# 安装 JDK 17
+brew install openjdk@17
+
+# 安装 Android SDK 命令行工具
+brew install android-commandlinetools
+
+# 创建 SDK 目录和许可证文件
+mkdir -p ~/Library/Android/sdk/licenses
+echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > ~/Library/Android/sdk/licenses/android-sdk-license
+echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" >> ~/Library/Android/sdk/licenses/android-sdk-license
+echo -e "\nd975f751698a77b662f1254ddbeed3901e976f5a" >> ~/Library/Android/sdk/licenses/android-sdk-license
+
+# 手动下载 SDK 组件（sdkmanager 网络问题时可使用此方法）
+cd ~/Downloads
+curl -O https://dl.google.com/android/repository/platform-tools-latest-darwin.zip
+curl -O https://dl.google.com/android/repository/platform-36_r01.zip
+
+# 解压到 SDK 目录
+mkdir -p ~/Library/Android/sdk/platform-tools
+mkdir -p ~/Library/Android/sdk/platforms/android-36
+unzip platform-tools-latest-darwin.zip -d ~/Library/Android/sdk/
+unzip platform-36_r01.zip -d ~/Library/Android/sdk/platforms/android-36/
+mv ~/Library/Android/sdk/platforms/android-36/android-36/* ~/Library/Android/sdk/platforms/android-36/
+rm -rf ~/Library/Android/sdk/platforms/android-36/android-36
+```
+
+### 配置环境变量（fish shell）
+
+在 `~/.config/fish/config.fish` 添加：
+
+```fish
+# Java (JDK 17)
+set -gx JAVA_HOME /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+set -gx PATH $PATH $JAVA_HOME/bin
+
+# Android SDK
+set -gx ANDROID_HOME ~/Library/Android/sdk
+set -gx ANDROID_SDK_ROOT $ANDROID_HOME
+set -gx PATH $PATH $ANDROID_HOME/platform-tools
+```
+
+---
+
+## Arch Linux 环境搭建
 
 ## 环境要求
 
