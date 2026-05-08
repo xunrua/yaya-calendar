@@ -7,9 +7,9 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-  runOnJS,
   Easing,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { useTheme } from "../../stores/themeStore";
 import { useViewStore } from "../../stores/eventStore";
 import { format, addMonths, subMonths, getISOWeek, startOfMonth, isSameMonth } from "date-fns";
@@ -86,7 +86,7 @@ export const MonthView: React.FC = () => {
           (finished) => {
             if (finished) {
               // 只更新 React 状态，translateX 在 useEffect 中重置
-              runOnJS(goToNextJS)();
+              scheduleOnRN(goToNextJS);
             }
           }
         );
@@ -98,7 +98,7 @@ export const MonthView: React.FC = () => {
           (finished) => {
             if (finished) {
               // 只更新 React 状态，translateX 在 useEffect 中重置
-              runOnJS(goToPreviousJS)();
+              scheduleOnRN(goToPreviousJS);
             }
           }
         );
