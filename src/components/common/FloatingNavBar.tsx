@@ -149,7 +149,7 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
                 },
               ]}
             >
-              待办
+              日程
             </Text>
           </TouchableOpacity>
         </View>

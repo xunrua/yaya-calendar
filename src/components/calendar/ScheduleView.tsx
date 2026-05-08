@@ -1,18 +1,29 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../stores/themeStore';
-import { useEventStore } from '../../stores/eventStore';
-import { format, parseISO, isSameDay } from 'date-fns';
+import { useEventStore, useViewStore } from '../../stores/eventStore';
+import { format, parseISO, isSameDay, getISOWeek } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
+import { getLunarInfo } from '../../domain/lunar';
 
 interface ScheduleViewProps {
   selectedDate?: string;
 }
 
-export const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate }) => {
+// Helper function to get lunar display text
+const getLunarDisplay = (dateStr: string): string => {
+  const lunarInfo = getLunarInfo(parseISO(dateStr));
+  return lunarInfo.holiday || lunarInfo.solarTerm || lunarInfo.lunarDay;
+};
+
+export const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate: propSelectedDate }) => {
   const { theme } = useTheme();
   const { events } = useEventStore();
+  const insets = useSafeAreaInsets();
+  const { selectedDate: viewSelectedDate } = useViewStore();
+  const currentMonth = new Date(propSelectedDate ?? viewSelectedDate);
 
   // Get all events sorted by start time
   const sortedEvents = React.useMemo(() => {
@@ -70,7 +81,18 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate }) => {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <>
+      <View style={[styles.monthHeader, { paddingTop: insets.top + 16 }]}>
+        <View style={styles.titleRow}>
+          <Text style={[styles.monthTitle, { color: theme.colors.text }]}>
+            {format(currentMonth, "yyyy年M月", { locale: zhCN })}
+          </Text>
+          <Text style={[styles.weekNumber, { color: theme.colors.textTertiary }]}>
+            第{getISOWeek(currentMonth)}周
+          </Text>
+        </View>
+      </View>
+      <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {sortedDates.map((date, dateIndex) => (
         <Animated.View
           key={date}
@@ -79,9 +101,14 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate }) => {
         >
           {/* Date Header */}
           <View style={styles.dateHeader}>
-            <Text style={[styles.dateHeaderText, { color: theme.colors.text }]}>
-              {formatDateHeader(date)}
-            </Text>
+            <View style={styles.dateHeaderLeft}>
+              <Text style={[styles.dateHeaderText, { color: theme.colors.text }]}>
+                {formatDateHeader(date)}
+              </Text>
+              <Text style={[styles.lunarText, { color: theme.colors.textSecondary }]}>
+                {getLunarDisplay(date)}
+              </Text>
+            </View>
             <Text style={[styles.dateSubText, { color: theme.colors.textTertiary }]}>
               {format(parseISO(date), 'yyyy年M月d日', { locale: zhCN })}
             </Text>
@@ -135,12 +162,33 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate }) => {
       {/* Bottom padding for floating nav */}
       <View style={styles.bottomPadding} />
     </ScrollView>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  monthHeader: {
+    marginLeft: 16,
+    marginRight: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: "5%",
+  },
+  monthTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+  },
+  weekNumber: {
+    fontSize: 14,
+    fontWeight: "400",
+    marginLeft: 8,
   },
   emptyContainer: {
     flex: 1,
@@ -155,9 +203,17 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 12,
   },
+  dateHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+  },
   dateHeaderText: {
     fontSize: 20,
     fontWeight: '700',
+  },
+  lunarText: {
+    fontSize: 12,
   },
   dateSubText: {
     fontSize: 13,
