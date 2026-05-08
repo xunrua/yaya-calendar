@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     marginLeft: 16,
     marginRight: 16,
     paddingTop: 16,
-    paddingBottom: 12,
+    paddingBottom: 20,
   },
   titleRow: {
     flexDirection: "row",
