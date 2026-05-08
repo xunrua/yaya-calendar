@@ -12,7 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useTheme } from "../../stores/themeStore";
 import { useViewStore } from "../../stores/eventStore";
-import { format, addMonths, subMonths } from "date-fns";
+import { format, addMonths, subMonths, getISOWeek } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import MonthGrid from "./MonthGrid";
 
@@ -110,9 +110,14 @@ export const MonthView: React.FC = () => {
     <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
       {/* Month header */}
       <View style={styles.monthHeader}>
-        <Text style={[styles.monthTitle, { color: theme.colors.text }]}>
-          {format(currentMonth, "yyyy年M月", { locale: zhCN })}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.monthTitle, { color: theme.colors.text }]}>
+            {format(currentMonth, "yyyy年M月", { locale: zhCN })}
+          </Text>
+          <Text style={[styles.weekNumber, { color: theme.colors.textTertiary }]}>
+            第{getISOWeek(currentMonth)}周
+          </Text>
+        </View>
       </View>
 
       {/* Fixed weekday header */}
@@ -172,10 +177,19 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: "5%",
+  },
   monthTitle: {
     fontSize: 28,
     fontWeight: "700",
-    marginLeft: "5%",
+  },
+  weekNumber: {
+    fontSize: 14,
+    fontWeight: "400",
+    marginLeft: 8,
   },
   weekdayHeader: {
     flexDirection: "row",
