@@ -52,10 +52,15 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
   React.useEffect(() => {
     if (visible) {
       setMounted(true);
-      scale.value = withTiming(1, { duration: 200, easing: Easing.bezier(0.4, 0, 0.2, 1) });
-      opacity.value = withTiming(1, { duration: 200 });
+      // 先放大到 1.02，再回到 1，模拟轻微回弹
+      scale.value = withTiming(1.02, { duration: 280, easing: Easing.bezier(0.4, 0, 0.2, 1) }, (finished) => {
+        if (finished) {
+          scale.value = withTiming(1, { duration: 150, easing: Easing.bezier(0.4, 0, 0.2, 1) });
+        }
+      });
+      opacity.value = withTiming(1, { duration: 280 });
     } else if (mounted) {
-      scale.value = withTiming(0, { duration: 150 });
+      scale.value = withTiming(0, { duration: 150, easing: Easing.bezier(0.4, 0, 0.2, 1) });
       opacity.value = withTiming(0, { duration: 150 }, (finished) => {
         if (finished) runOnJS(setMounted)(false);
       });
