@@ -95,6 +95,7 @@ export const MonthView: React.FC = () => {
       translateX.value = 0;
       isAnimating.value = false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayMonthStr]);
 
   const panGesture = Gesture.Pan()
