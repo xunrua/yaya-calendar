@@ -16,6 +16,8 @@ interface FloatingNavBarProps {
   activeTab: "calendar" | "todo";
   onTabChange: (tab: "calendar" | "todo") => void;
   menuOpen?: boolean;
+  onTodayPress?: () => void;
+  showTodayButton?: boolean;
 }
 
 export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
@@ -24,6 +26,8 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
   activeTab,
   onTabChange,
   menuOpen = false,
+  onTodayPress,
+  showTodayButton,
 }) => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -31,12 +35,35 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
   // Animation values for segmented control
   const indicatorPosition = useSharedValue(activeTab === "calendar" ? 0 : 1);
 
+  // Animation values for "今" button
+  const todayButtonScale = useSharedValue(0);
+  const todayButtonOpacity = useSharedValue(0);
+
   React.useEffect(() => {
     indicatorPosition.value = withTiming(activeTab === "calendar" ? 0 : 1, {
       duration: 250,
       easing: Easing.bezier(0.4, 0, 0.2, 1),
     });
   }, [activeTab, indicatorPosition]);
+
+  // "今"按钮显示/隐藏动画（参考 FloatingMenu 的回弹效果）
+  React.useEffect(() => {
+    if (showTodayButton) {
+      todayButtonScale.value = withTiming(
+        1.02,
+        { duration: 280, easing: Easing.bezier(0.4, 0, 0.2, 1) },
+        (finished) => {
+          if (finished) {
+            todayButtonScale.value = withTiming(1, { duration: 150 });
+          }
+        }
+      );
+      todayButtonOpacity.value = withTiming(1, { duration: 280 });
+    } else {
+      todayButtonScale.value = withTiming(0, { duration: 150 });
+      todayButtonOpacity.value = withTiming(0, { duration: 150 });
+    }
+  }, [showTodayButton]);
 
   const animatedIndicatorStyle = useAnimatedStyle(() => {
     const segmentWidth = 80;
@@ -46,6 +73,11 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
       transform: [{ translateX: totalOffset }],
     };
   });
+
+  const animatedTodayStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: todayButtonScale.value }],
+    opacity: todayButtonOpacity.value,
+  }));
 
   const handleTabPress = (tab: "calendar" | "todo") => {
     if (tab !== activeTab) {
@@ -74,6 +106,21 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
         >
           <Ionicons name={menuOpen ? "close" : "menu"} size={24} color={theme.colors.text} />
         </TouchableOpacity>
+
+        {/* Today Button */}
+        {showTodayButton !== undefined && (
+          <Animated.View style={[styles.todayButtonContainer, animatedTodayStyle]}>
+            <TouchableOpacity
+              style={[styles.todayButton, { backgroundColor: theme.colors.primary }]}
+              onPress={onTodayPress}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.todayButtonText, { color: theme.mode === "dark" ? "#1C1C1E" : "#FAFAFA" }]}>
+                今
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* Segmented Control */}
         <View
@@ -216,6 +263,21 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 14,
     lineHeight: 14,
+  },
+  todayButtonContainer: {
+    marginRight: 8,
+  },
+  todayButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    minWidth: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  todayButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
 
