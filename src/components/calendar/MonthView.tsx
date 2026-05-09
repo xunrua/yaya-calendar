@@ -1,11 +1,12 @@
 import { addMonths, format, getISOWeek, isSameMonth, startOfMonth, subMonths } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import type React from "react";
-import { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
+  runOnUI,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -26,13 +27,19 @@ const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
 
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
-  const { selectedDate } = useViewStore();
+  const { selectedDate, displayMonth: displayMonthStr, setDisplayMonth } = useViewStore();
   const insets = useSafeAreaInsets();
 
-  // 独立的显示月份状态，不受 selectedDate 影响
-  const [displayMonth, setDisplayMonth] = useState(() => startOfMonth(new Date(selectedDate)));
+  // 从全局状态获取 displayMonth，转换为 Date 对象
+  const displayMonth = useMemo(() => {
+    const date = new Date(displayMonthStr);
+    return startOfMonth(date);
+  }, [displayMonthStr]);
+
   const translateX = useSharedValue(0);
+  const opacity = useSharedValue(1);
   const isAnimating = useSharedValue(false);
+  const prevDisplayMonthRef = useRef(displayMonthStr);
 
   // 计算显示的周数：如果当前显示月份包含 selectedDate，显示 selectedDate 的周数；否则显示该月第一周的周数
   const prevMonth = useMemo(() => subMonths(displayMonth, 1), [displayMonth]);
@@ -47,19 +54,48 @@ export const MonthView: React.FC = () => {
   }, [displayMonth, selectedDate]);
 
   const goToPreviousJS = useCallback(() => {
-    setDisplayMonth((prev) => subMonths(prev, 1));
-  }, []);
+    const newMonth = subMonths(displayMonth, 1);
+    setDisplayMonth(newMonth.toISOString().split("T")[0]);
+  }, [displayMonth, setDisplayMonth]);
 
   const goToNextJS = useCallback(() => {
-    setDisplayMonth((prev) => addMonths(prev, 1));
-  }, []);
+    const newMonth = addMonths(displayMonth, 1);
+    setDisplayMonth(newMonth.toISOString().split("T")[0]);
+  }, [displayMonth, setDisplayMonth]);
 
   // 当 displayMonth 更新后，使用 useLayoutEffect 同步重置 translateX
   // 这确保在浏览器绘制之前完成重置，避免闪烁
+  // 同时处理大跨度跳转的淡入淡出动画
   useLayoutEffect(() => {
-    translateX.value = 0;
-    isAnimating.value = false;
-  }, [displayMonth]);
+    const prevMonth = prevDisplayMonthRef.current;
+    prevDisplayMonthRef.current = displayMonthStr;
+
+    if (prevMonth && displayMonthStr) {
+      const prevDate = new Date(prevMonth);
+      const currentDate = new Date(displayMonthStr);
+      const monthDiff = (currentDate.getFullYear() - prevDate.getFullYear()) * 12
+        + currentDate.getMonth() - prevDate.getMonth();
+
+      if (Math.abs(monthDiff) > 1) {
+        // 大跨度跳转：使用淡入淡出动画
+        opacity.value = 0;
+        translateX.value = 0;
+        isAnimating.value = false;
+        // 下一帧淡入
+        runOnUI(() => {
+          "worklet";
+          opacity.value = withTiming(1, { duration: 200 });
+        })();
+      } else {
+        // 正常滑动：重置位置
+        translateX.value = 0;
+        isAnimating.value = false;
+      }
+    } else {
+      translateX.value = 0;
+      isAnimating.value = false;
+    }
+  }, [displayMonthStr]);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -108,6 +144,7 @@ export const MonthView: React.FC = () => {
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
+    opacity: opacity.value,
   }));
 
   const prevMonthStyle = useAnimatedStyle(() => ({
