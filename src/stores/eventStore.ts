@@ -128,8 +128,10 @@ export const useEventStore = create<EventState>((set, get) => ({
 interface ViewState {
   currentView: ViewType;
   selectedDate: string; // ISO date string
+  displayMonth: string; // ISO date string (月初日期)
   setCurrentView: (view: ViewType) => void;
   setSelectedDate: (date: string) => void;
+  setDisplayMonth: (date: string) => void;
   goToToday: () => void;
   goToPrevious: () => void;
   goToNext: () => void;
@@ -143,6 +145,7 @@ const getTodayString = (): string => {
 export const useViewStore = create<ViewState>((set, get) => ({
   currentView: "month",
   selectedDate: getTodayString(),
+  displayMonth: getTodayString(),
 
   setCurrentView: (view) => {
     set({ currentView: view });
@@ -152,8 +155,16 @@ export const useViewStore = create<ViewState>((set, get) => ({
     set({ selectedDate: date });
   },
 
+  setDisplayMonth: (date) => {
+    set({ displayMonth: date });
+  },
+
   goToToday: () => {
-    set({ selectedDate: getTodayString() });
+    const today = getTodayString();
+    set({
+      selectedDate: today,
+      displayMonth: today,
+    });
   },
 
   goToPrevious: () => {
