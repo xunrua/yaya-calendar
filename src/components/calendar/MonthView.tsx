@@ -59,7 +59,7 @@ export const MonthView: React.FC = () => {
   useLayoutEffect(() => {
     translateX.value = 0;
     isAnimating.value = false;
-  }, [translateX, isAnimating]);
+  }, [displayMonth]);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
