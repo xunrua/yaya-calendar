@@ -1,19 +1,20 @@
-import React, { useCallback, useMemo, useState, useLayoutEffect } from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import { addMonths, format, getISOWeek, isSameMonth, startOfMonth, subMonths } from "date-fns";
+import { zhCN } from "date-fns/locale";
+import type React from "react";
+import { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import { Dimensions, StyleSheet, Text, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-  useSharedValue,
+  Easing,
   useAnimatedStyle,
+  useSharedValue,
   withSpring,
   withTiming,
-  Easing,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
-import { useTheme } from "../../stores/themeStore";
 import { useViewStore } from "../../stores/eventStore";
-import { format, addMonths, subMonths, getISOWeek, startOfMonth, isSameMonth } from "date-fns";
-import { zhCN } from "date-fns/locale";
+import { useTheme } from "../../stores/themeStore";
 import MonthGrid from "./MonthGrid";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -58,7 +59,7 @@ export const MonthView: React.FC = () => {
   useLayoutEffect(() => {
     translateX.value = 0;
     isAnimating.value = false;
-  }, [displayMonth, translateX, isAnimating]);
+  }, [translateX, isAnimating]);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -72,11 +73,9 @@ export const MonthView: React.FC = () => {
 
       const { translationX, velocityX } = event;
       const shouldSwipeLeft =
-        translationX < -SWIPE_DISTANCE_THRESHOLD ||
-        velocityX < -SWIPE_VELOCITY_THRESHOLD;
+        translationX < -SWIPE_DISTANCE_THRESHOLD || velocityX < -SWIPE_VELOCITY_THRESHOLD;
       const shouldSwipeRight =
-        translationX > SWIPE_DISTANCE_THRESHOLD ||
-        velocityX > SWIPE_VELOCITY_THRESHOLD;
+        translationX > SWIPE_DISTANCE_THRESHOLD || velocityX > SWIPE_VELOCITY_THRESHOLD;
 
       if (shouldSwipeLeft) {
         isAnimating.value = true;
@@ -120,7 +119,12 @@ export const MonthView: React.FC = () => {
   }));
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.colors.background, paddingTop: insets.top },
+      ]}
+    >
       {/* Month header */}
       <View style={styles.monthHeader}>
         <View style={styles.titleRow}>
@@ -151,7 +155,9 @@ export const MonthView: React.FC = () => {
       {/* Swipeable month grids */}
       <GestureDetector gesture={panGesture}>
         <View style={styles.monthsContainer}>
-          <Animated.View style={[styles.monthPanel, { bottom: insets.bottom + 64 }, prevMonthStyle]}>
+          <Animated.View
+            style={[styles.monthPanel, { bottom: insets.bottom + 64 }, prevMonthStyle]}
+          >
             <MonthGrid
               year={prevMonth.getFullYear()}
               month={prevMonth.getMonth()}
@@ -167,7 +173,9 @@ export const MonthView: React.FC = () => {
             />
           </Animated.View>
 
-          <Animated.View style={[styles.monthPanel, { bottom: insets.bottom + 64 }, nextMonthStyle]}>
+          <Animated.View
+            style={[styles.monthPanel, { bottom: insets.bottom + 64 }, nextMonthStyle]}
+          >
             <MonthGrid
               year={nextMonth.getFullYear()}
               month={nextMonth.getMonth()}

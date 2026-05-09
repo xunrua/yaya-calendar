@@ -19,7 +19,7 @@ export interface Event {
 }
 
 export interface RecurrenceRule {
-  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  frequency: "daily" | "weekly" | "monthly" | "yearly";
   interval: number; // Every N days/weeks/months/years
   endDate?: string; // ISO date when recurrence ends
   count?: number; // Number of occurrences
@@ -31,7 +31,7 @@ export interface RecurrenceRule {
 // View Types
 // ============================================================================
 
-export type ViewType = 'day' | 'week' | 'month' | 'events';
+export type ViewType = "day" | "week" | "month" | "events";
 
 export interface ViewState {
   currentView: ViewType;
@@ -43,7 +43,7 @@ export interface ViewState {
 // Theme Types
 // ============================================================================
 
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = "light" | "dark" | "system";
 
 export interface ThemeColors {
   primary: string;
@@ -72,7 +72,7 @@ export interface ThemeColors {
 }
 
 export interface Theme {
-  mode: 'light' | 'dark';
+  mode: "light" | "dark";
   colors: ThemeColors;
   spacing: {
     xs: number;
@@ -120,7 +120,7 @@ export interface SolarTerm {
 export interface Holiday {
   name: string;
   date: string; // ISO date
-  type: 'traditional' | 'statutory' | 'solar_term';
+  type: "traditional" | "statutory" | "solar_term";
   isHoliday: boolean; // Is a day off
   isWorkday?: boolean; // Compensated workday
 }
@@ -131,7 +131,7 @@ export interface Holiday {
 
 export interface DatabaseAdapter {
   init(): Promise<void>;
-  createEvent(event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>): Promise<Event>;
+  createEvent(event: Omit<Event, "id" | "createdAt" | "updatedAt">): Promise<Event>;
   updateEvent(id: string, updates: Partial<Event>): Promise<Event>;
   deleteEvent(id: string): Promise<void>;
   getEventById(id: string): Promise<Event | null>;
@@ -145,13 +145,13 @@ export interface DatabaseAdapter {
 
 export interface AnimationConfig {
   duration: number;
-  easing: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
+  easing: "linear" | "easeIn" | "easeOut" | "easeInOut";
   useNativeDriver: boolean;
 }
 
 export const ANIMATION_PRESETS = {
-  fast: { duration: 150, easing: 'easeOut' as const, useNativeDriver: true },
-  normal: { duration: 250, easing: 'easeOut' as const, useNativeDriver: true },
-  slow: { duration: 350, easing: 'easeInOut' as const, useNativeDriver: true },
-  spring: { duration: 400, easing: 'easeOut' as const, useNativeDriver: true },
+  fast: { duration: 150, easing: "easeOut" as const, useNativeDriver: true },
+  normal: { duration: 250, easing: "easeOut" as const, useNativeDriver: true },
+  slow: { duration: 350, easing: "easeInOut" as const, useNativeDriver: true },
+  spring: { duration: 400, easing: "easeOut" as const, useNativeDriver: true },
 } as const;

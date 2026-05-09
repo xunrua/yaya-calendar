@@ -1,14 +1,14 @@
-import React from "react";
-import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
   Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
 } from "react-native-reanimated";
-import { useTheme } from "../../stores/themeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../../stores/themeStore";
 
 interface FloatingNavBarProps {
   onMenuPress: () => void;
@@ -66,19 +66,13 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
             styles.circleButton,
             {
               backgroundColor:
-                theme.mode === "dark"
-                  ? "rgba(58, 58, 60, 0.8)"
-                  : "rgba(235, 235, 235, 0.8)",
+                theme.mode === "dark" ? "rgba(58, 58, 60, 0.8)" : "rgba(235, 235, 235, 0.8)",
             },
           ]}
           onPress={handleMenuPress}
           activeOpacity={0.7}
         >
-          <Ionicons
-            name={menuOpen ? "close" : "menu"}
-            size={24}
-            color={theme.colors.text}
-          />
+          <Ionicons name={menuOpen ? "close" : "menu"} size={24} color={theme.colors.text} />
         </TouchableOpacity>
 
         {/* Segmented Control */}
@@ -87,9 +81,7 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
             styles.segmentedContainer,
             {
               backgroundColor:
-                theme.mode === "dark"
-                  ? "rgba(58, 58, 60, 0.6)"
-                  : "rgba(235, 235, 235, 0.6)",
+                theme.mode === "dark" ? "rgba(58, 58, 60, 0.6)" : "rgba(235, 235, 235, 0.6)",
               borderColor: theme.colors.border,
             },
           ]}
@@ -165,11 +157,7 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
           onPress={onAddPress}
           activeOpacity={0.7}
         >
-          <Ionicons
-            name="add"
-            size={28}
-            color={theme.mode === "dark" ? "#1C1C1E" : "#FAFAFA"}
-          />
+          <Ionicons name="add" size={28} color={theme.mode === "dark" ? "#1C1C1E" : "#FAFAFA"} />
         </TouchableOpacity>
       </View>
     </View>
@@ -232,4 +220,3 @@ const styles = StyleSheet.create({
 });
 
 export default FloatingNavBar;
-

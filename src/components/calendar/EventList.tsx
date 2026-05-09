@@ -1,12 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, SectionList, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useTheme } from '../../stores/themeStore';
-import { useEventStore } from '../../stores/eventStore';
-import { format, parseISO, isToday, isTomorrow } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
-import { getLunarInfo } from '../../domain/lunar';
-import { Event } from '../../domain/types';
+import { format, isToday, isTomorrow, parseISO } from "date-fns";
+import { zhCN } from "date-fns/locale";
+import { useRouter } from "expo-router";
+import type React from "react";
+import { SectionList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { getLunarInfo } from "../../domain/lunar";
+import type { Event } from "../../domain/types";
+import { useEventStore } from "../../stores/eventStore";
+import { useTheme } from "../../stores/themeStore";
 
 interface EventItemProps {
   event: Event;
@@ -18,17 +18,22 @@ const EventItem: React.FC<EventItemProps> = ({ event, onPress }) => {
 
   return (
     <TouchableOpacity
-      style={[styles.eventItem, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+      style={[
+        styles.eventItem,
+        { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={[styles.eventColor, { backgroundColor: event.color || theme.colors.eventDefault }]} />
+      <View
+        style={[styles.eventColor, { backgroundColor: event.color || theme.colors.eventDefault }]}
+      />
       <View style={styles.eventContent}>
         <Text style={[styles.eventTitle, { color: theme.colors.text }]} numberOfLines={1}>
           {event.title}
         </Text>
         <Text style={[styles.eventTime, { color: theme.colors.textSecondary }]}>
-          {format(parseISO(event.startTime), 'HH:mm')} - {format(parseISO(event.endTime), 'HH:mm')}
+          {format(parseISO(event.startTime), "HH:mm")} - {format(parseISO(event.endTime), "HH:mm")}
         </Text>
         {event.description && (
           <Text style={[styles.eventDesc, { color: theme.colors.textTertiary }]} numberOfLines={2}>
@@ -46,9 +51,9 @@ const EventItem: React.FC<EventItemProps> = ({ event, onPress }) => {
 };
 
 const getDateSectionTitle = (date: Date): string => {
-  if (isToday(date)) return '今天';
-  if (isTomorrow(date)) return '明天';
-  return format(date, 'M月d日 EEEE', { locale: zhCN });
+  if (isToday(date)) return "今天";
+  if (isTomorrow(date)) return "明天";
+  return format(date, "M月d日 EEEE", { locale: zhCN });
 };
 
 export const EventList: React.FC = () => {
@@ -59,7 +64,7 @@ export const EventList: React.FC = () => {
   // Group events by date
   const eventMap = new Map<string, Event[]>();
   events.forEach((event) => {
-    const dateKey = format(parseISO(event.startTime), 'yyyy-MM-dd');
+    const dateKey = format(parseISO(event.startTime), "yyyy-MM-dd");
     const existing = eventMap.get(dateKey) ?? [];
     existing.push(event);
     eventMap.set(dateKey, existing);
@@ -99,9 +104,7 @@ export const EventList: React.FC = () => {
       {events.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>📅</Text>
-          <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-            暂无事件
-          </Text>
+          <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>暂无事件</Text>
           <Text style={[styles.emptyHint, { color: theme.colors.textTertiary }]}>
             点击日历中的日期创建新事件
           </Text>
@@ -130,20 +133,20 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   sectionHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     gap: 8,
   },
   sectionDate: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   sectionLunar: {
     fontSize: 12,
@@ -152,17 +155,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   eventItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 12,
     borderWidth: 1,
     marginHorizontal: 16,
     marginBottom: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   eventColor: {
     width: 4,
-    height: '100%',
+    height: "100%",
   },
   eventContent: {
     flex: 1,
@@ -170,7 +173,7 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   eventTime: {
     fontSize: 13,
@@ -191,8 +194,8 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 32,
   },
   emptyIcon: {
@@ -201,12 +204,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   emptyHint: {
     fontSize: 14,
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
 

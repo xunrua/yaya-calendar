@@ -1,12 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useTheme } from '../../stores/themeStore';
-import { useViewStore, useEventStore } from '../../stores/eventStore';
-import { format, parseISO, setHours, setMinutes, isSameDay, addHours } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
-import { getLunarInfo } from '../../domain/lunar';
-import { Event } from '../../domain/types';
+import { addHours, format, isSameDay, parseISO, setHours, setMinutes } from "date-fns";
+import { zhCN } from "date-fns/locale";
+import { useRouter } from "expo-router";
+import type React from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { getLunarInfo } from "../../domain/lunar";
+import type { Event } from "../../domain/types";
+import { useEventStore, useViewStore } from "../../stores/eventStore";
+import { useTheme } from "../../stores/themeStore";
 
 const HOUR_HEIGHT = 60;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -38,7 +38,7 @@ const EventBlock: React.FC<EventBlockProps> = ({ event, top, height, onPress }) 
       </Text>
       {height > 40 && (
         <Text style={styles.eventTime} numberOfLines={1}>
-          {format(parseISO(event.startTime), 'HH:mm')} - {format(parseISO(event.endTime), 'HH:mm')}
+          {format(parseISO(event.startTime), "HH:mm")} - {format(parseISO(event.endTime), "HH:mm")}
         </Text>
       )}
     </TouchableOpacity>
@@ -79,7 +79,7 @@ export const DayView: React.FC = () => {
     const newStartTime = setMinutes(setHours(currentDate, hour), 0);
     const newEndTime = addHours(newStartTime, 1);
     // TODO: Open event creation modal
-    console.log('Create event:', format(newStartTime, 'HH:mm'), '-', format(newEndTime, 'HH:mm'));
+    console.log("Create event:", format(newStartTime, "HH:mm"), "-", format(newEndTime, "HH:mm"));
   };
 
   const renderTimeSlot = (hour: number) => {
@@ -95,7 +95,7 @@ export const DayView: React.FC = () => {
         {/* Time label */}
         <View style={styles.timeLabel}>
           <Text style={[styles.timeText, { color: theme.colors.textSecondary }]}>
-            {hour.toString().padStart(2, '0')}:00
+            {hour.toString().padStart(2, "0")}:00
           </Text>
         </View>
 
@@ -131,11 +131,11 @@ export const DayView: React.FC = () => {
       <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
         <View style={styles.dateHeader}>
           <Text style={[styles.dayNumber, { color: theme.colors.text }]}>
-            {format(currentDate, 'd')}
+            {format(currentDate, "d")}
           </Text>
           <View style={styles.dateInfo}>
             <Text style={[styles.weekday, { color: theme.colors.text }]}>
-              {format(currentDate, 'EEEE', { locale: zhCN })}
+              {format(currentDate, "EEEE", { locale: zhCN })}
             </Text>
             <Text style={[styles.lunarInfo, { color: theme.colors.textSecondary }]}>
               {lunarInfo.holiday || lunarInfo.solarTerm || lunarInfo.lunarDay}
@@ -168,20 +168,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
   },
   dateHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   dayNumber: {
     fontSize: 48,
-    fontWeight: '700',
+    fontWeight: "700",
     marginRight: 12,
   },
   dateInfo: {
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   },
   weekday: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   lunarInfo: {
     fontSize: 14,
@@ -200,25 +200,25 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   todayText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   scrollView: {
     flex: 1,
   },
   timeGrid: {
-    position: 'relative',
+    position: "relative",
     paddingTop: 8,
   },
   timeSlot: {
-    flexDirection: 'row',
+    flexDirection: "row",
     height: HOUR_HEIGHT,
   },
   timeLabel: {
     width: 60,
     paddingRight: 8,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   timeText: {
     fontSize: 12,
@@ -228,33 +228,33 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   currentTimeIndicator: {
-    position: 'absolute',
+    position: "absolute",
     left: 60,
     right: 0,
     top: 0,
     height: 2,
   },
   eventsOverlay: {
-    position: 'absolute',
+    position: "absolute",
     left: 68,
     right: 8,
     top: 8,
   },
   eventBlock: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     borderRadius: 8,
     padding: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   eventTitle: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   eventTime: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "rgba(255, 255, 255, 0.8)",
     fontSize: 12,
     marginTop: 2,
   },

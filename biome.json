@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+    "includes": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "!**/.agents"]
   },
   "assist": {
     "enabled": true,

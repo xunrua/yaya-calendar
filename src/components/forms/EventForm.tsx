@@ -1,18 +1,12 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
-import { useTheme } from '../../stores/themeStore';
-import { useEventStore } from '../../stores/eventStore';
-import { Button } from '../common/Button';
-import { GlassCard } from '../common/GlassCard';
-import { Event, RecurrenceRule } from '../../domain/types';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO } from "date-fns";
+import type React from "react";
+import { useState } from "react";
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import type { Event, RecurrenceRule } from "../../domain/types";
+import { useEventStore } from "../../stores/eventStore";
+import { useTheme } from "../../stores/themeStore";
+import { Button } from "../common/Button";
+import { GlassCard } from "../common/GlassCard";
 
 interface EventFormProps {
   event?: Event;
@@ -22,47 +16,42 @@ interface EventFormProps {
 }
 
 const EVENT_COLORS = [
-  '#6366F1', // Indigo
-  '#8B5CF6', // Violet
-  '#EC4899', // Pink
-  '#EF4444', // Red
-  '#F59E0B', // Amber
-  '#22C55E', // Green
-  '#14B8A6', // Teal
-  '#3B82F6', // Blue
+  "#6366F1", // Indigo
+  "#8B5CF6", // Violet
+  "#EC4899", // Pink
+  "#EF4444", // Red
+  "#F59E0B", // Amber
+  "#22C55E", // Green
+  "#14B8A6", // Teal
+  "#3B82F6", // Blue
 ];
 
-const RECURRENCE_OPTIONS: { label: string; value: RecurrenceRule['frequency'] | 'none' }[] = [
-  { label: '不重复', value: 'none' },
-  { label: '每天', value: 'daily' },
-  { label: '每周', value: 'weekly' },
-  { label: '每月', value: 'monthly' },
-  { label: '每年', value: 'yearly' },
+const RECURRENCE_OPTIONS: { label: string; value: RecurrenceRule["frequency"] | "none" }[] = [
+  { label: "不重复", value: "none" },
+  { label: "每天", value: "daily" },
+  { label: "每周", value: "weekly" },
+  { label: "每月", value: "monthly" },
+  { label: "每年", value: "yearly" },
 ];
 
-export const EventForm: React.FC<EventFormProps> = ({
-  event,
-  initialDate,
-  onSave,
-  onCancel,
-}) => {
+export const EventForm: React.FC<EventFormProps> = ({ event, initialDate, onSave, onCancel }) => {
   const { theme } = useTheme();
   const { createEvent, updateEvent } = useEventStore();
 
-  const [title, setTitle] = useState(event?.title ?? '');
-  const [description, setDescription] = useState(event?.description ?? '');
+  const [title, setTitle] = useState(event?.title ?? "");
+  const [description, setDescription] = useState(event?.description ?? "");
   const [startDate, setStartDate] = useState(
-    event?.startTime?.split('T')[0] ?? initialDate ?? format(new Date(), 'yyyy-MM-dd')
+    event?.startTime?.split("T")[0] ?? initialDate ?? format(new Date(), "yyyy-MM-dd")
   );
   const [startTime, setStartTime] = useState(
-    event?.startTime ? format(parseISO(event.startTime), 'HH:mm') : '09:00'
+    event?.startTime ? format(parseISO(event.startTime), "HH:mm") : "09:00"
   );
   const [endTime, setEndTime] = useState(
-    event?.endTime ? format(parseISO(event.endTime), 'HH:mm') : '10:00'
+    event?.endTime ? format(parseISO(event.endTime), "HH:mm") : "10:00"
   );
   const [color, setColor] = useState(event?.color ?? EVENT_COLORS[0]);
-  const [recurrence, setRecurrence] = useState<RecurrenceRule['frequency'] | 'none'>(
-    event?.recurrenceRule?.frequency ?? 'none'
+  const [recurrence, setRecurrence] = useState<RecurrenceRule["frequency"] | "none">(
+    event?.recurrenceRule?.frequency ?? "none"
   );
   const [loading, setLoading] = useState(false);
 
@@ -82,7 +71,7 @@ export const EventForm: React.FC<EventFormProps> = ({
         startTime: startDateTime,
         endTime: endDateTime,
         color,
-        recurrenceRule: recurrence !== 'none' ? { frequency: recurrence, interval: 1 } : undefined,
+        recurrenceRule: recurrence !== "none" ? { frequency: recurrence, interval: 1 } : undefined,
       };
 
       if (event) {
@@ -93,7 +82,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 
       onSave();
     } catch (error) {
-      console.error('Failed to save event:', error);
+      console.error("Failed to save event:", error);
     } finally {
       setLoading(false);
     }
@@ -154,7 +143,11 @@ export const EventForm: React.FC<EventFormProps> = ({
         <View style={styles.field}>
           <Text style={[styles.label, { color: theme.colors.textSecondary }]}>描述</Text>
           <TextInput
-            style={[styles.input, styles.textArea, { color: theme.colors.text, borderColor: theme.colors.border }]}
+            style={[
+              styles.input,
+              styles.textArea,
+              { color: theme.colors.text, borderColor: theme.colors.border },
+            ]}
             value={description}
             onChangeText={setDescription}
             placeholder="添加描述（可选）"
@@ -192,12 +185,12 @@ export const EventForm: React.FC<EventFormProps> = ({
                 style={[
                   styles.recurrenceOption,
                   {
-                    backgroundColor: recurrence === option.value
-                      ? theme.colors.primary
-                      : theme.colors.surfaceVariant,
-                    borderColor: recurrence === option.value
-                      ? theme.colors.primary
-                      : theme.colors.border,
+                    backgroundColor:
+                      recurrence === option.value
+                        ? theme.colors.primary
+                        : theme.colors.surfaceVariant,
+                    borderColor:
+                      recurrence === option.value ? theme.colors.primary : theme.colors.border,
                   },
                 ]}
                 onPress={() => setRecurrence(option.value)}
@@ -206,9 +199,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   style={[
                     styles.recurrenceText,
                     {
-                      color: recurrence === option.value
-                        ? '#FFFFFF'
-                        : theme.colors.text,
+                      color: recurrence === option.value ? "#FFFFFF" : theme.colors.text,
                     },
                   ]}
                 >
@@ -222,14 +213,9 @@ export const EventForm: React.FC<EventFormProps> = ({
 
       {/* Actions */}
       <View style={styles.actions}>
+        <Button title="取消" onPress={onCancel} variant="secondary" style={styles.button} />
         <Button
-          title="取消"
-          onPress={onCancel}
-          variant="secondary"
-          style={styles.button}
-        />
-        <Button
-          title={event ? '保存' : '创建'}
+          title={event ? "保存" : "创建"}
           onPress={handleSave}
           variant="primary"
           loading={loading}
@@ -254,7 +240,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 8,
   },
   input: {
@@ -266,17 +252,17 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 80,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   halfWidth: {
     flex: 1,
   },
   colorPicker: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   colorOption: {
@@ -286,11 +272,11 @@ const styles = StyleSheet.create({
   },
   colorSelected: {
     borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderColor: "#FFFFFF",
   },
   recurrenceOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   recurrenceOption: {
@@ -301,10 +287,10 @@ const styles = StyleSheet.create({
   },
   recurrenceText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   actions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginTop: 16,
     marginBottom: 32,

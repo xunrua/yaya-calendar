@@ -1,15 +1,15 @@
-import React from 'react';
+import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  Modal as RNModal,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
   Animated,
   Dimensions,
-} from 'react-native';
-import { useTheme } from '../../stores/themeStore';
+  Modal as RNModal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import { useTheme } from "../../stores/themeStore";
 
 interface ModalProps {
   visible: boolean;
@@ -17,10 +17,10 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  animationType?: 'slide' | 'fade';
+  animationType?: "slide" | "fade";
 }
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export const Modal: React.FC<ModalProps> = ({
   visible,
@@ -28,7 +28,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   footer,
-  animationType = 'slide',
+  animationType = "slide",
 }) => {
   const { theme } = useTheme();
   const [slideAnim] = React.useState(new Animated.Value(SCREEN_HEIGHT));
@@ -44,7 +44,7 @@ export const Modal: React.FC<ModalProps> = ({
         useNativeDriver: true,
       }).start();
 
-      if (animationType === 'slide') {
+      if (animationType === "slide") {
         Animated.spring(slideAnim, {
           toValue: 0,
           tension: 65,
@@ -66,7 +66,7 @@ export const Modal: React.FC<ModalProps> = ({
         useNativeDriver: true,
       }).start();
 
-      if (animationType === 'slide') {
+      if (animationType === "slide") {
         Animated.timing(slideAnim, {
           toValue: SCREEN_HEIGHT,
           duration: 250,
@@ -83,19 +83,12 @@ export const Modal: React.FC<ModalProps> = ({
   }, [visible, animationType, slideAnim, fadeAnim, overlayAnim]);
 
   const animatedStyle =
-    animationType === 'slide'
-      ? { transform: [{ translateY: slideAnim }] }
-      : { opacity: fadeAnim };
+    animationType === "slide" ? { transform: [{ translateY: slideAnim }] } : { opacity: fadeAnim };
 
   const overlayStyle = { opacity: overlayAnim };
 
   return (
-    <RNModal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
+    <RNModal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <Animated.View style={[styles.overlay, overlayStyle]}>
           <TouchableWithoutFeedback>
@@ -111,13 +104,9 @@ export const Modal: React.FC<ModalProps> = ({
               {/* Header */}
               {title && (
                 <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
-                  <Text style={[styles.title, { color: theme.colors.text }]}>
-                    {title}
-                  </Text>
+                  <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
                   <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                    <Text style={[styles.closeText, { color: theme.colors.textSecondary }]}>
-                      ✕
-                    </Text>
+                    <Text style={[styles.closeText, { color: theme.colors.textSecondary }]}>✕</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -142,26 +131,26 @@ export const Modal: React.FC<ModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   container: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '90%',
+    maxHeight: "90%",
     minHeight: 200,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   closeButton: {
     padding: 8,
@@ -173,8 +162,8 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,

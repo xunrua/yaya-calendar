@@ -1,5 +1,5 @@
-import { Solar, Lunar, SolarMonth } from 'lunar-javascript';
-import { LunarDate, SolarTerm, Holiday } from '../domain/types';
+import { Lunar, Solar, SolarMonth } from "lunar-javascript";
+import type { Holiday, LunarDate, SolarTerm } from "../domain/types";
 
 // ============================================================================
 // Lunar Calendar Service
@@ -29,7 +29,12 @@ export const toLunarDate = (date: Date): LunarDate => {
 /**
  * Convert a Chinese lunar date to Gregorian date
  */
-export const toSolarDate = (lunarYear: number, lunarMonth: number, lunarDay: number, isLeapMonth = false): Date => {
+export const toSolarDate = (
+  lunarYear: number,
+  lunarMonth: number,
+  lunarDay: number,
+  isLeapMonth = false
+): Date => {
   const lunar = Lunar.fromYmd(lunarYear, isLeapMonth ? -lunarMonth : lunarMonth, lunarDay);
   const solar = lunar.getSolar();
   return solar.getDate();
@@ -54,10 +59,30 @@ export const getLunarDayDisplay = (date: Date): string => {
 
 // Solar terms in order (二十四节气)
 const SOLAR_TERMS = [
-  '小寒', '大寒', '立春', '雨水', '惊蛰', '春分',
-  '清明', '谷雨', '立夏', '小满', '芒种', '夏至',
-  '小暑', '大暑', '立秋', '处暑', '白露', '秋分',
-  '寒露', '霜降', '立冬', '小雪', '大雪', '冬至',
+  "小寒",
+  "大寒",
+  "立春",
+  "雨水",
+  "惊蛰",
+  "春分",
+  "清明",
+  "谷雨",
+  "立夏",
+  "小满",
+  "芒种",
+  "夏至",
+  "小暑",
+  "大暑",
+  "立秋",
+  "处暑",
+  "白露",
+  "秋分",
+  "寒露",
+  "霜降",
+  "立冬",
+  "小雪",
+  "大雪",
+  "冬至",
 ];
 
 /**
@@ -71,7 +96,7 @@ export const getSolarTerm = (date: Date): SolarTerm | null => {
   if (jieQi) {
     return {
       name: jieQi,
-      date: date.toISOString().split('T')[0],
+      date: date.toISOString().split("T")[0],
       index: SOLAR_TERMS.indexOf(jieQi),
     };
   }
@@ -84,10 +109,30 @@ export const getSolarTerm = (date: Date): SolarTerm | null => {
 export const getSolarTermsForYear = (year: number): SolarTerm[] => {
   const terms: SolarTerm[] = [];
   const solarTermsNames = [
-    '小寒', '大寒', '立春', '雨水', '惊蛰', '春分',
-    '清明', '谷雨', '立夏', '小满', '芒种', '夏至',
-    '小暑', '大暑', '立秋', '处暑', '白露', '秋分',
-    '寒露', '霜降', '立冬', '小雪', '大雪', '冬至',
+    "小寒",
+    "大寒",
+    "立春",
+    "雨水",
+    "惊蛰",
+    "春分",
+    "清明",
+    "谷雨",
+    "立夏",
+    "小满",
+    "芒种",
+    "夏至",
+    "小暑",
+    "大暑",
+    "立秋",
+    "处暑",
+    "白露",
+    "秋分",
+    "寒露",
+    "霜降",
+    "立冬",
+    "小雪",
+    "大雪",
+    "冬至",
   ];
 
   // Iterate through the year to find solar terms
@@ -127,8 +172,8 @@ export const getHolidays = (date: Date): Holiday[] => {
   for (const festival of lunarFestivals) {
     holidays.push({
       name: festival,
-      date: date.toISOString().split('T')[0],
-      type: 'traditional',
+      date: date.toISOString().split("T")[0],
+      type: "traditional",
       isHoliday: isTraditionalHoliday(festival),
     });
   }
@@ -138,8 +183,8 @@ export const getHolidays = (date: Date): Holiday[] => {
   for (const festival of solarFestivals) {
     holidays.push({
       name: festival,
-      date: date.toISOString().split('T')[0],
-      type: 'statutory',
+      date: date.toISOString().split("T")[0],
+      type: "statutory",
       isHoliday: isStatutoryHoliday(festival),
     });
   }
@@ -149,8 +194,8 @@ export const getHolidays = (date: Date): Holiday[] => {
   if (jieQi) {
     holidays.push({
       name: jieQi,
-      date: date.toISOString().split('T')[0],
-      type: 'solar_term',
+      date: date.toISOString().split("T")[0],
+      type: "solar_term",
       isHoliday: false,
     });
   }
@@ -161,9 +206,7 @@ export const getHolidays = (date: Date): Holiday[] => {
 /**
  * Traditional Chinese holidays that are days off
  */
-const TRADITIONAL_HOLIDAYS = [
-  '春节', '元宵节', '清明节', '端午节', '中秋节', '重阳节', '除夕',
-];
+const TRADITIONAL_HOLIDAYS = ["春节", "元宵节", "清明节", "端午节", "中秋节", "重阳节", "除夕"];
 
 const isTraditionalHoliday = (name: string): boolean => {
   return TRADITIONAL_HOLIDAYS.includes(name);
@@ -172,9 +215,7 @@ const isTraditionalHoliday = (name: string): boolean => {
 /**
  * Statutory holidays in China
  */
-const STATUTORY_HOLIDAYS = [
-  '元旦', '春节', '清明节', '劳动节', '端午节', '中秋节', '国庆节',
-];
+const STATUTORY_HOLIDAYS = ["元旦", "春节", "清明节", "劳动节", "端午节", "中秋节", "国庆节"];
 
 const isStatutoryHoliday = (name: string): boolean => {
   return STATUTORY_HOLIDAYS.includes(name);
@@ -185,7 +226,7 @@ const isStatutoryHoliday = (name: string): boolean => {
  */
 export const isHoliday = (date: Date): boolean => {
   const holidays = getHolidays(date);
-  return holidays.some(h => h.isHoliday);
+  return holidays.some((h) => h.isHoliday);
 };
 
 /**
@@ -203,12 +244,12 @@ export const isSolarTermDay = (date: Date): boolean => {
 export const getHolidayDisplay = (date: Date): string | null => {
   const holidays = getHolidays(date);
   // Prioritize traditional holidays and statutory holidays over solar terms
-  const priorityHolidays = holidays.filter(h => h.type !== 'solar_term');
+  const priorityHolidays = holidays.filter((h) => h.type !== "solar_term");
   if (priorityHolidays.length > 0) {
     return priorityHolidays[0].name;
   }
   // Then show solar term if no other holiday
-  const solarTermHoliday = holidays.find(h => h.type === 'solar_term');
+  const solarTermHoliday = holidays.find((h) => h.type === "solar_term");
   if (solarTermHoliday) {
     return solarTermHoliday.name;
   }
@@ -222,7 +263,9 @@ export const getHolidayDisplay = (date: Date): string | null => {
 /**
  * Get comprehensive lunar info for a date (for calendar cell display)
  */
-export const getLunarInfo = (date: Date): {
+export const getLunarInfo = (
+  date: Date
+): {
   lunarDay: string;
   solarTerm?: string;
   holiday?: string;

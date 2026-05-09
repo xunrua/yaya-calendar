@@ -1,12 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../stores/themeStore';
-import { useEventStore, useViewStore } from '../../stores/eventStore';
-import { format, parseISO, isSameDay, getISOWeek } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
-import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
-import { getLunarInfo } from '../../domain/lunar';
+import { format, getISOWeek, isSameDay, parseISO } from "date-fns";
+import { zhCN } from "date-fns/locale";
+import React from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import Animated, { FadeInUp, FadeOutDown } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getLunarInfo } from "../../domain/lunar";
+import { useEventStore, useViewStore } from "../../stores/eventStore";
+import { useTheme } from "../../stores/themeStore";
 
 interface ScheduleViewProps {
   selectedDate?: string;
@@ -39,7 +39,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate: propSe
   const eventsByDate = React.useMemo(() => {
     const grouped: { [date: string]: typeof sortedEvents } = {};
     sortedEvents.forEach((event) => {
-      const dateKey = format(new Date(event.startTime), 'yyyy-MM-dd');
+      const dateKey = format(new Date(event.startTime), "yyyy-MM-dd");
       if (!grouped[dateKey]) {
         grouped[dateKey] = [];
       }
@@ -52,7 +52,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate: propSe
 
   const formatEventTime = (dateStr: string) => {
     const date = new Date(dateStr);
-    return format(date, 'HH:mm');
+    return format(date, "HH:mm");
   };
 
   const formatDateHeader = (dateStr: string) => {
@@ -62,20 +62,18 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate: propSe
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     if (isSameDay(date, today)) {
-      return '今天';
+      return "今天";
     }
     if (isSameDay(date, tomorrow)) {
-      return '明天';
+      return "明天";
     }
-    return format(date, 'M月d日 EEEE', { locale: zhCN });
+    return format(date, "M月d日 EEEE", { locale: zhCN });
   };
 
   if (sortedDates.length === 0) {
     return (
       <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
-        <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-          暂无日程安排
-        </Text>
+        <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>暂无日程安排</Text>
       </View>
     );
   }
@@ -93,75 +91,75 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate: propSe
         </View>
       </View>
       <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {sortedDates.map((date, dateIndex) => (
-        <Animated.View
-          key={date}
-          entering={FadeInUp.delay(dateIndex * 50).springify()}
-          exiting={FadeOutDown}
-        >
-          {/* Date Header */}
-          <View style={styles.dateHeader}>
-            <View style={styles.dateHeaderLeft}>
-              <Text style={[styles.dateHeaderText, { color: theme.colors.text }]}>
-                {formatDateHeader(date)}
-              </Text>
-              <Text style={[styles.lunarText, { color: theme.colors.textSecondary }]}>
-                {getLunarDisplay(date)}
+        {sortedDates.map((date, dateIndex) => (
+          <Animated.View
+            key={date}
+            entering={FadeInUp.delay(dateIndex * 50).springify()}
+            exiting={FadeOutDown}
+          >
+            {/* Date Header */}
+            <View style={styles.dateHeader}>
+              <View style={styles.dateHeaderLeft}>
+                <Text style={[styles.dateHeaderText, { color: theme.colors.text }]}>
+                  {formatDateHeader(date)}
+                </Text>
+                <Text style={[styles.lunarText, { color: theme.colors.textSecondary }]}>
+                  {getLunarDisplay(date)}
+                </Text>
+              </View>
+              <Text style={[styles.dateSubText, { color: theme.colors.textTertiary }]}>
+                {format(parseISO(date), "yyyy年M月d日", { locale: zhCN })}
               </Text>
             </View>
-            <Text style={[styles.dateSubText, { color: theme.colors.textTertiary }]}>
-              {format(parseISO(date), 'yyyy年M月d日', { locale: zhCN })}
-            </Text>
-          </View>
 
-          {/* Events for this date */}
-          <View style={styles.eventsContainer}>
-            {eventsByDate[date].map((event, eventIndex) => (
-              <View
-                key={event.id}
-                style={[
-                  styles.eventCard,
-                  {
-                    backgroundColor: theme.colors.surface,
-                    borderLeftColor: event.color || theme.colors.eventDefault,
-                  },
-                ]}
-              >
-                <View style={styles.eventTimeContainer}>
-                  <Text style={[styles.eventTime, { color: theme.colors.textSecondary }]}>
-                    {formatEventTime(event.startTime)}
-                  </Text>
-                  {event.endTime && (
-                    <Text style={[styles.eventTimeEnd, { color: theme.colors.textTertiary }]}>
-                      - {formatEventTime(event.endTime)}
+            {/* Events for this date */}
+            <View style={styles.eventsContainer}>
+              {eventsByDate[date].map((event, _eventIndex) => (
+                <View
+                  key={event.id}
+                  style={[
+                    styles.eventCard,
+                    {
+                      backgroundColor: theme.colors.surface,
+                      borderLeftColor: event.color || theme.colors.eventDefault,
+                    },
+                  ]}
+                >
+                  <View style={styles.eventTimeContainer}>
+                    <Text style={[styles.eventTime, { color: theme.colors.textSecondary }]}>
+                      {formatEventTime(event.startTime)}
                     </Text>
-                  )}
-                </View>
-                <View style={styles.eventContent}>
-                  <Text
-                    style={[styles.eventTitle, { color: theme.colors.text }]}
-                    numberOfLines={2}
-                  >
-                    {event.title}
-                  </Text>
-                  {event.description && (
+                    {event.endTime && (
+                      <Text style={[styles.eventTimeEnd, { color: theme.colors.textTertiary }]}>
+                        - {formatEventTime(event.endTime)}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.eventContent}>
                     <Text
-                      style={[styles.eventDescription, { color: theme.colors.textSecondary }]}
+                      style={[styles.eventTitle, { color: theme.colors.text }]}
                       numberOfLines={2}
                     >
-                      {event.description}
+                      {event.title}
                     </Text>
-                  )}
+                    {event.description && (
+                      <Text
+                        style={[styles.eventDescription, { color: theme.colors.textSecondary }]}
+                        numberOfLines={2}
+                      >
+                        {event.description}
+                      </Text>
+                    )}
+                  </View>
                 </View>
-              </View>
-            ))}
-          </View>
-        </Animated.View>
-      ))}
+              ))}
+            </View>
+          </Animated.View>
+        ))}
 
-      {/* Bottom padding for floating nav */}
-      <View style={styles.bottomPadding} />
-    </ScrollView>
+        {/* Bottom padding for floating nav */}
+        <View style={styles.bottomPadding} />
+      </ScrollView>
     </>
   );
 };
@@ -192,8 +190,8 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   emptyText: {
     fontSize: 16,
@@ -204,13 +202,13 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   dateHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     gap: 8,
   },
   dateHeaderText: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   lunarText: {
     fontSize: 12,
@@ -223,7 +221,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   eventCard: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -235,7 +233,7 @@ const styles = StyleSheet.create({
   },
   eventTime: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   eventTimeEnd: {
     fontSize: 12,
@@ -246,7 +244,7 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   eventDescription: {
     fontSize: 14,

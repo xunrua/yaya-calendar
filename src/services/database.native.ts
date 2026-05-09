@@ -1,5 +1,5 @@
-import { Event } from '../domain/types';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
+import type { Event } from "../domain/types";
 
 // Native implementation using expo-sqlite
 // This file is used only for iOS/Android platforms
@@ -8,8 +8,8 @@ let db: any = null;
 
 const initDatabase = async (): Promise<void> => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const SQLite = require('expo-sqlite');
-  db = await SQLite.openDatabaseAsync('yaya_calendar.db');
+  const SQLite = require("expo-sqlite");
+  db = await SQLite.openDatabaseAsync("yaya_calendar.db");
 
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS schema_version (
@@ -51,7 +51,9 @@ const mapRowToEvent = (row: any): Event => ({
   updatedAt: row.updated_at,
 });
 
-const createEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>): Promise<Event> => {
+const createEvent = async (
+  eventData: Omit<Event, "id" | "createdAt" | "updatedAt">
+): Promise<Event> => {
   const now = new Date().toISOString();
   const event: Event = {
     ...eventData,
@@ -64,10 +66,17 @@ const createEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updatedA
     `INSERT INTO events (id, title, description, start_time, end_time, color, recurrence_rule, recurrence_exception, timezone, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      event.id, event.title, event.description ?? null, event.startTime, event.endTime,
-      event.color, event.recurrenceRule ? JSON.stringify(event.recurrenceRule) : null,
+      event.id,
+      event.title,
+      event.description ?? null,
+      event.startTime,
+      event.endTime,
+      event.color,
+      event.recurrenceRule ? JSON.stringify(event.recurrenceRule) : null,
       event.recurrenceException ? JSON.stringify(event.recurrenceException) : null,
-      event.timezone ?? null, event.createdAt, event.updatedAt,
+      event.timezone ?? null,
+      event.createdAt,
+      event.updatedAt,
     ]
   );
 
@@ -84,10 +93,16 @@ const updateEvent = async (id: string, updates: Partial<Event>): Promise<Event> 
   await db.runAsync(
     `UPDATE events SET title = ?, description = ?, start_time = ?, end_time = ?, color = ?, recurrence_rule = ?, recurrence_exception = ?, timezone = ?, updated_at = ? WHERE id = ?`,
     [
-      updated.title, updated.description ?? null, updated.startTime, updated.endTime, updated.color,
+      updated.title,
+      updated.description ?? null,
+      updated.startTime,
+      updated.endTime,
+      updated.color,
       updated.recurrenceRule ? JSON.stringify(updated.recurrenceRule) : null,
       updated.recurrenceException ? JSON.stringify(updated.recurrenceException) : null,
-      updated.timezone ?? null, updated.updatedAt, id,
+      updated.timezone ?? null,
+      updated.updatedAt,
+      id,
     ]
   );
 
@@ -95,24 +110,24 @@ const updateEvent = async (id: string, updates: Partial<Event>): Promise<Event> 
 };
 
 const deleteEvent = async (id: string): Promise<void> => {
-  await db.runAsync('DELETE FROM events WHERE id = ?', [id]);
+  await db.runAsync("DELETE FROM events WHERE id = ?", [id]);
 };
 
 const getEventById = async (id: string): Promise<Event | null> => {
-  const row = await db.getFirstAsync('SELECT * FROM events WHERE id = ?', [id]);
+  const row = await db.getFirstAsync("SELECT * FROM events WHERE id = ?", [id]);
   return row ? mapRowToEvent(row) : null;
 };
 
 const getEventsByDateRange = async (start: string, end: string): Promise<Event[]> => {
   const rows = await db.getAllAsync(
-    'SELECT * FROM events WHERE start_time >= ? AND start_time < ? ORDER BY start_time ASC',
+    "SELECT * FROM events WHERE start_time >= ? AND start_time < ? ORDER BY start_time ASC",
     [start, end]
   );
   return rows.map(mapRowToEvent);
 };
 
 const getAllEvents = async (): Promise<Event[]> => {
-  const rows = await db.getAllAsync('SELECT * FROM events ORDER BY start_time ASC');
+  const rows = await db.getAllAsync("SELECT * FROM events ORDER BY start_time ASC");
   return rows.map(mapRowToEvent);
 };
 
@@ -124,10 +139,10 @@ const exportDatabase = async (): Promise<string> => {
 const importDatabase = async (jsonData: string): Promise<void> => {
   const data = JSON.parse(jsonData);
   if (!data.events || !Array.isArray(data.events)) {
-    throw new Error('Invalid backup data format');
+    throw new Error("Invalid backup data format");
   }
 
-  await db.runAsync('DELETE FROM events');
+  await db.runAsync("DELETE FROM events");
 
   for (const event of data.events as Event[]) {
     await createEvent({
@@ -157,13 +172,13 @@ export default {
 
 // Named exports for direct import
 export {
-  initDatabase,
   createEvent,
-  updateEvent,
   deleteEvent,
+  exportDatabase,
+  getAllEvents,
   getEventById,
   getEventsByDateRange,
-  getAllEvents,
-  exportDatabase,
   importDatabase,
+  initDatabase,
+  updateEvent,
 };

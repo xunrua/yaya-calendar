@@ -1,10 +1,11 @@
-import React, { useEffect, ReactNode, useRef } from 'react';
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ThemeMode, Theme } from '../domain/types';
-import { createTheme, lightTheme } from '../styles/theme';
-import { useColorScheme, View, Appearance, Animated, StyleSheet } from 'react-native';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import type React from "react";
+import { type ReactNode, useEffect, useRef } from "react";
+import { Animated, Appearance, StyleSheet, useColorScheme, View } from "react-native";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import type { Theme, ThemeMode } from "../domain/types";
+import { createTheme, lightTheme } from "../styles/theme";
 
 // ============================================================================
 // Theme Store State
@@ -15,16 +16,16 @@ interface ThemeState {
   theme: Theme;
   setMode: (mode: ThemeMode) => void;
   toggleTheme: () => void;
-  getSystemTheme: () => 'light' | 'dark';
+  getSystemTheme: () => "light" | "dark";
 }
 
 // ============================================================================
 // System Theme Detection
 // ============================================================================
 
-const getSystemColorScheme = (): 'light' | 'dark' => {
+const getSystemColorScheme = (): "light" | "dark" => {
   const colorScheme = Appearance.getColorScheme();
-  return colorScheme === 'dark' ? 'dark' : 'light';
+  return colorScheme === "dark" ? "dark" : "light";
 };
 
 // ============================================================================
@@ -34,26 +35,26 @@ const getSystemColorScheme = (): 'light' | 'dark' => {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      mode: 'system',
+      mode: "system",
       theme: lightTheme,
 
       setMode: (mode: ThemeMode) => {
         const systemTheme = get().getSystemTheme();
-        const effectiveMode = mode === 'system' ? systemTheme : mode;
+        const effectiveMode = mode === "system" ? systemTheme : mode;
         set({
           mode,
-          theme: createTheme(effectiveMode === 'dark'),
+          theme: createTheme(effectiveMode === "dark"),
         });
       },
 
       toggleTheme: () => {
         const currentMode = get().mode;
         const systemTheme = get().getSystemTheme();
-        const currentEffective = currentMode === 'system' ? systemTheme : currentMode;
-        const newMode = currentEffective === 'light' ? 'dark' : 'light';
+        const currentEffective = currentMode === "system" ? systemTheme : currentMode;
+        const newMode = currentEffective === "light" ? "dark" : "light";
         set({
           mode: newMode,
-          theme: createTheme(newMode === 'dark'),
+          theme: createTheme(newMode === "dark"),
         });
       },
 
@@ -62,15 +63,15 @@ export const useThemeStore = create<ThemeState>()(
       },
     }),
     {
-      name: 'yaya-theme-storage',
+      name: "yaya-theme-storage",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({ mode: state.mode }),
       onRehydrateStorage: () => (state) => {
         if (state) {
           // Re-apply theme based on stored mode
           const systemTheme = getSystemColorScheme();
-          const effectiveMode = state.mode === 'system' ? systemTheme : state.mode;
-          state.theme = createTheme(effectiveMode === 'dark');
+          const effectiveMode = state.mode === "system" ? systemTheme : state.mode;
+          state.theme = createTheme(effectiveMode === "dark");
         }
       },
     }
@@ -89,7 +90,7 @@ export const useTheme = () => {
     mode,
     setMode,
     toggleTheme,
-    isDark: theme.mode === 'dark',
+    isDark: theme.mode === "dark",
   };
 };
 
@@ -129,8 +130,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   // Update theme when system preference changes
   useEffect(() => {
-    if (mode === 'system' && systemColorScheme) {
-      setMode('system');
+    if (mode === "system" && systemColorScheme) {
+      setMode("system");
     }
   }, [systemColorScheme, mode, setMode]);
 

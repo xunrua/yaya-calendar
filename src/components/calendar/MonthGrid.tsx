@@ -1,18 +1,18 @@
-import { useMemo } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
 import {
-  startOfMonth,
-  endOfMonth,
   eachDayOfInterval,
-  startOfWeek,
+  endOfMonth,
   endOfWeek,
   format,
   isSameMonth,
+  startOfMonth,
+  startOfWeek,
 } from "date-fns";
+import { useMemo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { getLunarInfo } from "../../domain/lunar";
-import { getWorkStatus } from "../../utils/workSchedule";
 import { useEventStore, useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
+import { getWorkStatus } from "../../utils/workSchedule";
 
 type Fidelity = "full" | "skeleton";
 
@@ -22,11 +22,7 @@ interface MonthGridProps {
   fidelity?: Fidelity;
 }
 
-export default function MonthGrid({
-  year,
-  month,
-  fidelity = "full",
-}: MonthGridProps) {
+export default function MonthGrid({ year, month, fidelity = "full" }: MonthGridProps) {
   const { theme } = useTheme();
   const c = theme.colors;
   const selectedDate = useViewStore((state) => state.selectedDate);
@@ -57,9 +53,7 @@ export default function MonthGrid({
       return (
         <View key={dateStr} style={styles.dayCell}>
           <View style={styles.dayNumberContainer}>
-            <Text style={[styles.dayNumber, { color: c.textTertiary }]}>
-              {format(day, "d")}
-            </Text>
+            <Text style={[styles.dayNumber, { color: c.textTertiary }]}>{format(day, "d")}</Text>
           </View>
         </View>
       );
@@ -71,19 +65,13 @@ export default function MonthGrid({
     const workStatus = fidelity === "full" ? getWorkStatus(day) : null;
 
     return (
-      <Pressable
-        key={dateStr}
-        onPress={() => handleDayPress(day)}
-        style={styles.dayCell}
-      >
+      <Pressable key={dateStr} onPress={() => handleDayPress(day)} style={styles.dayCell}>
         <View style={styles.dayNumberWrapper}>
           <View
             style={[
               styles.dayNumberContainer,
               {
-                backgroundColor: isSelectedDate
-                  ? c.selectedBackground
-                  : "transparent",
+                backgroundColor: isSelectedDate ? c.selectedBackground : "transparent",
               },
             ]}
           >
@@ -141,10 +129,7 @@ export default function MonthGrid({
             {events.slice(0, 3).map((event) => (
               <View
                 key={event.id}
-                style={[
-                  styles.eventDot,
-                  { backgroundColor: event.color || c.eventDefault },
-                ]}
+                style={[styles.eventDot, { backgroundColor: event.color || c.eventDefault }]}
               />
             ))}
           </View>
@@ -153,11 +138,7 @@ export default function MonthGrid({
     );
   };
 
-  return (
-    <View style={styles.daysGrid}>
-      {calendarDays.map((day) => renderDayCell(day))}
-    </View>
-  );
+  return <View style={styles.daysGrid}>{calendarDays.map((day) => renderDayCell(day))}</View>;
 }
 
 const styles = StyleSheet.create({

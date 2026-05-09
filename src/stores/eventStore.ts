@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { Event, ViewType } from '../domain/types';
-import * as database from '../services/database';
-import { expandRecurrence, getEventOccurrencesInRange } from '../domain/recurrence';
+import { create } from "zustand";
+import { expandRecurrence, getEventOccurrencesInRange } from "../domain/recurrence";
+import type { Event, ViewType } from "../domain/types";
+import * as database from "../services/database";
 
 // ============================================================================
 // Event Store State
@@ -15,7 +15,7 @@ interface EventState {
 
   // Actions
   loadEvents: () => Promise<void>;
-  createEvent: (event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Event>;
+  createEvent: (event: Omit<Event, "id" | "createdAt" | "updatedAt">) => Promise<Event>;
   updateEvent: (id: string, updates: Partial<Event>) => Promise<Event>;
   deleteEvent: (id: string) => Promise<void>;
   selectEvent: (id: string | null) => void;
@@ -113,9 +113,7 @@ export const useEventStore = create<EventState>((set, get) => ({
       }
     }
 
-    return eventsForDate.sort((a, b) =>
-      a.startTime.localeCompare(b.startTime)
-    );
+    return eventsForDate.sort((a, b) => a.startTime.localeCompare(b.startTime));
   },
 
   getEventsForDateRange: (startDate, endDate) => {
@@ -139,11 +137,11 @@ interface ViewState {
 
 const getTodayString = (): string => {
   const today = new Date();
-  return today.toISOString().split('T')[0];
+  return today.toISOString().split("T")[0];
 };
 
 export const useViewStore = create<ViewState>((set, get) => ({
-  currentView: 'month',
+  currentView: "month",
   selectedDate: getTodayString(),
 
   setCurrentView: (view) => {
@@ -163,21 +161,21 @@ export const useViewStore = create<ViewState>((set, get) => ({
     const date = new Date(selectedDate);
 
     switch (currentView) {
-      case 'day':
+      case "day":
         date.setDate(date.getDate() - 1);
         break;
-      case 'week':
+      case "week":
         date.setDate(date.getDate() - 7);
         break;
-      case 'month':
+      case "month":
         date.setMonth(date.getMonth() - 1);
         break;
-      case 'events':
+      case "events":
         date.setMonth(date.getMonth() - 1);
         break;
     }
 
-    set({ selectedDate: date.toISOString().split('T')[0] });
+    set({ selectedDate: date.toISOString().split("T")[0] });
   },
 
   goToNext: () => {
@@ -185,21 +183,21 @@ export const useViewStore = create<ViewState>((set, get) => ({
     const date = new Date(selectedDate);
 
     switch (currentView) {
-      case 'day':
+      case "day":
         date.setDate(date.getDate() + 1);
         break;
-      case 'week':
+      case "week":
         date.setDate(date.getDate() + 7);
         break;
-      case 'month':
+      case "month":
         date.setMonth(date.getMonth() + 1);
         break;
-      case 'events':
+      case "events":
         date.setMonth(date.getMonth() + 1);
         break;
     }
 
-    set({ selectedDate: date.toISOString().split('T')[0] });
+    set({ selectedDate: date.toISOString().split("T")[0] });
   },
 }));
 

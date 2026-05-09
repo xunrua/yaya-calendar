@@ -1,12 +1,20 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useTheme } from '../../stores/themeStore';
-import { useViewStore, useEventStore } from '../../stores/eventStore';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, parseISO, isSameDay, addDays } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
-import { getLunarInfo } from '../../domain/lunar';
-import { Event } from '../../domain/types';
+import {
+  addDays,
+  eachDayOfInterval,
+  endOfWeek,
+  format,
+  isSameDay,
+  parseISO,
+  startOfWeek,
+} from "date-fns";
+import { zhCN } from "date-fns/locale";
+import { useRouter } from "expo-router";
+import type React from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { getLunarInfo } from "../../domain/lunar";
+import type { Event } from "../../domain/types";
+import { useEventStore, useViewStore } from "../../stores/eventStore";
+import { useTheme } from "../../stores/themeStore";
 
 const HOUR_HEIGHT = 40;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -28,8 +36,8 @@ export const WeekView: React.FC = () => {
   const eventsMap = getEventsForDateRange(weekStart, addDays(weekEnd, 1));
 
   const handleDayPress = (date: Date) => {
-    setSelectedDate(format(date, 'yyyy-MM-dd'));
-    setCurrentView('day');
+    setSelectedDate(format(date, "yyyy-MM-dd"));
+    setCurrentView("day");
   };
 
   const getEventPosition = (event: Event) => {
@@ -54,19 +62,24 @@ export const WeekView: React.FC = () => {
 
           return (
             <TouchableOpacity
-              key={format(day, 'yyyy-MM-dd')}
-              style={[styles.dayHeader, isToday && { backgroundColor: theme.colors.todayBackground }]}
+              key={format(day, "yyyy-MM-dd")}
+              style={[
+                styles.dayHeader,
+                isToday && { backgroundColor: theme.colors.todayBackground },
+              ]}
               onPress={() => handleDayPress(day)}
             >
               <Text style={[styles.weekdayText, { color: theme.colors.textSecondary }]}>
-                {format(day, 'EEE', { locale: zhCN })}
+                {format(day, "EEE", { locale: zhCN })}
               </Text>
-              <Text style={[
-                styles.dayNumber,
-                { color: isToday ? theme.colors.todayText : theme.colors.text },
-                isToday && styles.todayNumber,
-              ]}>
-                {format(day, 'd')}
+              <Text
+                style={[
+                  styles.dayNumber,
+                  { color: isToday ? theme.colors.todayText : theme.colors.text },
+                  isToday && styles.todayNumber,
+                ]}
+              >
+                {format(day, "d")}
               </Text>
               <Text style={[styles.lunarText, { color: theme.colors.lunarText }]}>
                 {lunarInfo.holiday || lunarInfo.solarTerm || lunarInfo.lunarDay}
@@ -86,7 +99,7 @@ export const WeekView: React.FC = () => {
           {HOURS.map((hour) => (
             <View key={hour} style={[styles.timeSlot, { height: HOUR_HEIGHT }]}>
               <Text style={[styles.timeLabel, { color: theme.colors.textSecondary }]}>
-                {hour.toString().padStart(2, '0')}
+                {hour.toString().padStart(2, "0")}
               </Text>
             </View>
           ))}
@@ -94,14 +107,20 @@ export const WeekView: React.FC = () => {
 
         {/* Day columns */}
         {weekDays.map((day) => {
-          const dateStr = format(day, 'yyyy-MM-dd');
+          const dateStr = format(day, "yyyy-MM-dd");
           const dayEvents = eventsMap.get(dateStr) ?? [];
 
           return (
             <View key={dateStr} style={[styles.dayColumn, { borderColor: theme.colors.border }]}>
               {/* Hour grid lines */}
               {HOURS.map((hour) => (
-                <View key={hour} style={[styles.hourLine, { height: HOUR_HEIGHT, borderColor: theme.colors.border }]} />
+                <View
+                  key={hour}
+                  style={[
+                    styles.hourLine,
+                    { height: HOUR_HEIGHT, borderColor: theme.colors.border },
+                  ]}
+                />
               ))}
 
               {/* Events */}
@@ -138,7 +157,8 @@ export const WeekView: React.FC = () => {
       {/* Week title */}
       <View style={styles.weekTitle}>
         <Text style={[styles.weekTitleText, { color: theme.colors.text }]}>
-          {format(weekStart, 'M月d日', { locale: zhCN })} - {format(weekEnd, 'M月d日', { locale: zhCN })}
+          {format(weekStart, "M月d日", { locale: zhCN })} -{" "}
+          {format(weekEnd, "M月d日", { locale: zhCN })}
         </Text>
       </View>
 
@@ -161,18 +181,18 @@ const styles = StyleSheet.create({
   },
   weekTitleText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   header: {
     borderBottomWidth: 1,
   },
   headerRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 4,
   },
   dayHeader: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 8,
     borderRadius: 8,
     marginHorizontal: 2,
@@ -182,11 +202,11 @@ const styles = StyleSheet.create({
   },
   dayNumber: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 2,
   },
   todayNumber: {
-    fontWeight: '700',
+    fontWeight: "700",
   },
   lunarText: {
     fontSize: 10,
@@ -196,13 +216,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   timeGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   timeLabelsColumn: {
     width: 30,
   },
   timeSlot: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
     paddingRight: 4,
   },
   timeLabel: {
@@ -211,23 +231,23 @@ const styles = StyleSheet.create({
   dayColumn: {
     flex: 1,
     borderLeftWidth: 1,
-    position: 'relative',
+    position: "relative",
   },
   hourLine: {
     borderBottomWidth: 1,
   },
   eventBlock: {
-    position: 'absolute',
+    position: "absolute",
     left: 2,
     right: 2,
     borderRadius: 4,
     padding: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   eventTitle: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

@@ -1,9 +1,9 @@
 import { Stack } from "expo-router";
-import { ThemeProvider } from "../src/stores/themeStore";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useEventStore } from "../src/stores/eventStore";
+import { ThemeProvider } from "../src/stores/themeStore";
 
 export default function RootLayout() {
   const { loadEvents } = useEventStore();

@@ -1,12 +1,12 @@
-const { getDefaultConfig } = require('expo/metro-config');
+const { getDefaultConfig } = require("expo/metro-config");
 
 const config = getDefaultConfig(__dirname);
 
 // Configure resolver for web platform
-config.resolver.platforms = ['ios', 'android', 'web'];
+config.resolver.platforms = ["ios", "android", "web"];
 
 // Handle ES modules (like Dexie) for web
-config.resolver.sourceExts = [...config.resolver.sourceExts, 'mjs'];
+config.resolver.sourceExts = [...config.resolver.sourceExts, "mjs"];
 
 // Enable package exports for proper ESM resolution
 config.resolver.unstable_enablePackageExports = true;
@@ -20,10 +20,10 @@ config.serializer = {
 };
 
 // Override the transform to replace import.meta.env
-const originalTransform = config.transformer?.babelTransformerPath;
+const _originalTransform = config.transformer?.babelTransformerPath;
 config.transformer = {
   ...config.transformer,
-  babelTransformerPath: require.resolve('./metro-transformer.js'),
+  babelTransformerPath: require.resolve("./metro-transformer.js"),
 };
 
 module.exports = config;
