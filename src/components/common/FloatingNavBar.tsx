@@ -237,6 +237,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   segmentedContainer: {
+    flex: 1,
     flexDirection: "row",
     borderRadius: 22,
     borderWidth: 1,
@@ -245,6 +246,8 @@ const styles = StyleSheet.create({
     gap: 8,
     overflow: "hidden",
     alignItems: "center",
+    justifyContent: "center",
+    maxWidth: 180,
   },
   segmentedIndicator: {
     position: "absolute",
