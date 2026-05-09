@@ -147,11 +147,13 @@ interface ViewState {
   hasNavigatedMonth: boolean;
   transitionState: ViewTransitionState;
   yearCellLayouts: Record<number, { x: number; y: number; width: number; height: number }>;
+  displayMonth: string; // ISO date string (月初日期)
   setCurrentView: (view: ViewType) => void;
   setSelectedDate: (date: string) => void;
   setHasNavigatedMonth: (value: boolean) => void;
   setTransitionState: (state: ViewTransitionState) => void;
   setYearCellLayouts: (layouts: Record<number, { x: number; y: number; width: number; height: number }>) => void;
+  setDisplayMonth: (date: string) => void;
   goToToday: () => void;
   goToPrevious: () => void;
   goToNext: () => void;
@@ -168,6 +170,7 @@ export const useViewStore = create<ViewState>((set, get) => ({
   hasNavigatedMonth: false,
   transitionState: {},
   yearCellLayouts: {},
+  displayMonth: getTodayString(),
 
   setCurrentView: (view) => {
     set({ currentView: view });
@@ -188,8 +191,16 @@ export const useViewStore = create<ViewState>((set, get) => ({
     set({ yearCellLayouts: layouts });
   },
 
+  setDisplayMonth: (date) => {
+    set({ displayMonth: date });
+  },
+
   goToToday: () => {
-    set({ selectedDate: getTodayString() });
+    const today = getTodayString();
+    set({
+      selectedDate: today,
+      displayMonth: today,
+    });
   },
 
   goToPrevious: () => {
