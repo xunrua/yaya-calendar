@@ -1,11 +1,12 @@
 import { addMonths, format, startOfMonth, subMonths } from "date-fns";
 import { Ionicons } from "@expo/vector-icons";
 import type React from "react";
-import { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
+  runOnUI,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -32,13 +33,19 @@ const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05;
 
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
-  const { selectedDate, setSelectedDate } = useViewStore();
+  const { selectedDate, displayMonth: displayMonthStr, setDisplayMonth } = useViewStore();
   const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
   const insets = useSafeAreaInsets();
 
-  const [displayMonth, setDisplayMonth] = useState(() => startOfMonth(new Date(selectedDate)));
+  // 从全局状态获取 displayMonth，转换为 Date 对象
+  const displayMonth = useMemo(() => {
+    const date = new Date(displayMonthStr);
+    return startOfMonth(date);
+  }, [displayMonthStr]);
   const translateX = useSharedValue(0);
+  const opacity = useSharedValue(1);
   const isAnimating = useSharedValue(false);
+  const prevDisplayMonthRef = useRef(displayMonthStr);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const calendarHeight = useSharedValue(EXPANDED_HEIGHT);
@@ -50,26 +57,20 @@ export const MonthView: React.FC = () => {
   // 当 selectedDate 从外部变化时（如从年视图点击月份），同步 displayMonth
   // 注意：不将 displayMonth 放入依赖，避免滑动切换时被重置
   useLayoutEffect(() => {
-    setDisplayMonth(startOfMonth(new Date(selectedDate)));
-  }, [selectedDate]);
+    setDisplayMonth(startOfMonth(new Date(selectedDate)).toISOString().split("T")[0]);
+  }, [selectedDate, setDisplayMonth]);
 
   const goToPreviousJS = useCallback(() => {
-    setDisplayMonth((prev) => {
-      const next = subMonths(prev, 1);
-      setSelectedDate(format(next, "yyyy-MM-dd"));
-      setHasNavigatedMonth(true);
-      return next;
-    });
-  }, [setSelectedDate, setHasNavigatedMonth]);
+    const newMonth = subMonths(displayMonth, 1);
+    setDisplayMonth(newMonth.toISOString().split("T")[0]);
+    setHasNavigatedMonth(true);
+  }, [displayMonth, setDisplayMonth, setHasNavigatedMonth]);
 
   const goToNextJS = useCallback(() => {
-    setDisplayMonth((prev) => {
-      const next = addMonths(prev, 1);
-      setSelectedDate(format(next, "yyyy-MM-dd"));
-      setHasNavigatedMonth(true);
-      return next;
-    });
-  }, [setSelectedDate, setHasNavigatedMonth]);
+    const newMonth = addMonths(displayMonth, 1);
+    setDisplayMonth(newMonth.toISOString().split("T")[0]);
+    setHasNavigatedMonth(true);
+  }, [displayMonth, setDisplayMonth, setHasNavigatedMonth]);
 
   const toggleCollapse = useCallback(() => {
     setIsCollapsed((prev) => !prev);
@@ -77,10 +78,37 @@ export const MonthView: React.FC = () => {
 
   // 当 displayMonth 更新后，使用 useLayoutEffect 同步重置 translateX
   // 这确保在浏览器绘制之前完成重置，避免闪烁
+  // 同时处理大跨度跳转的淡入淡出动画
   useLayoutEffect(() => {
-    translateX.value = 0;
-    isAnimating.value = false;
-  }, [displayMonth, translateX, isAnimating]);
+    const prevMonth = prevDisplayMonthRef.current;
+    prevDisplayMonthRef.current = displayMonthStr;
+
+    if (prevMonth && displayMonthStr) {
+      const prevDate = new Date(prevMonth);
+      const currentDate = new Date(displayMonthStr);
+      const monthDiff = (currentDate.getFullYear() - prevDate.getFullYear()) * 12
+        + currentDate.getMonth() - prevDate.getMonth();
+
+      if (Math.abs(monthDiff) > 1) {
+        // 大跨度跳转：使用淡入淡出动画
+        opacity.value = 0;
+        translateX.value = 0;
+        isAnimating.value = false;
+        // 下一帧淡入
+        runOnUI(() => {
+          "worklet";
+          opacity.value = withTiming(1, { duration: 200 });
+        })();
+      } else {
+        // 正常滑动：重置位置
+        translateX.value = 0;
+        isAnimating.value = false;
+      }
+    } else {
+      translateX.value = 0;
+      isAnimating.value = false;
+    }
+  }, [displayMonthStr]);
 
   // 折叠高度动画
   useLayoutEffect(() => {
@@ -137,6 +165,7 @@ export const MonthView: React.FC = () => {
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
+    opacity: opacity.value,
   }));
 
   const prevMonthStyle = useAnimatedStyle(() => ({
