@@ -93,37 +93,39 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
   return (
     <View style={[styles.container, { bottom: Math.max(insets.bottom, 8) + 8, paddingBottom: 8 }]}>
       <View style={styles.content}>
-        {/* Menu Button */}
-        <TouchableOpacity
-          style={[
-            styles.circleButton,
-            {
-              backgroundColor:
-                theme.mode === "dark" ? "rgba(58, 58, 60, 0.8)" : "rgba(235, 235, 235, 0.8)",
-            },
-          ]}
-          onPress={handleMenuPress}
-          activeOpacity={0.7}
-        >
-          <Ionicons name={menuOpen ? "close" : "menu"} size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        {/* Left Group: Menu Button + Today Button */}
+        <View style={styles.leftGroup}>
+          <TouchableOpacity
+            style={[
+              styles.circleButton,
+              {
+                backgroundColor:
+                  theme.mode === "dark" ? "rgba(58, 58, 60, 0.8)" : "rgba(235, 235, 235, 0.8)",
+              },
+            ]}
+            onPress={handleMenuPress}
+            activeOpacity={0.7}
+          >
+            <Ionicons name={menuOpen ? "close" : "menu"} size={24} color={theme.colors.text} />
+          </TouchableOpacity>
 
-        {/* Today Button */}
-        {showTodayButton !== undefined && (
-          <Animated.View style={[styles.todayButtonContainer, animatedTodayStyle]}>
-            <TouchableOpacity
-              style={[styles.todayButton, { backgroundColor: theme.colors.primary }]}
-              onPress={onTodayPress}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.todayButtonText, { color: theme.mode === "dark" ? "#1C1C1E" : "#FAFAFA" }]}>
-                今
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
-        )}
+          {/* Today Button */}
+          {showTodayButton !== undefined && (
+            <Animated.View style={[styles.todayButtonContainer, animatedTodayStyle]}>
+              <TouchableOpacity
+                style={[styles.todayButton, { backgroundColor: theme.colors.primary }]}
+                onPress={onTodayPress}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.todayButtonText, { color: theme.mode === "dark" ? "#1C1C1E" : "#FAFAFA" }]}>
+                  今
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+        </View>
 
-        {/* Segmented Control */}
+        {/* Segmented Control - Centered */}
         <View
           style={[
             styles.segmentedContainer,
@@ -194,19 +196,21 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Add Button */}
-        <TouchableOpacity
-          style={[
-            styles.circleButton,
-            {
-              backgroundColor: theme.colors.primary,
-            },
-          ]}
-          onPress={onAddPress}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="add" size={28} color={theme.mode === "dark" ? "#1C1C1E" : "#FAFAFA"} />
-        </TouchableOpacity>
+        {/* Right Group: Add Button */}
+        <View style={styles.rightGroup}>
+          <TouchableOpacity
+            style={[
+              styles.circleButton,
+              {
+                backgroundColor: theme.colors.primary,
+              },
+            ]}
+            onPress={onAddPress}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add" size={28} color={theme.mode === "dark" ? "#1C1C1E" : "#FAFAFA"} />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -224,10 +228,21 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     gap: 12,
     paddingLeft: "5%",
     paddingRight: "5%",
+  },
+  leftGroup: {
+    position: "absolute",
+    left: "5%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  rightGroup: {
+    position: "absolute",
+    right: "5%",
   },
   circleButton: {
     width: 44,
