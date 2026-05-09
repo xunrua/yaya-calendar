@@ -1,16 +1,16 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Platform, Pressable } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import React from "react";
+import { Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
   Easing,
   runOnJS,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../stores/themeStore';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../../stores/themeStore";
 
 interface MenuItem {
   id: string;
@@ -22,7 +22,6 @@ interface MenuItem {
 interface FloatingMenuProps {
   visible: boolean;
   onClose: () => void;
-  onThemeToggle: () => void;
   onWeekView: () => void;
   onScheduleView: () => void;
 }
@@ -30,7 +29,6 @@ interface FloatingMenuProps {
 export const FloatingMenu: React.FC<FloatingMenuProps> = ({
   visible,
   onClose,
-  onThemeToggle,
   onWeekView,
   onScheduleView,
 }) => {
@@ -53,11 +51,15 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
     if (visible) {
       setMounted(true);
       // 先放大到 1.02，再回到 1，模拟轻微回弹
-      scale.value = withTiming(1.02, { duration: 280, easing: Easing.bezier(0.4, 0, 0.2, 1) }, (finished) => {
-        if (finished) {
-          scale.value = withTiming(1, { duration: 150, easing: Easing.bezier(0.4, 0, 0.2, 1) });
+      scale.value = withTiming(
+        1.02,
+        { duration: 280, easing: Easing.bezier(0.4, 0, 0.2, 1) },
+        (finished) => {
+          if (finished) {
+            scale.value = withTiming(1, { duration: 150, easing: Easing.bezier(0.4, 0, 0.2, 1) });
+          }
         }
-      });
+      );
       opacity.value = withTiming(1, { duration: 280 });
     } else if (mounted) {
       scale.value = withTiming(0, { duration: 150, easing: Easing.bezier(0.4, 0, 0.2, 1) });
@@ -73,8 +75,8 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
     // When scale = 0, the bottom-left corner should stay at the same position
     return {
       transform: [
-        { translateX: -(1 - scale.value) * menuWidth / 2 },
-        { translateY: (1 - scale.value) * menuHeight / 2 },
+        { translateX: (-(1 - scale.value) * menuWidth) / 2 },
+        { translateY: ((1 - scale.value) * menuHeight) / 2 },
         { scale: scale.value },
       ],
       opacity: opacity.value,
@@ -83,12 +85,12 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
   const handleThemeToggle = () => {
     // Cycle through: light -> dark -> system -> light
-    if (mode === 'light') {
-      setMode('dark');
-    } else if (mode === 'dark') {
-      setMode('system');
+    if (mode === "light") {
+      setMode("dark");
+    } else if (mode === "dark") {
+      setMode("system");
     } else {
-      setMode('light');
+      setMode("light");
     }
     onClose();
   };
@@ -114,28 +116,32 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
   };
 
   const menuItems: MenuItem[] = [
-    { id: 'settings', label: '设置', icon: 'settings-outline', onPress: handleSettings },
+    { id: "settings", label: "设置", icon: "settings-outline", onPress: handleSettings },
     {
-      id: 'theme',
-      label: `主题: ${mode === 'light' ? '浅色' : mode === 'dark' ? '深色' : '跟随系统'}`,
-      icon: mode === 'light' ? 'sunny-outline' : mode === 'dark' ? 'moon-outline' : 'phone-portrait-outline',
+      id: "theme",
+      label: `主题: ${mode === "light" ? "浅色" : mode === "dark" ? "深色" : "跟随系统"}`,
+      icon:
+        mode === "light"
+          ? "sunny-outline"
+          : mode === "dark"
+            ? "moon-outline"
+            : "phone-portrait-outline",
       onPress: handleThemeToggle,
     },
-    { id: 'about', label: '关于', icon: 'information-circle-outline', onPress: handleAbout },
-    { id: 'week', label: '周视图', icon: 'calendar-outline', onPress: handleWeekView },
-    { id: 'schedule', label: '日程视图', icon: 'list-outline', onPress: handleScheduleView },
+    { id: "about", label: "关于", icon: "information-circle-outline", onPress: handleAbout },
+    { id: "week", label: "周视图", icon: "calendar-outline", onPress: handleWeekView },
+    { id: "schedule", label: "日程视图", icon: "list-outline", onPress: handleScheduleView },
   ];
 
   const renderGlassBackground = () => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       return (
         <View
           style={[
             styles.webGlass,
             {
-              backgroundColor: theme.mode === 'dark'
-                ? 'rgba(44, 44, 46, 0.95)'
-                : 'rgba(250, 250, 250, 0.95)',
+              backgroundColor:
+                theme.mode === "dark" ? "rgba(44, 44, 46, 0.95)" : "rgba(250, 250, 250, 0.95)",
               borderColor: theme.colors.border,
             },
           ]}
@@ -146,13 +152,12 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
     return (
       <BlurView
         intensity={50}
-        tint={theme.mode === 'dark' ? 'dark' : 'light'}
+        tint={theme.mode === "dark" ? "dark" : "light"}
         style={[
           styles.glass,
           {
-            backgroundColor: theme.mode === 'dark'
-              ? 'rgba(44, 44, 46, 0.8)'
-              : 'rgba(250, 250, 250, 0.8)',
+            backgroundColor:
+              theme.mode === "dark" ? "rgba(44, 44, 46, 0.8)" : "rgba(250, 250, 250, 0.8)",
             borderColor: theme.colors.border,
           },
         ]}
@@ -168,7 +173,14 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
       <Pressable style={styles.backdrop} onPress={onClose} />
 
       {/* Menu */}
-      <Animated.View style={[styles.container, { bottom: Math.max(insets.bottom, 8) + 80, backgroundColor: theme.colors.surface }, animatedContainerStyle]} onLayout={handleLayout}>
+      <Animated.View
+        style={[
+          styles.container,
+          { bottom: Math.max(insets.bottom, 8) + 80, backgroundColor: theme.colors.surface },
+          animatedContainerStyle,
+        ]}
+        onLayout={handleLayout}
+      >
         {renderGlassBackground()}
 
         <View style={styles.menuContent}>
@@ -191,14 +203,8 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 color={theme.colors.text}
                 style={styles.menuIcon}
               />
-              <Text style={[styles.menuLabel, { color: theme.colors.text }]}>
-                {item.label}
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={theme.colors.textTertiary}
-              />
+              <Text style={[styles.menuLabel, { color: theme.colors.text }]}>{item.label}</Text>
+              <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
             </TouchableOpacity>
           ))}
         </View>
@@ -209,7 +215,7 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
 const styles = StyleSheet.create({
   backdrop: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -217,47 +223,47 @@ const styles = StyleSheet.create({
     zIndex: 99,
   },
   container: {
-    position: 'absolute',
+    position: "absolute",
     left: 16,
     width: 200,
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
     zIndex: 100,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
-    marginLeft: '5%',
+    marginLeft: "5%",
   },
   glass: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     borderRadius: 16,
     borderWidth: 1,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   webGlass: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     borderRadius: 16,
     borderWidth: 1,
-    overflow: 'hidden',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
+    overflow: "hidden",
+    backdropFilter: "blur(20px)",
+    WebkitBackdropFilter: "blur(20px)",
   } as any,
   menuContent: {
     paddingVertical: 4,
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,

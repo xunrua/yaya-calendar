@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { useTheme } from '../../src/stores/themeStore';
-import { useViewStore } from '../../src/stores/eventStore';
-import { FloatingNavBar } from '../../src/components/common/FloatingNavBar';
-import { FloatingMenu } from '../../src/components/common/FloatingMenu';
-import { MonthView } from '../../src/components/calendar/MonthView';
-import { WeekView } from '../../src/components/calendar/WeekView';
-import { ScheduleView } from '../../src/components/calendar/ScheduleView';
-import { DayView } from '../../src/components/calendar/DayView';
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { DayView } from "../../src/components/calendar/DayView";
+import { MonthView } from "../../src/components/calendar/MonthView";
+import { ScheduleView } from "../../src/components/calendar/ScheduleView";
+import { WeekView } from "../../src/components/calendar/WeekView";
+import { FloatingMenu } from "../../src/components/common/FloatingMenu";
+import { FloatingNavBar } from "../../src/components/common/FloatingNavBar";
+import { useViewStore } from "../../src/stores/eventStore";
+import { useTheme } from "../../src/stores/themeStore";
 
 export default function MainScreen() {
   const { theme } = useTheme();
   const { currentView, setCurrentView } = useViewStore();
-  const [activeTab, setActiveTab] = useState<'calendar' | 'todo'>('calendar');
+  const [activeTab, setActiveTab] = useState<"calendar" | "todo">("calendar");
   const [menuVisible, setMenuVisible] = useState(false);
 
   const handleMenuPress = () => {
@@ -23,34 +23,34 @@ export default function MainScreen() {
     // TODO: Implement add event
   };
 
-  const handleTabChange = (tab: 'calendar' | 'todo') => {
+  const handleTabChange = (tab: "calendar" | "todo") => {
     setActiveTab(tab);
-    if (tab === 'calendar') {
-      setCurrentView('month');
+    if (tab === "calendar") {
+      setCurrentView("month");
     } else {
-      setCurrentView('events');
+      setCurrentView("events");
     }
   };
 
   const handleWeekView = () => {
-    setCurrentView('week');
-    setActiveTab('calendar');
+    setCurrentView("week");
+    setActiveTab("calendar");
   };
 
   const handleScheduleView = () => {
-    setCurrentView('events');
-    setActiveTab('calendar');
+    setCurrentView("events");
+    setActiveTab("calendar");
   };
 
   const renderContent = () => {
     switch (currentView) {
-      case 'month':
+      case "month":
         return <MonthView />;
-      case 'day':
+      case "day":
         return <DayView />;
-      case 'week':
+      case "week":
         return <WeekView />;
-      case 'events':
+      case "events":
         return <ScheduleView />;
       default:
         return <MonthView />;
@@ -60,9 +60,7 @@ export default function MainScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Main Content */}
-      <View style={styles.content}>
-        {renderContent()}
-      </View>
+      <View style={styles.content}>{renderContent()}</View>
 
       {/* Floating Navigation Bar */}
       <FloatingNavBar
@@ -77,7 +75,6 @@ export default function MainScreen() {
       <FloatingMenu
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
-        onThemeToggle={() => {}}
         onWeekView={handleWeekView}
         onScheduleView={handleScheduleView}
       />
