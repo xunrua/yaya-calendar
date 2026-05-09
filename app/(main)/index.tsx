@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { isSameMonth, startOfMonth } from "date-fns";
+import { useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { DayView } from "../../src/components/calendar/DayView";
 import { MonthView } from "../../src/components/calendar/MonthView";
@@ -11,9 +12,19 @@ import { useTheme } from "../../src/stores/themeStore";
 
 export default function MainScreen() {
   const { theme } = useTheme();
-  const { currentView, setCurrentView } = useViewStore();
+  const { currentView, setCurrentView, selectedDate, displayMonth, goToToday } = useViewStore();
   const [activeTab, setActiveTab] = useState<"calendar" | "todo">("calendar");
   const [menuVisible, setMenuVisible] = useState(false);
+
+  // 计算是否显示"今"按钮
+  const showTodayButton = useMemo(() => {
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    const currentDisplayMonth = startOfMonth(new Date(displayMonth));
+    const todayMonth = startOfMonth(today);
+
+    return selectedDate !== todayStr || !isSameMonth(currentDisplayMonth, todayMonth);
+  }, [selectedDate, displayMonth]);
 
   const handleMenuPress = () => {
     setMenuVisible(!menuVisible);
@@ -69,6 +80,8 @@ export default function MainScreen() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         menuOpen={menuVisible}
+        onTodayPress={goToToday}
+        showTodayButton={showTodayButton}
       />
 
       {/* Floating Menu */}
