@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, View, Dimensions } from "react-native";
 import Animated, {
   cancelAnimation,
@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
-import { getMonth, parseISO } from "date-fns";
+import { getMonth, isSameMonth, parseISO, startOfMonth } from "date-fns";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DayView } from "@/src/components/calendar/DayView";
 import { MonthView } from "@/src/components/calendar/MonthView";
@@ -45,10 +45,22 @@ export default function MainScreen() {
     setTransitionState,
     selectedDate,
     yearCellLayouts,
+    displayMonth,
+    goToToday,
   } = useViewStore();
   const insets = useSafeAreaInsets();
   const [menuVisible, setMenuVisible] = useState(false);
   const prevViewRef = useRef(currentView);
+
+  // 计算是否显示"今"按钮
+  const showTodayButton = useMemo(() => {
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    const currentDisplayMonth = startOfMonth(new Date(displayMonth));
+    const todayMonth = startOfMonth(today);
+
+    return selectedDate !== todayStr || !isSameMonth(currentDisplayMonth, todayMonth);
+  }, [selectedDate, displayMonth]);
 
   const contentLayout = useRef({ x: 0, y: 0, width: SCREEN_WIDTH, height: 0 });
 
@@ -321,6 +333,8 @@ export default function MainScreen() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         menuOpen={menuVisible}
+        onTodayPress={goToToday}
+        showTodayButton={showTodayButton}
       />
       <FloatingMenu
         visible={menuVisible}
