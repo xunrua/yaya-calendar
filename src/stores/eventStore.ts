@@ -125,11 +125,28 @@ export const useEventStore = create<EventState>((set, get) => ({
 // View Store (for calendar navigation)
 // ============================================================================
 
+interface ViewTransitionState {
+  sourceLayout?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  targetLayout?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
 interface ViewState {
   currentView: ViewType;
   selectedDate: string; // ISO date string
+  transitionState: ViewTransitionState;
   setCurrentView: (view: ViewType) => void;
   setSelectedDate: (date: string) => void;
+  setTransitionState: (state: ViewTransitionState) => void;
   goToToday: () => void;
   goToPrevious: () => void;
   goToNext: () => void;
@@ -143,6 +160,7 @@ const getTodayString = (): string => {
 export const useViewStore = create<ViewState>((set, get) => ({
   currentView: "month",
   selectedDate: getTodayString(),
+  transitionState: {},
 
   setCurrentView: (view) => {
     set({ currentView: view });
@@ -150,6 +168,10 @@ export const useViewStore = create<ViewState>((set, get) => ({
 
   setSelectedDate: (date) => {
     set({ selectedDate: date });
+  },
+
+  setTransitionState: (state) => {
+    set({ transitionState: state });
   },
 
   goToToday: () => {
@@ -161,6 +183,9 @@ export const useViewStore = create<ViewState>((set, get) => ({
     const date = new Date(selectedDate);
 
     switch (currentView) {
+      case "year":
+        date.setFullYear(date.getFullYear() - 1);
+        break;
       case "day":
         date.setDate(date.getDate() - 1);
         break;
@@ -183,6 +208,9 @@ export const useViewStore = create<ViewState>((set, get) => ({
     const date = new Date(selectedDate);
 
     switch (currentView) {
+      case "year":
+        date.setFullYear(date.getFullYear() + 1);
+        break;
       case "day":
         date.setDate(date.getDate() + 1);
         break;

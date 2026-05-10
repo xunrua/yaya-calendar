@@ -18,11 +18,17 @@ import { useTheme } from "../../stores/themeStore";
 import MonthGrid from "./MonthGrid";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
+const SCREEN_HEIGHT = Dimensions.get("window").height;
 const SWIPE_VELOCITY_THRESHOLD = 500;
 const SWIPE_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.3;
 const SPRING_CONFIG = { damping: 20, stiffness: 100 };
+const FOLD_SPRING_CONFIG = { damping: 18, stiffness: 200 };
 
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
+const EXPANDED_HEIGHT = 320;
+const COLLAPSED_HEIGHT = 64;
+const FOLD_VELOCITY_THRESHOLD = 300;
+const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05;
 
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
@@ -33,6 +39,10 @@ export const MonthView: React.FC = () => {
   const [displayMonth, setDisplayMonth] = useState(() => startOfMonth(new Date(selectedDate)));
   const translateX = useSharedValue(0);
   const isAnimating = useSharedValue(false);
+
+  // 折叠状态
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const calendarHeight = useSharedValue(EXPANDED_HEIGHT);
 
   // 计算显示的周数：如果当前显示月份包含 selectedDate，显示 selectedDate 的周数；否则显示该月第一周的周数
   const prevMonth = useMemo(() => subMonths(displayMonth, 1), [displayMonth]);
@@ -54,12 +64,24 @@ export const MonthView: React.FC = () => {
     setDisplayMonth((prev) => addMonths(prev, 1));
   }, []);
 
+  const toggleCollapse = useCallback(() => {
+    setIsCollapsed((prev) => !prev);
+  }, []);
+
   // 当 displayMonth 更新后，使用 useLayoutEffect 同步重置 translateX
   // 这确保在浏览器绘制之前完成重置，避免闪烁
   useLayoutEffect(() => {
     translateX.value = 0;
     isAnimating.value = false;
-  }, [displayMonth]);
+  }, [displayMonth, translateX, isAnimating]);
+
+  // 折叠高度动画
+  useLayoutEffect(() => {
+    calendarHeight.value = withSpring(
+      isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT,
+      FOLD_SPRING_CONFIG
+    );
+  }, [isCollapsed, calendarHeight]);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -118,6 +140,28 @@ export const MonthView: React.FC = () => {
     transform: [{ translateX: translateX.value + SCREEN_WIDTH }],
   }));
 
+  const calendarHeightStyle = useAnimatedStyle(() => ({
+    height: calendarHeight.value,
+  }));
+
+  // 折叠手势（垂直滑动）
+  const foldGesture = Gesture.Pan()
+    .activeOffsetY([-15, 15])
+    .failOffsetX([-20, 20])
+    .onEnd((event) => {
+      const { translationY, velocityY } = event;
+      const shouldFold =
+        translationY > FOLD_DISTANCE_THRESHOLD || velocityY > FOLD_VELOCITY_THRESHOLD;
+      const shouldExpand =
+        translationY < -FOLD_DISTANCE_THRESHOLD || velocityY < -FOLD_VELOCITY_THRESHOLD;
+
+      if (shouldFold && !isCollapsed) {
+        scheduleOnRN(toggleCollapse);
+      } else if (shouldExpand && isCollapsed) {
+        scheduleOnRN(toggleCollapse);
+      }
+    });
+
   return (
     <View
       style={[
@@ -152,38 +196,45 @@ export const MonthView: React.FC = () => {
         ))}
       </View>
 
-      {/* Swipeable month grids */}
-      <GestureDetector gesture={panGesture}>
-        <View style={styles.monthsContainer}>
+      {/* Swipeable month grids with fold gesture */}
+      <GestureDetector gesture={Gesture.Simultaneous(panGesture, foldGesture)}>
+        <Animated.View style={[styles.monthsContainer, calendarHeightStyle]}>
           <Animated.View
-            style={[styles.monthPanel, { bottom: insets.bottom + 64 }, prevMonthStyle]}
+            style={[styles.monthPanel, prevMonthStyle]}
           >
             <MonthGrid
               year={prevMonth.getFullYear()}
               month={prevMonth.getMonth()}
-              fidelity="full"
+              fidelity={isCollapsed ? "skeleton" : "full"}
             />
           </Animated.View>
 
-          <Animated.View style={[styles.monthPanel, { bottom: insets.bottom + 64 }, animatedStyle]}>
+          <Animated.View style={[styles.monthPanel, animatedStyle]}>
             <MonthGrid
               year={displayMonth.getFullYear()}
               month={displayMonth.getMonth()}
-              fidelity="full"
+              fidelity={isCollapsed ? "skeleton" : "full"}
             />
           </Animated.View>
 
           <Animated.View
-            style={[styles.monthPanel, { bottom: insets.bottom + 64 }, nextMonthStyle]}
+            style={[styles.monthPanel, nextMonthStyle]}
           >
             <MonthGrid
               year={nextMonth.getFullYear()}
               month={nextMonth.getMonth()}
-              fidelity="full"
+              fidelity={isCollapsed ? "skeleton" : "full"}
             />
           </Animated.View>
-        </View>
+        </Animated.View>
       </GestureDetector>
+
+      {/* Collapse indicator */}
+      <View style={styles.collapseIndicator}>
+        <Text style={[styles.collapseText, { color: theme.colors.textTertiary }]}>
+          {isCollapsed ? "ˆ" : "ˇ"}
+        </Text>
+      </View>
     </View>
   );
 };
@@ -225,7 +276,6 @@ const styles = StyleSheet.create({
     width: "14.28%",
   },
   monthsContainer: {
-    flex: 1,
     overflow: "hidden",
   },
   monthPanel: {
@@ -233,6 +283,14 @@ const styles = StyleSheet.create({
     top: 0,
     left: 16,
     right: 16,
+    bottom: 100,
+  },
+  collapseIndicator: {
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  collapseText: {
+    fontSize: 16,
   },
 });
 
