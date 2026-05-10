@@ -97,10 +97,13 @@ export default function MainScreen() {
         // 月层：从满屏向格子中心收敛
         monthZoomOriginX.value = cellCenterX;
         monthZoomOriginY.value = cellCenterY;
-        monthZoomScale.value = 1;
-        monthOpacity.value = 1;
-        monthZoomScale.value = withTiming(cellScale, ZOOM_TIMING);
-        monthOpacity.value = withTiming(0, { duration: 250 });
+        // monthZoomScale.value = 1;
+        //  monthOpacity.value = 1;
+        //  monthZoomScale.value = withTiming(cellScale, ZOOM_TIMING);
+        //  monthOpacity.value = withTiming(0, { duration: 250 });
+        // 月层：直接隐藏，不做动画
+        monthZoomScale.value = cellScale;
+        monthOpacity.value = 0;
 
         // 年层：从格子位置展开到满屏
         yearZoomOriginX.value = cellCenterX;
@@ -122,10 +125,12 @@ export default function MainScreen() {
 
         monthZoomOriginX.value = cellCenterX;
         monthZoomOriginY.value = cellCenterY;
-        monthZoomScale.value = 1;
-        monthOpacity.value = 1;
-        monthZoomScale.value = withTiming(1 / 3, ZOOM_TIMING);
-        monthOpacity.value = withTiming(0, { duration: 250 });
+        // monthZoomScale.value = 1;
+        // monthOpacity.value = 1;
+        // monthZoomScale.value = withTiming(1 / 3, ZOOM_TIMING);
+        // monthOpacity.value = withTiming(0, { duration: 250 });
+        monthZoomScale.value = 1 / 3;
+        monthOpacity.value = 0;
 
         yearZoomOriginX.value = cellCenterX;
         yearZoomOriginY.value = cellCenterY;
@@ -148,9 +153,11 @@ export default function MainScreen() {
       const cellScale = width / cl.width;
 
       // 年层：仅 fade out（无缩放动画）
+      // yearZoomScale.value = 1;
+      // yearOpacity.value = 1;
+      // yearOpacity.value = withTiming(0, { duration: 200 });
       yearZoomScale.value = 1;
-      yearOpacity.value = 1;
-      yearOpacity.value = withTiming(0, { duration: 200 });
+      yearOpacity.value = 0;
 
       // 月层：从格子位置展开到满屏
       monthZoomOriginX.value = cellCenterX;
