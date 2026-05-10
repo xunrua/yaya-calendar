@@ -32,7 +32,8 @@ const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05;
 
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
-  const { selectedDate } = useViewStore();
+  const { selectedDate, setSelectedDate } = useViewStore();
+  const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
   const insets = useSafeAreaInsets();
 
   const [displayMonth, setDisplayMonth] = useState(() => startOfMonth(new Date(selectedDate)));
@@ -62,12 +63,22 @@ export const MonthView: React.FC = () => {
   }, [selectedDate]);
 
   const goToPreviousJS = useCallback(() => {
-    setDisplayMonth((prev) => subMonths(prev, 1));
-  }, []);
+    setDisplayMonth((prev) => {
+      const next = subMonths(prev, 1);
+      setSelectedDate(format(next, "yyyy-MM-dd"));
+      setHasNavigatedMonth(true);
+      return next;
+    });
+  }, [setSelectedDate, setHasNavigatedMonth]);
 
   const goToNextJS = useCallback(() => {
-    setDisplayMonth((prev) => addMonths(prev, 1));
-  }, []);
+    setDisplayMonth((prev) => {
+      const next = addMonths(prev, 1);
+      setSelectedDate(format(next, "yyyy-MM-dd"));
+      setHasNavigatedMonth(true);
+      return next;
+    });
+  }, [setSelectedDate, setHasNavigatedMonth]);
 
   const toggleCollapse = useCallback(() => {
     setIsCollapsed((prev) => !prev);

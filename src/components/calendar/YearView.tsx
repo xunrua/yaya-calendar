@@ -7,6 +7,7 @@ import {
   endOfMonth,
   endOfWeek,
   format,
+  getMonth,
   getYear,
   isSameDay,
   isSameMonth,
@@ -194,6 +195,7 @@ export const YearView: React.FC = () => {
     setCurrentView,
     setTransitionState,
     setYearCellLayouts,
+    hasNavigatedMonth,
   } = useViewStore();
   const insets = useSafeAreaInsets();
 
@@ -212,12 +214,18 @@ export const YearView: React.FC = () => {
   );
 
   const goToPreviousYearJS = useCallback(() => {
-    setDisplayYear((prev) => prev - 1);
-  }, []);
+    const newYear = displayYear - 1;
+    setDisplayYear(newYear);
+    const month = hasNavigatedMonth ? getMonth(parseISO(selectedDate)) : 0;
+    setSelectedDate(format(new Date(newYear, month, 1), "yyyy-MM-dd"));
+  }, [displayYear, selectedDate, setSelectedDate, hasNavigatedMonth]);
 
   const goToNextYearJS = useCallback(() => {
-    setDisplayYear((prev) => prev + 1);
-  }, []);
+    const newYear = displayYear + 1;
+    setDisplayYear(newYear);
+    const month = hasNavigatedMonth ? getMonth(parseISO(selectedDate)) : 0;
+    setSelectedDate(format(new Date(newYear, month, 1), "yyyy-MM-dd"));
+  }, [displayYear, selectedDate, setSelectedDate, hasNavigatedMonth]);
 
   const handleMonthPress = useCallback(
     (
