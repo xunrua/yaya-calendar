@@ -9,25 +9,27 @@ import Animated, {
 } from "react-native-reanimated";
 import { getMonth, parseISO } from "date-fns";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { DayView } from "../../src/components/calendar/DayView";
-import { MonthView } from "../../src/components/calendar/MonthView";
-import { ScheduleView } from "../../src/components/calendar/ScheduleView";
-import { WeekView } from "../../src/components/calendar/WeekView";
-import { YearView } from "../../src/components/calendar/YearView";
-import { FloatingMenu } from "../../src/components/common/FloatingMenu";
-import { FloatingNavBar } from "../../src/components/common/FloatingNavBar";
-import { ViewTabBar } from "../../src/components/common/ViewTabBar";
-import { useViewStore } from "../../src/stores/eventStore";
-import { useTheme } from "../../src/stores/themeStore";
+import { DayView } from "@/src/components/calendar/DayView";
+import { MonthView } from "@/src/components/calendar/MonthView";
+import { ScheduleView } from "@/src/components/calendar/ScheduleView";
+import { WeekView } from "@/src/components/calendar/WeekView";
+import { YearView } from "@/src/components/calendar/YearView";
+import { FloatingMenu } from "@/src/components/common/FloatingMenu";
+import { FloatingNavBar } from "@/src/components/common/FloatingNavBar";
+import { ViewTabBar } from "@/src/components/common/ViewTabBar";
+import { DebugOverlay } from "@/src/components/common/DebugOverlay";
+import { useViewStore } from "@/src/stores/eventStore";
+import { useTheme } from "@/src/stores/themeStore";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
+const ANIM_DURATION = 800;
+
 const ZOOM_TIMING = {
-  duration: 300,
+  duration: ANIM_DURATION,
   easing: Easing.bezier(0.4, 0, 0.2, 1),
 };
 
-// 年视图网格参数
 const YEAR_HEADER_HEIGHT = 38;
 const YEAR_PANEL_BOTTOM = 100;
 
@@ -45,32 +47,36 @@ export default function MainScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const prevViewRef = useRef(currentView);
 
-  // 内容区域布局
   const contentLayout = useRef({ x: 0, y: 0, width: SCREEN_WIDTH, height: 0 });
 
-  // 月层缩放动画（独立于年层）
+  // ── Shared values ──────────────────────────────────────────────────────────
+  // ⚠️ origin 存的是「格子中心 相对于 内容区中心」的偏移量
+  //    即：dx = cellCenterX - contentWidth/2
+  //        dy = cellCenterY - contentHeight/2
   const monthZoomScale = useSharedValue(1);
-  const monthZoomOriginX = useSharedValue(0);
-  const monthZoomOriginY = useSharedValue(0);
+  const monthZoomOriginX = useSharedValue(0); // dx from center
+  const monthZoomOriginY = useSharedValue(0); // dy from center
 
-  // 年层缩放动画（独立于月层）
   const yearZoomScale = useSharedValue(1);
   const yearZoomOriginX = useSharedValue(0);
   const yearZoomOriginY = useSharedValue(0);
 
-  // 每层的透明度
   const monthOpacity = useSharedValue(1);
   const yearOpacity = useSharedValue(0);
 
+  const lastCellCXRef = useRef(0);
+  const lastCellCYRef = useRef(0);
+
+  // ── Layout ─────────────────────────────────────────────────────────────────
   const handleContentLayout = useCallback((e: any) => {
     const { x, y, width, height } = e.nativeEvent.layout;
     contentLayout.current = { x, y, width, height };
   }, []);
 
+  // ── 核心：计算 origin（偏移量），并驱动动画 ─────────────────────────────────
   useEffect(() => {
     const prev = prevViewRef.current;
     const curr = currentView;
-
     if (prev === curr) return;
 
     cancelAnimation(monthZoomScale);
@@ -83,64 +89,65 @@ export default function MainScreen() {
     const fromYear = prev === "year";
     const toMonth = curr === "month";
 
+    /**
+     * 将「格子的绝对坐标」换算成「相对于内容区中心的偏移量」
+     * transform: [tx(dx), ty(dy), scale(s), tx(-dx), ty(-dy)]
+     * 等价于以 (contentCX + dx, contentCY + dy) 为锚点缩放
+     */
+    const toDelta = (cellCenterX: number, cellCenterY: number) => {
+      const cl = contentLayout.current;
+      return {
+        dx: cellCenterX - cl.width / 2,
+        dy: cellCenterY - cl.height / 2,
+      };
+    };
+
     if (fromMonth && toYear) {
       const cl = contentLayout.current;
       const month = getMonth(parseISO(selectedDate));
       const storedLayout = yearCellLayouts[month];
 
+      let cellCenterX: number;
+      let cellCenterY: number;
+      let cellScale: number;
+
       if (storedLayout) {
         const { x: pageX, y: pageY, width, height } = storedLayout;
-        const cellCenterX = pageX + width / 2 - cl.x;
-        const cellCenterY = pageY + height / 2 - cl.y;
-        const cellScale = width / cl.width;
-
-        // 月层：从满屏向格子中心收敛
-        monthZoomOriginX.value = cellCenterX;
-        monthZoomOriginY.value = cellCenterY;
-        // monthZoomScale.value = 1;
-        //  monthOpacity.value = 1;
-        //  monthZoomScale.value = withTiming(cellScale, ZOOM_TIMING);
-        //  monthOpacity.value = withTiming(0, { duration: 250 });
-        // 月层：直接隐藏，不做动画
-        monthZoomScale.value = cellScale;
-        monthOpacity.value = 0;
-
-        // 年层：从格子位置展开到满屏
-        yearZoomOriginX.value = cellCenterX;
-        yearZoomOriginY.value = cellCenterY;
-        yearZoomScale.value = 1 / cellScale;
-        yearOpacity.value = 0;
-        yearZoomScale.value = withTiming(1, ZOOM_TIMING);
-        yearOpacity.value = withTiming(1, { duration: 300 });
+        cellCenterX = pageX + width / 2 - cl.x;
+        cellCenterY = pageY + height / 2 - cl.y;
+        cellScale = width / cl.width;
       } else {
+        // fallback：用网格估算
         const col = month % 3;
         const row = Math.floor(month / 3);
         const cellWidth = cl.width / 3;
-        const gridHeight =
+        const gridH =
           cl.height - insets.top - YEAR_HEADER_HEIGHT - YEAR_PANEL_BOTTOM;
-        const cellHeight = gridHeight / 4;
-        const cellCenterX = (col + 0.5) * cellWidth;
-        const cellCenterY =
-          insets.top + YEAR_HEADER_HEIGHT + (row + 0.5) * cellHeight;
-
-        monthZoomOriginX.value = cellCenterX;
-        monthZoomOriginY.value = cellCenterY;
-        // monthZoomScale.value = 1;
-        // monthOpacity.value = 1;
-        // monthZoomScale.value = withTiming(1 / 3, ZOOM_TIMING);
-        // monthOpacity.value = withTiming(0, { duration: 250 });
-        monthZoomScale.value = 1 / 3;
-        monthOpacity.value = 0;
-
-        yearZoomOriginX.value = cellCenterX;
-        yearZoomOriginY.value = cellCenterY;
-        yearZoomScale.value = 3;
-        yearOpacity.value = 0;
-        yearZoomScale.value = withTiming(1, ZOOM_TIMING);
-        yearOpacity.value = withTiming(1, { duration: 300 });
+        const cellH = gridH / 4;
+        cellCenterX = (col + 0.5) * cellWidth;
+        cellCenterY = insets.top + YEAR_HEADER_HEIGHT + (row + 0.5) * cellH;
+        cellScale = 1 / 3;
       }
+
+      lastCellCXRef.current = cellCenterX;
+      lastCellCYRef.current = cellCenterY;
+
+      const { dx, dy } = toDelta(cellCenterX, cellCenterY);
+
+      // 月层：直接跳到收缩态（隐藏）
+      monthZoomOriginX.value = dx;
+      monthZoomOriginY.value = dy;
+      monthZoomScale.value = cellScale;
+      monthOpacity.value = 0;
+
+      // 年层：从格子位置放大到满屏
+      yearZoomOriginX.value = dx;
+      yearZoomOriginY.value = dy;
+      yearZoomScale.value = 1 / cellScale; // 起点：和格子等大
+      yearOpacity.value = 0;
+      yearZoomScale.value = withTiming(1, ZOOM_TIMING);
+      yearOpacity.value = withTiming(1, { duration: ANIM_DURATION });
     } else if (fromYear && toMonth && transitionState.sourceLayout) {
-      // 年→月：年面板直接消失，月视图从格子位置展开
       const {
         x: pageX,
         y: pageY,
@@ -152,20 +159,22 @@ export default function MainScreen() {
       const cellCenterY = pageY + height / 2 - cl.y;
       const cellScale = width / cl.width;
 
-      // 年层：仅 fade out（无缩放动画）
-      // yearZoomScale.value = 1;
-      // yearOpacity.value = 1;
-      // yearOpacity.value = withTiming(0, { duration: 200 });
+      lastCellCXRef.current = cellCenterX;
+      lastCellCYRef.current = cellCenterY;
+
+      const { dx, dy } = toDelta(cellCenterX, cellCenterY);
+
+      // 年层：直接消失
       yearZoomScale.value = 1;
       yearOpacity.value = 0;
 
       // 月层：从格子位置展开到满屏
-      monthZoomOriginX.value = cellCenterX;
-      monthZoomOriginY.value = cellCenterY;
-      monthZoomScale.value = cellScale;
+      monthZoomOriginX.value = dx;
+      monthZoomOriginY.value = dy;
+      monthZoomScale.value = cellScale; // 起点：和格子等大
       monthOpacity.value = 0;
       monthZoomScale.value = withTiming(1, ZOOM_TIMING);
-      monthOpacity.value = withTiming(1, { duration: 300 });
+      monthOpacity.value = withTiming(1, { duration: ANIM_DURATION });
     } else if (curr === "year") {
       monthZoomScale.value = 1;
       monthOpacity.value = 0;
@@ -187,7 +196,9 @@ export default function MainScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentView, transitionState]);
 
-  // 月层缩放变换
+  // ── Animated styles ────────────────────────────────────────────────────────
+  // 三明治公式：translate(dx,dy) → scale → translate(-dx,-dy)
+  // 效果：以「内容区中心 + (dx,dy)」为锚点缩放
   const monthZoomStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: monthZoomOriginX.value },
@@ -198,7 +209,6 @@ export default function MainScreen() {
     ],
   }));
 
-  // 年层缩放变换
   const yearZoomStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: yearZoomOriginX.value },
@@ -212,11 +222,11 @@ export default function MainScreen() {
   const monthLayerStyle = useAnimatedStyle(() => ({
     opacity: monthOpacity.value,
   }));
-
   const yearLayerStyle = useAnimatedStyle(() => ({
     opacity: yearOpacity.value,
   }));
 
+  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleMenuPress = () => setMenuVisible(!menuVisible);
   const handleAddPress = () => {};
   const handleTabChange = (tab: "calendar" | "todo") => {
@@ -242,7 +252,6 @@ export default function MainScreen() {
 
       {showCalendarLayers ? (
         <View style={styles.contentArea} onLayout={handleContentLayout}>
-          {/* 年视图层（底层） */}
           <Animated.View
             style={[styles.layer, yearLayerStyle, yearZoomStyle]}
             pointerEvents={currentView === "year" ? "auto" : "none"}
@@ -250,7 +259,6 @@ export default function MainScreen() {
             <YearView />
           </Animated.View>
 
-          {/* 月视图层（顶层） */}
           <Animated.View
             style={[styles.layer, monthLayerStyle, monthZoomStyle]}
             pointerEvents={currentView === "month" ? "auto" : "none"}
@@ -279,23 +287,27 @@ export default function MainScreen() {
         onWeekView={handleWeekView}
         onScheduleView={handleScheduleView}
       />
+
+      <DebugOverlay
+        monthZoomScale={monthZoomScale}
+        monthZoomOriginX={monthZoomOriginX}
+        monthZoomOriginY={monthZoomOriginY}
+        monthOpacity={monthOpacity}
+        yearZoomScale={yearZoomScale}
+        yearZoomOriginX={yearZoomOriginX}
+        yearZoomOriginY={yearZoomOriginY}
+        yearOpacity={yearOpacity}
+        contentLayout={contentLayout}
+        lastCellCXRef={lastCellCXRef}
+        lastCellCYRef={lastCellCYRef}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  contentArea: {
-    flex: 1,
-    position: "relative",
-    overflow: "hidden",
-  },
-  content: {
-    flex: 1,
-  },
-  layer: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  container: { flex: 1 },
+  contentArea: { flex: 1, position: "relative", overflow: "hidden" },
+  content: { flex: 1 },
+  layer: { ...StyleSheet.absoluteFillObject },
 });
