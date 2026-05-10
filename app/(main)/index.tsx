@@ -33,7 +33,13 @@ const YEAR_PANEL_BOTTOM = 100;
 
 export default function MainScreen() {
   const { theme } = useTheme();
-  const { currentView, setCurrentView, transitionState, selectedDate } = useViewStore();
+  const {
+    currentView,
+    setCurrentView,
+    transitionState,
+    selectedDate,
+    yearCellLayouts,
+  } = useViewStore();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<"calendar" | "todo">("calendar");
   const [menuVisible, setMenuVisible] = useState(false);
@@ -78,53 +84,78 @@ export default function MainScreen() {
     const toMonth = curr === "month";
 
     if (fromMonth && toYear) {
-      // 月→年：计算当前月份在年网格中的格子中心
       const cl = contentLayout.current;
       const month = getMonth(parseISO(selectedDate));
-      const col = month % 3;
-      const row = Math.floor(month / 3);
+      const storedLayout = yearCellLayouts[month];
 
-      const cellWidth = cl.width / 3;
-      const gridHeight = cl.height - insets.top - YEAR_HEADER_HEIGHT - YEAR_PANEL_BOTTOM;
-      const cellHeight = gridHeight / 4;
+      if (storedLayout) {
+        const { x: pageX, y: pageY, width, height } = storedLayout;
+        const cellCenterX = pageX + width / 2 - cl.x;
+        const cellCenterY = pageY + height / 2 - cl.y;
+        const cellScale = width / cl.width;
 
-      const cellCenterX = (col + 0.5) * cellWidth;
-      const cellCenterY = insets.top + YEAR_HEADER_HEIGHT + (row + 0.5) * cellHeight;
+        // 月层：从满屏向格子中心收敛
+        monthZoomOriginX.value = cellCenterX;
+        monthZoomOriginY.value = cellCenterY;
+        monthZoomScale.value = 1;
+        monthOpacity.value = 1;
+        monthZoomScale.value = withTiming(cellScale, ZOOM_TIMING);
+        monthOpacity.value = withTiming(0, { duration: 250 });
 
-      // 月层：从满屏向格子中心收敛（scale 1 → 1/3）
-      monthZoomOriginX.value = cellCenterX;
-      monthZoomOriginY.value = cellCenterY;
-      monthZoomScale.value = 1;
-      monthOpacity.value = 1;
-      monthZoomScale.value = withTiming(1 / 3, ZOOM_TIMING);
-      monthOpacity.value = withTiming(0, { duration: 250 });
+        // 年层：从格子位置展开到满屏
+        yearZoomOriginX.value = cellCenterX;
+        yearZoomOriginY.value = cellCenterY;
+        yearZoomScale.value = 1 / cellScale;
+        yearOpacity.value = 0;
+        yearZoomScale.value = withTiming(1, ZOOM_TIMING);
+        yearOpacity.value = withTiming(1, { duration: 300 });
+      } else {
+        const col = month % 3;
+        const row = Math.floor(month / 3);
+        const cellWidth = cl.width / 3;
+        const gridHeight =
+          cl.height - insets.top - YEAR_HEADER_HEIGHT - YEAR_PANEL_BOTTOM;
+        const cellHeight = gridHeight / 4;
+        const cellCenterX = (col + 0.5) * cellWidth;
+        const cellCenterY =
+          insets.top + YEAR_HEADER_HEIGHT + (row + 0.5) * cellHeight;
 
-      // 年层：从格子位置展开到满屏（scale 3 → 1）
-      yearZoomOriginX.value = cellCenterX;
-      yearZoomOriginY.value = cellCenterY;
-      yearZoomScale.value = 3;
-      yearOpacity.value = 0;
-      yearZoomScale.value = withTiming(1, ZOOM_TIMING);
-      yearOpacity.value = withTiming(1, { duration: 300 });
+        monthZoomOriginX.value = cellCenterX;
+        monthZoomOriginY.value = cellCenterY;
+        monthZoomScale.value = 1;
+        monthOpacity.value = 1;
+        monthZoomScale.value = withTiming(1 / 3, ZOOM_TIMING);
+        monthOpacity.value = withTiming(0, { duration: 250 });
+
+        yearZoomOriginX.value = cellCenterX;
+        yearZoomOriginY.value = cellCenterY;
+        yearZoomScale.value = 3;
+        yearOpacity.value = 0;
+        yearZoomScale.value = withTiming(1, ZOOM_TIMING);
+        yearOpacity.value = withTiming(1, { duration: 300 });
+      }
     } else if (fromYear && toMonth && transitionState.sourceLayout) {
-      // 年→月：计算被点击月份的格子中心
-      const { x: pageX, y: pageY, width, height } = transitionState.sourceLayout;
+      // 年→月：年面板直接消失，月视图从格子位置展开
+      const {
+        x: pageX,
+        y: pageY,
+        width,
+        height,
+      } = transitionState.sourceLayout;
       const cl = contentLayout.current;
       const cellCenterX = pageX + width / 2 - cl.x;
       const cellCenterY = pageY + height / 2 - cl.y;
+      const cellScale = width / cl.width;
 
-      // 年层：从满屏向格子中心收敛（scale 1 → 3）
-      yearZoomOriginX.value = cellCenterX;
-      yearZoomOriginY.value = cellCenterY;
+      // 年层：仅 fade out（无缩放动画）
       yearZoomScale.value = 1;
       yearOpacity.value = 1;
-      yearZoomScale.value = withTiming(3, ZOOM_TIMING);
-      yearOpacity.value = withTiming(0, { duration: 250 });
+      yearOpacity.value = withTiming(0, { duration: 200 });
 
-      // 月层：从格子位置展开到满屏（scale 1/3 → 1）
+      // 月层：从格子位置展开到满屏
       monthZoomOriginX.value = cellCenterX;
       monthZoomOriginY.value = cellCenterY;
-      monthZoomScale.value = 1 / 3;
+      monthZoomScale.value = cellScale;
       monthOpacity.value = 0;
       monthZoomScale.value = withTiming(1, ZOOM_TIMING);
       monthOpacity.value = withTiming(1, { duration: 300 });
@@ -252,6 +283,7 @@ const styles = StyleSheet.create({
   contentArea: {
     flex: 1,
     position: "relative",
+    overflow: "hidden",
   },
   content: {
     flex: 1,

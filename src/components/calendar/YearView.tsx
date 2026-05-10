@@ -13,7 +13,13 @@ import {
   subYears,
 } from "date-fns";
 import React, { useCallback, useMemo, useState, useRef } from "react";
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
@@ -26,7 +32,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../stores/themeStore";
 import { useViewStore } from "../../stores/eventStore";
-import { toLunarDate, getHolidays } from "../../domain/lunar";
+import { getHolidays } from "../../domain/lunar";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const PRIMARY_COLOR = "#E8563A";
@@ -35,7 +41,15 @@ const SWIPE_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.3;
 const SPRING_CONFIG = { damping: 20, stiffness: 100 };
 
 // 法定假日列表
-const STATUTORY_HOLIDAYS = ["元旦", "春节", "清明节", "劳动节", "端午节", "中秋节", "国庆节"];
+const STATUTORY_HOLIDAYS = [
+  "元旦",
+  "春节",
+  "清明节",
+  "劳动节",
+  "端午节",
+  "中秋节",
+  "国庆节",
+];
 
 const isStatutoryHoliday = (date: Date): boolean => {
   const holidays = getHolidays(date);
@@ -45,10 +59,19 @@ const isStatutoryHoliday = (date: Date): boolean => {
 interface MiniMonthGridProps {
   year: number;
   month: number;
-  onMonthPress: (date: Date, layout: { x: number; y: number; width: number; height: number }) => void;
+  onMonthPress: (
+    date: Date,
+    layout: { x: number; y: number; width: number; height: number }
+  ) => void;
   selectedDate: Date;
-  onMeasure?: (month: number, layout: { x: number; y: number; width: number; height: number }) => void;
+  onMeasure?: (
+    month: number,
+    layout: { x: number; y: number; width: number; height: number }
+  ) => void;
 }
+
+const WEEKDAY_LABELS = ["日", "一", "二", "三", "四", "五", "六"];
+const CELL_WIDTH = (SCREEN_WIDTH / 3 - 12) / 7;
 
 const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
   year,
@@ -69,7 +92,6 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
   const days = eachDayOfInterval({ start: calStart, end: calEnd });
 
   const today = new Date();
-  const lunarDate = toLunarDate(monthDate);
   const isSelectedMonth = isSameMonth(monthDate, selectedDate);
 
   const handlePress = () => {
@@ -101,8 +123,23 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
           },
         ]}
       >
-        {format(monthDate, "M月")} {lunarDate.monthName}
+        {format(monthDate, "M月")}
       </Text>
+
+      <View style={styles.miniWeekRow}>
+        {WEEKDAY_LABELS.map((label) => (
+          <View key={label} style={[styles.miniCell, styles.miniWeekCell]}>
+            <Text
+              style={[
+                styles.miniWeekText,
+                { color: theme.colors.textSecondary },
+              ]}
+            >
+              {label}
+            </Text>
+          </View>
+        ))}
+      </View>
 
       <View style={styles.miniDaysGrid}>
         {days.map((day, idx) => {
@@ -111,7 +148,7 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
           const isHolidayDay = isStatutoryHoliday(day);
 
           if (!isCurrentMonth) {
-            return <View key={idx} style={styles.miniEmptyCell} />;
+            return <View key={idx} style={styles.miniCell} />;
           }
 
           const textColor = isToday
@@ -124,7 +161,7 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
             <View
               key={idx}
               style={[
-                styles.miniDayCell,
+                styles.miniCell,
                 isToday && {
                   backgroundColor: PRIMARY_COLOR,
                   borderRadius: 10,
@@ -151,7 +188,13 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
 
 export const YearView: React.FC = () => {
   const { theme } = useTheme();
-  const { selectedDate, setSelectedDate, setCurrentView, setTransitionState, setYearCellLayouts } = useViewStore();
+  const {
+    selectedDate,
+    setSelectedDate,
+    setCurrentView,
+    setTransitionState,
+    setYearCellLayouts,
+  } = useViewStore();
   const insets = useSafeAreaInsets();
 
   const currentSelectedDate = parseISO(selectedDate);
@@ -159,8 +202,14 @@ export const YearView: React.FC = () => {
   const translateX = useSharedValue(0);
   const isAnimating = useSharedValue(false);
 
-  const prevYear = useMemo(() => subYears(new Date(displayYear, 0, 1), 1), [displayYear]);
-  const nextYear = useMemo(() => addYears(new Date(displayYear, 0, 1), 1), [displayYear]);
+  const prevYear = useMemo(
+    () => subYears(new Date(displayYear, 0, 1), 1),
+    [displayYear]
+  );
+  const nextYear = useMemo(
+    () => addYears(new Date(displayYear, 0, 1), 1),
+    [displayYear]
+  );
 
   const goToPreviousYearJS = useCallback(() => {
     setDisplayYear((prev) => prev - 1);
@@ -170,23 +219,37 @@ export const YearView: React.FC = () => {
     setDisplayYear((prev) => prev + 1);
   }, []);
 
-  const handleMonthPress = useCallback((monthDate: Date, layout: { x: number; y: number; width: number; height: number }) => {
-    setTransitionState({
-      sourceLayout: layout,
-    });
-    setSelectedDate(format(monthDate, "yyyy-MM-dd"));
-    setCurrentView("month");
-  }, [setSelectedDate, setCurrentView, setTransitionState]);
+  const handleMonthPress = useCallback(
+    (
+      monthDate: Date,
+      layout: { x: number; y: number; width: number; height: number }
+    ) => {
+      setTransitionState({
+        sourceLayout: layout,
+      });
+      setSelectedDate(format(monthDate, "yyyy-MM-dd"));
+      setCurrentView("month");
+    },
+    [setSelectedDate, setCurrentView, setTransitionState]
+  );
 
   // Collect cell measurements for Month→Year animation
-  const pendingMeasurements = useRef<Record<number, { x: number; y: number; width: number; height: number }>>({});
+  const pendingMeasurements = useRef<
+    Record<number, { x: number; y: number; width: number; height: number }>
+  >({});
 
-  const handleCellMeasure = useCallback((month: number, layout: { x: number; y: number; width: number; height: number }) => {
-    pendingMeasurements.current[month] = layout;
-    if (Object.keys(pendingMeasurements.current).length === 12) {
-      setYearCellLayouts({ ...pendingMeasurements.current });
-    }
-  }, [setYearCellLayouts]);
+  const handleCellMeasure = useCallback(
+    (
+      month: number,
+      layout: { x: number; y: number; width: number; height: number }
+    ) => {
+      pendingMeasurements.current[month] = layout;
+      if (Object.keys(pendingMeasurements.current).length === 12) {
+        setYearCellLayouts({ ...pendingMeasurements.current });
+      }
+    },
+    [setYearCellLayouts]
+  );
 
   React.useLayoutEffect(() => {
     translateX.value = 0;
@@ -206,9 +269,11 @@ export const YearView: React.FC = () => {
 
       const { translationX, velocityX } = event;
       const shouldSwipeLeft =
-        translationX < -SWIPE_DISTANCE_THRESHOLD || velocityX < -SWIPE_VELOCITY_THRESHOLD;
+        translationX < -SWIPE_DISTANCE_THRESHOLD ||
+        velocityX < -SWIPE_VELOCITY_THRESHOLD;
       const shouldSwipeRight =
-        translationX > SWIPE_DISTANCE_THRESHOLD || velocityX > SWIPE_VELOCITY_THRESHOLD;
+        translationX > SWIPE_DISTANCE_THRESHOLD ||
+        velocityX > SWIPE_VELOCITY_THRESHOLD;
 
       if (shouldSwipeLeft) {
         isAnimating.value = true;
@@ -275,11 +340,11 @@ export const YearView: React.FC = () => {
         { backgroundColor: theme.colors.background, paddingTop: insets.top },
       ]}
     >
-      <View style={styles.yearHeader}>
+      {/* <View style={styles.yearHeader}>
         <Text style={[styles.yearTitle, { color: theme.colors.text }]}>
           {displayYear}年
         </Text>
-      </View>
+      </View> */}
 
       <GestureDetector gesture={panGesture}>
         <View style={styles.yearsContainer}>
@@ -323,6 +388,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 100,
+    overflow: "hidden",
   },
   yearGrid: {
     flexDirection: "row",
@@ -331,31 +397,37 @@ const styles = StyleSheet.create({
   miniMonthContainer: {
     width: "33.33%",
     paddingHorizontal: 6,
-    paddingVertical: 10,
+    paddingVertical: 4,
   },
   miniMonthTitle: {
     fontSize: 13,
     fontWeight: "500",
     textAlign: "center",
-    marginBottom: 4,
+    marginBottom: 2,
+  },
+  miniWeekRow: {
+    flexDirection: "row",
+  },
+  miniWeekCell: {
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  miniWeekText: {
+    fontSize: 9,
   },
   miniDaysGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
   },
-  miniEmptyCell: {
-    width: 26,
-    height: 24,
-  },
-  miniDayCell: {
-    width: 26,
-    height: 24,
+  miniCell: {
+    width: CELL_WIDTH,
+    height: CELL_WIDTH,
     alignItems: "center",
     justifyContent: "center",
   },
   miniDayText: {
-    fontSize: 13,
+    fontSize: 11,
   },
 });
 

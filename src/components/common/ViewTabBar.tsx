@@ -42,7 +42,7 @@ const calculateMonthPositionInYearView = (
 
   const cellWidth = SCREEN_WIDTH / 3;
   const viewTabBarHeight = 56; // container paddingVertical(8)*2 + tabContainer height(40)
-  const yearHeaderHeight = 38;
+  const yearHeaderHeight = 0;
   const cellHeight = 185;
 
   const x = col * cellWidth;
