@@ -16,10 +16,12 @@ import { WeekView } from "@/src/components/calendar/WeekView";
 import { YearView } from "@/src/components/calendar/YearView";
 import { FloatingMenu } from "@/src/components/common/FloatingMenu";
 import { FloatingNavBar } from "@/src/components/common/FloatingNavBar";
-import { ViewTabBar } from "@/src/components/common/ViewTabBar";
 import { DebugOverlay } from "@/src/components/common/DebugOverlay";
 import { useViewStore } from "@/src/stores/eventStore";
 import { useTheme } from "@/src/stores/themeStore";
+import type { ViewType } from "@/src/domain/types";
+
+type NavTab = "year" | "calendar" | "todo";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -39,11 +41,11 @@ export default function MainScreen() {
     currentView,
     setCurrentView,
     transitionState,
+    setTransitionState,
     selectedDate,
     yearCellLayouts,
   } = useViewStore();
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<"calendar" | "todo">("calendar");
   const [menuVisible, setMenuVisible] = useState(false);
   const prevViewRef = useRef(currentView);
 
@@ -227,20 +229,51 @@ export default function MainScreen() {
   }));
 
   // ── Handlers ───────────────────────────────────────────────────────────────
+  const VIEW_FROM_TAB: Record<NavTab, ViewType> = {
+    year: "year",
+    calendar: "month",
+    todo: "events",
+  };
+
+  const activeTab: NavTab =
+    currentView === "year" ? "year"
+    : currentView === "events" ? "todo"
+    : "calendar";
+
+  /** 月→年切换前，设置过渡动画的起始位置 */
+  const prepareYearTransition = useCallback(() => {
+    if (currentView !== "month") return;
+
+    const month = getMonth(parseISO(selectedDate));
+    const storedLayout = yearCellLayouts[month];
+    if (storedLayout) {
+      setTransitionState({ sourceLayout: storedLayout });
+      return;
+    }
+
+    const col = month % 3;
+    const row = Math.floor(month / 3);
+    const cellWidth = SCREEN_WIDTH / 3;
+    setTransitionState({
+      sourceLayout: {
+        x: col * cellWidth,
+        y: insets.top + row * 185,
+        width: cellWidth,
+        height: 185,
+      },
+    });
+  }, [currentView, selectedDate, yearCellLayouts, insets.top, setTransitionState]);
+
   const handleMenuPress = () => setMenuVisible(!menuVisible);
   const handleAddPress = () => {};
-  const handleTabChange = (tab: "calendar" | "todo") => {
-    setActiveTab(tab);
-    setCurrentView(tab === "calendar" ? "month" : "events");
+
+  const handleTabChange = (tab: NavTab) => {
+    if (tab === "year") prepareYearTransition();
+    setCurrentView(VIEW_FROM_TAB[tab]);
   };
-  const handleWeekView = () => {
-    setCurrentView("week");
-    setActiveTab("calendar");
-  };
-  const handleScheduleView = () => {
-    setCurrentView("events");
-    setActiveTab("calendar");
-  };
+
+  const handleWeekView = () => setCurrentView("week");
+  const handleScheduleView = () => setCurrentView("events");
 
   const showCalendarLayers = currentView === "year" || currentView === "month";
 
@@ -248,8 +281,6 @@ export default function MainScreen() {
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <ViewTabBar />
-
       {showCalendarLayers ? (
         <View style={styles.contentArea} onLayout={handleContentLayout}>
           <Animated.View
