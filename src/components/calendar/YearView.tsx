@@ -47,6 +47,7 @@ interface MiniMonthGridProps {
   month: number;
   onMonthPress: (date: Date, layout: { x: number; y: number; width: number; height: number }) => void;
   selectedDate: Date;
+  onMeasure?: (month: number, layout: { x: number; y: number; width: number; height: number }) => void;
 }
 
 const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
@@ -54,9 +55,12 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
   month,
   onMonthPress,
   selectedDate,
+  onMeasure,
 }) => {
   const { theme } = useTheme();
   const ref = useRef<View>(null);
+  const onMeasureRef = useRef(onMeasure);
+  onMeasureRef.current = onMeasure;
   const monthDate = new Date(year, month, 1);
   const monthStart = startOfMonth(monthDate);
   const monthEnd = endOfMonth(monthDate);
@@ -73,6 +77,14 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
       onMonthPress(monthDate, { x: pageX, y: pageY, width, height });
     });
   };
+
+  React.useEffect(() => {
+    requestAnimationFrame(() => {
+      ref.current?.measure((x, y, width, height, pageX, pageY) => {
+        onMeasureRef.current?.(month, { x: pageX, y: pageY, width, height });
+      });
+    });
+  }, [month, year]);
 
   return (
     <TouchableOpacity
@@ -139,7 +151,7 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
 
 export const YearView: React.FC = () => {
   const { theme } = useTheme();
-  const { selectedDate, setSelectedDate, setCurrentView, setTransitionState } = useViewStore();
+  const { selectedDate, setSelectedDate, setCurrentView, setTransitionState, setYearCellLayouts } = useViewStore();
   const insets = useSafeAreaInsets();
 
   const currentSelectedDate = parseISO(selectedDate);
@@ -159,7 +171,6 @@ export const YearView: React.FC = () => {
   }, []);
 
   const handleMonthPress = useCallback((monthDate: Date, layout: { x: number; y: number; width: number; height: number }) => {
-    // 设置过渡动画的源位置（月份格子的屏幕位置）
     setTransitionState({
       sourceLayout: layout,
     });
@@ -167,9 +178,20 @@ export const YearView: React.FC = () => {
     setCurrentView("month");
   }, [setSelectedDate, setCurrentView, setTransitionState]);
 
+  // Collect cell measurements for Month→Year animation
+  const pendingMeasurements = useRef<Record<number, { x: number; y: number; width: number; height: number }>>({});
+
+  const handleCellMeasure = useCallback((month: number, layout: { x: number; y: number; width: number; height: number }) => {
+    pendingMeasurements.current[month] = layout;
+    if (Object.keys(pendingMeasurements.current).length === 12) {
+      setYearCellLayouts({ ...pendingMeasurements.current });
+    }
+  }, [setYearCellLayouts]);
+
   React.useLayoutEffect(() => {
     translateX.value = 0;
     isAnimating.value = false;
+    pendingMeasurements.current = {};
   }, [displayYear, translateX, isAnimating]);
 
   const panGesture = Gesture.Pan()
@@ -227,7 +249,7 @@ export const YearView: React.FC = () => {
     transform: [{ translateX: translateX.value + SCREEN_WIDTH }],
   }));
 
-  const renderYearGrid = (year: number) => {
+  const renderYearGrid = (year: number, isCurrentYear: boolean) => {
     const months = Array.from({ length: 12 }, (_, i) => i);
 
     return (
@@ -238,6 +260,7 @@ export const YearView: React.FC = () => {
             year={year}
             month={month}
             onMonthPress={handleMonthPress}
+            onMeasure={isCurrentYear ? handleCellMeasure : undefined}
             selectedDate={currentSelectedDate}
           />
         ))}
@@ -261,15 +284,15 @@ export const YearView: React.FC = () => {
       <GestureDetector gesture={panGesture}>
         <View style={styles.yearsContainer}>
           <Animated.View style={[styles.yearPanel, prevYearStyle]}>
-            {renderYearGrid(getYear(prevYear))}
+            {renderYearGrid(getYear(prevYear), false)}
           </Animated.View>
 
           <Animated.View style={[styles.yearPanel, animatedStyle]}>
-            {renderYearGrid(displayYear)}
+            {renderYearGrid(displayYear, true)}
           </Animated.View>
 
           <Animated.View style={[styles.yearPanel, nextYearStyle]}>
-            {renderYearGrid(getYear(nextYear))}
+            {renderYearGrid(getYear(nextYear), false)}
           </Animated.View>
         </View>
       </GestureDetector>

@@ -7,6 +7,8 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
+import { getMonth, parseISO } from "date-fns";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DayView } from "../../src/components/calendar/DayView";
 import { MonthView } from "../../src/components/calendar/MonthView";
 import { ScheduleView } from "../../src/components/calendar/ScheduleView";
@@ -19,29 +21,38 @@ import { useViewStore } from "../../src/stores/eventStore";
 import { useTheme } from "../../src/stores/themeStore";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
-const SCREEN_HEIGHT = Dimensions.get("window").height;
 
-const ZOOM_OUT_TIMING = {
+const ZOOM_TIMING = {
   duration: 300,
   easing: Easing.bezier(0.4, 0, 0.2, 1),
 };
 
+// 年视图网格参数
+const YEAR_HEADER_HEIGHT = 38;
+const YEAR_PANEL_BOTTOM = 100;
+
 export default function MainScreen() {
   const { theme } = useTheme();
-  const { currentView, setCurrentView, transitionState } = useViewStore();
+  const { currentView, setCurrentView, transitionState, selectedDate } = useViewStore();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<"calendar" | "todo">("calendar");
   const [menuVisible, setMenuVisible] = useState(false);
   const prevViewRef = useRef(currentView);
 
-  // Content area layout (position + dimensions, set via onLayout)
-  const contentLayout = useRef({ x: 0, y: 0, width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
+  // 内容区域布局
+  const contentLayout = useRef({ x: 0, y: 0, width: SCREEN_WIDTH, height: 0 });
 
-  // Zoom animation shared values — applied to the INCOMING view
-  const zoomScale = useSharedValue(1);
-  const zoomTranslateX = useSharedValue(0);
-  const zoomTranslateY = useSharedValue(0);
+  // 月层缩放动画（独立于年层）
+  const monthZoomScale = useSharedValue(1);
+  const monthZoomOriginX = useSharedValue(0);
+  const monthZoomOriginY = useSharedValue(0);
 
-  // Opacity for each layer
+  // 年层缩放动画（独立于月层）
+  const yearZoomScale = useSharedValue(1);
+  const yearZoomOriginX = useSharedValue(0);
+  const yearZoomOriginY = useSharedValue(0);
+
+  // 每层的透明度
   const monthOpacity = useSharedValue(1);
   const yearOpacity = useSharedValue(0);
 
@@ -56,10 +67,8 @@ export default function MainScreen() {
 
     if (prev === curr) return;
 
-    // Cancel any ongoing animations to handle rapid switching
-    cancelAnimation(zoomScale);
-    cancelAnimation(zoomTranslateX);
-    cancelAnimation(zoomTranslateY);
+    cancelAnimation(monthZoomScale);
+    cancelAnimation(yearZoomScale);
     cancelAnimation(monthOpacity);
     cancelAnimation(yearOpacity);
 
@@ -68,92 +77,97 @@ export default function MainScreen() {
     const fromYear = prev === "year";
     const toMonth = curr === "month";
 
-    if (fromMonth && toYear && transitionState.sourceLayout) {
-      // Month → Year: month instantly hidden, year zooms OUT from current month position
-      monthOpacity.value = 0;
-
-      const { x, y, width, height } = transitionState.sourceLayout;
+    if (fromMonth && toYear) {
+      // 月→年：计算当前月份在年网格中的格子中心
       const cl = contentLayout.current;
+      const month = getMonth(parseISO(selectedDate));
+      const col = month % 3;
+      const row = Math.floor(month / 3);
 
-      // Year view starts zoomed IN so the current month cell fills the content area
-      const initialScale = cl.width / width;
-      const cellCenterX = x + width / 2;
-      const cellCenterY = y + height / 2;
-      const contentCenterX = cl.width / 2;
-      const contentCenterY = cl.height / 2;
+      const cellWidth = cl.width / 3;
+      const gridHeight = cl.height - insets.top - YEAR_HEADER_HEIGHT - YEAR_PANEL_BOTTOM;
+      const cellHeight = gridHeight / 4;
 
-      const initialTX = contentCenterX - cellCenterX * initialScale;
-      const initialTY = contentCenterY - cellCenterY * initialScale;
+      const cellCenterX = (col + 0.5) * cellWidth;
+      const cellCenterY = insets.top + YEAR_HEADER_HEIGHT + (row + 0.5) * cellHeight;
 
-      // Set initial state (no animation)
-      zoomScale.value = initialScale;
-      zoomTranslateX.value = initialTX;
-      zoomTranslateY.value = initialTY;
+      // 月层：从满屏向格子中心收敛（scale 1 → 1/3）
+      monthZoomOriginX.value = cellCenterX;
+      monthZoomOriginY.value = cellCenterY;
+      monthZoomScale.value = 1;
+      monthOpacity.value = 1;
+      monthZoomScale.value = withTiming(1 / 3, ZOOM_TIMING);
+      monthOpacity.value = withTiming(0, { duration: 250 });
+
+      // 年层：从格子位置展开到满屏（scale 3 → 1）
+      yearZoomOriginX.value = cellCenterX;
+      yearZoomOriginY.value = cellCenterY;
+      yearZoomScale.value = 3;
       yearOpacity.value = 0;
-
-      // Animate year view to normal size + fade in
-      zoomScale.value = withTiming(1, ZOOM_OUT_TIMING);
-      zoomTranslateX.value = withTiming(0, ZOOM_OUT_TIMING);
-      zoomTranslateY.value = withTiming(0, ZOOM_OUT_TIMING);
+      yearZoomScale.value = withTiming(1, ZOOM_TIMING);
       yearOpacity.value = withTiming(1, { duration: 300 });
     } else if (fromYear && toMonth && transitionState.sourceLayout) {
-      // Year → Month: year instantly hidden, month zooms IN from clicked cell position
-      yearOpacity.value = 0;
-
+      // 年→月：计算被点击月份的格子中心
       const { x: pageX, y: pageY, width, height } = transitionState.sourceLayout;
       const cl = contentLayout.current;
-
-      // sourceLayout has screen-absolute coords from ref.measure(); convert to content-area-relative
       const cellCenterX = pageX + width / 2 - cl.x;
       const cellCenterY = pageY + height / 2 - cl.y;
-      const contentCenterX = cl.width / 2;
-      const contentCenterY = cl.height / 2;
-      const initialScale = width / cl.width;
-      const initialTX = cellCenterX - contentCenterX * initialScale;
-      const initialTY = cellCenterY - contentCenterY * initialScale;
 
-      // Set initial state
-      zoomScale.value = initialScale;
-      zoomTranslateX.value = initialTX;
-      zoomTranslateY.value = initialTY;
+      // 年层：从满屏向格子中心收敛（scale 1 → 3）
+      yearZoomOriginX.value = cellCenterX;
+      yearZoomOriginY.value = cellCenterY;
+      yearZoomScale.value = 1;
+      yearOpacity.value = 1;
+      yearZoomScale.value = withTiming(3, ZOOM_TIMING);
+      yearOpacity.value = withTiming(0, { duration: 250 });
+
+      // 月层：从格子位置展开到满屏（scale 1/3 → 1）
+      monthZoomOriginX.value = cellCenterX;
+      monthZoomOriginY.value = cellCenterY;
+      monthZoomScale.value = 1 / 3;
       monthOpacity.value = 0;
-
-      // Animate month view to full size + fade in
-      zoomScale.value = withTiming(1, ZOOM_OUT_TIMING);
-      zoomTranslateX.value = withTiming(0, ZOOM_OUT_TIMING);
-      zoomTranslateY.value = withTiming(0, ZOOM_OUT_TIMING);
+      monthZoomScale.value = withTiming(1, ZOOM_TIMING);
       monthOpacity.value = withTiming(1, { duration: 300 });
     } else if (curr === "year") {
-      // Direct navigation to year view
+      monthZoomScale.value = 1;
       monthOpacity.value = 0;
+      yearZoomScale.value = 1;
       yearOpacity.value = 1;
-      zoomScale.value = 1;
-      zoomTranslateX.value = 0;
-      zoomTranslateY.value = 0;
     } else if (curr === "month") {
+      yearZoomScale.value = 1;
       yearOpacity.value = 0;
+      monthZoomScale.value = 1;
       monthOpacity.value = 1;
-      zoomScale.value = 1;
-      zoomTranslateX.value = 0;
-      zoomTranslateY.value = 0;
     } else {
-      yearOpacity.value = 0;
+      monthZoomScale.value = 1;
+      yearZoomScale.value = 1;
       monthOpacity.value = 0;
-      zoomScale.value = 1;
-      zoomTranslateX.value = 0;
-      zoomTranslateY.value = 0;
+      yearOpacity.value = 0;
     }
 
     prevViewRef.current = curr;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentView, transitionState]);
 
-  // The zoom transform is applied to whichever view is appearing
-  const zoomStyle = useAnimatedStyle(() => ({
+  // 月层缩放变换
+  const monthZoomStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: zoomTranslateX.value },
-      { translateY: zoomTranslateY.value },
-      { scale: zoomScale.value },
+      { translateX: monthZoomOriginX.value },
+      { translateY: monthZoomOriginY.value },
+      { scale: monthZoomScale.value },
+      { translateX: -monthZoomOriginX.value },
+      { translateY: -monthZoomOriginY.value },
+    ],
+  }));
+
+  // 年层缩放变换
+  const yearZoomStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: yearZoomOriginX.value },
+      { translateY: yearZoomOriginY.value },
+      { scale: yearZoomScale.value },
+      { translateX: -yearZoomOriginX.value },
+      { translateY: -yearZoomOriginY.value },
     ],
   }));
 
@@ -190,17 +204,17 @@ export default function MainScreen() {
 
       {showCalendarLayers ? (
         <View style={styles.contentArea} onLayout={handleContentLayout}>
-          {/* Year view layer (behind) */}
+          {/* 年视图层（底层） */}
           <Animated.View
-            style={[styles.layer, yearLayerStyle, zoomStyle]}
+            style={[styles.layer, yearLayerStyle, yearZoomStyle]}
             pointerEvents={currentView === "year" ? "auto" : "none"}
           >
             <YearView />
           </Animated.View>
 
-          {/* Month view layer (front) */}
+          {/* 月视图层（顶层） */}
           <Animated.View
-            style={[styles.layer, monthLayerStyle, zoomStyle]}
+            style={[styles.layer, monthLayerStyle, monthZoomStyle]}
             pointerEvents={currentView === "month" ? "auto" : "none"}
           >
             <MonthView />

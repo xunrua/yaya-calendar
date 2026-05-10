@@ -1,5 +1,11 @@
 import { useEffect } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, Dimensions } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Dimensions,
+} from "react-native";
 import { parseISO, getMonth } from "date-fns";
 import Animated, {
   Easing,
@@ -26,27 +32,34 @@ const ANIMATION_CONFIG = {
 
 const PRIMARY_COLOR = "#E8563A";
 
-// 计算月份在年视图网格中的位置（content-area-relative 坐标）
-const calculateMonthPositionInYearView = (month: number, insetsTop: number): { x: number; y: number; width: number; height: number } => {
+// 计算月份在年视图网格中的位置（screen-absolute 坐标，与 measure() 结果一致）
+const calculateMonthPositionInYearView = (
+  month: number,
+  insetsTop: number
+): { x: number; y: number; width: number; height: number } => {
   const col = month % 3;
   const row = Math.floor(month / 3);
 
-  // 年视图网格参数（对应 YearView 样式）
   const cellWidth = SCREEN_WIDTH / 3;
-  const paddingHorizontal = 6;
-  const yearHeaderHeight = 34; // yearTitle paddingTop(10) + text + paddingBottom(6)
-  const monthWidth = cellWidth - paddingHorizontal * 2;
-  const monthHeight = 175; // paddingVertical(20) + title(21) + dayGrid(6*24=144)
+  const viewTabBarHeight = 56; // container paddingVertical(8)*2 + tabContainer height(40)
+  const yearHeaderHeight = 38;
+  const cellHeight = 185;
 
-  const x = col * cellWidth + paddingHorizontal;
-  const y = insetsTop + yearHeaderHeight + row * monthHeight;
+  const x = col * cellWidth;
+  const y = viewTabBarHeight + insetsTop + yearHeaderHeight + row * cellHeight;
 
-  return { x, y, width: monthWidth, height: monthHeight };
+  return { x, y, width: cellWidth, height: cellHeight };
 };
 
 export const ViewTabBar: React.FC = () => {
   const { theme } = useTheme();
-  const { currentView, setCurrentView, selectedDate, setTransitionState } = useViewStore();
+  const {
+    currentView,
+    setCurrentView,
+    selectedDate,
+    setTransitionState,
+    yearCellLayouts,
+  } = useViewStore();
   const insets = useSafeAreaInsets();
   const indicatorPosition = useSharedValue(0);
 
@@ -69,11 +82,15 @@ export const ViewTabBar: React.FC = () => {
   const handleTabPress = (view: ViewType) => {
     if (view !== currentView) {
       if (view === "year" && currentView === "month") {
-        // 月→年：计算当前月份在年视图中的位置
         const date = parseISO(selectedDate);
         const month = getMonth(date);
-        const layout = calculateMonthPositionInYearView(month, insets.top);
-        setTransitionState({ sourceLayout: layout });
+        const storedLayout = yearCellLayouts[month];
+        if (storedLayout) {
+          setTransitionState({ sourceLayout: storedLayout });
+        } else {
+          const layout = calculateMonthPositionInYearView(month, insets.top);
+          setTransitionState({ sourceLayout: layout });
+        }
       }
       setCurrentView(view);
     }
