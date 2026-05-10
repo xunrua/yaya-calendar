@@ -41,7 +41,6 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: "row",
     alignItems: "baseline",
-    marginLeft: "5%",
     paddingTop: 16,
   },
   title: {

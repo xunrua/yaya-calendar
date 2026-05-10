@@ -72,7 +72,8 @@ interface MiniMonthGridProps {
 }
 
 const WEEKDAY_LABELS = ["日", "一", "二", "三", "四", "五", "六"];
-const CELL_WIDTH = (SCREEN_WIDTH / 3 - 12) / 7;
+const GRID_MARGIN = 16;
+const CELL_WIDTH = ((SCREEN_WIDTH - GRID_MARGIN * 2) / 3 - 12) / 7;
 
 const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
   year,
@@ -401,17 +402,18 @@ const styles = StyleSheet.create({
   yearGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    marginHorizontal: 16,
   },
   miniMonthContainer: {
     width: "33.33%",
     paddingHorizontal: 6,
-    paddingVertical: 4,
+    paddingVertical: 10,
   },
   miniMonthTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: "500",
-    textAlign: "center",
-    marginBottom: 2,
+    textAlign: "left",
+    marginBottom: 4,
   },
   miniWeekRow: {
     flexDirection: "row",
