@@ -35,7 +35,6 @@ export const MonthView: React.FC = () => {
   const { selectedDate } = useViewStore();
   const insets = useSafeAreaInsets();
 
-  // 独立的显示月份状态，不受 selectedDate 影响
   const [displayMonth, setDisplayMonth] = useState(() => startOfMonth(new Date(selectedDate)));
   const translateX = useSharedValue(0);
   const isAnimating = useSharedValue(false);
@@ -55,6 +54,12 @@ export const MonthView: React.FC = () => {
     }
     return getISOWeek(startOfMonth(displayMonth));
   }, [displayMonth, selectedDate]);
+
+  // 当 selectedDate 从外部变化时（如从年视图点击月份），同步 displayMonth
+  // 注意：不将 displayMonth 放入依赖，避免滑动切换时被重置
+  useLayoutEffect(() => {
+    setDisplayMonth(startOfMonth(new Date(selectedDate)));
+  }, [selectedDate]);
 
   const goToPreviousJS = useCallback(() => {
     setDisplayMonth((prev) => subMonths(prev, 1));
