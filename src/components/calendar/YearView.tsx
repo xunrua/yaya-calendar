@@ -1,3 +1,6 @@
+import { getHolidays } from "@/src/domain/lunar";
+import { useViewStore } from "@/src/stores/eventStore";
+import { useTheme } from "@/src/stores/themeStore";
 import {
   addYears,
   eachDayOfInterval,
@@ -30,9 +33,6 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "../../stores/themeStore";
-import { useViewStore } from "../../stores/eventStore";
-import { getHolidays } from "../../domain/lunar";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const PRIMARY_COLOR = "#E8563A";
