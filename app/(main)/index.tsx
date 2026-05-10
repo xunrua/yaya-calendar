@@ -50,21 +50,29 @@ export default function MainScreen() {
       translateX.value = targetX;
       translateY.value = targetY;
 
-      // 动画到全屏（不用弹簧，用 timing）
+      // 动画到全屏
       scale.value = withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) });
       translateX.value = withTiming(0, { duration: 380, easing: Easing.out(Easing.cubic) });
       translateY.value = withTiming(0, { duration: 380, easing: Easing.out(Easing.cubic) });
-    } else if (fromMonth && toYear) {
-      // 月→年：从全屏缩小淡出，年视图淡入
-      // 这里不需要位置动画，只做简单的淡出效果
-      scale.value = withTiming(0.9, { duration: 200, easing: Easing.in(Easing.ease) });
-      translateX.value = withTiming(0, { duration: 200 });
-      translateY.value = withTiming(0, { duration: 200 });
+    } else if (fromMonth && toYear && transitionState.sourceLayout) {
+      // 月→年：从全屏缩小到格子位置（反向动画）
+      const { x, y, width, height } = transitionState.sourceLayout;
+      const targetScale = width / SCREEN_WIDTH;
+      const targetX = x + width / 2 - SCREEN_WIDTH / 2;
+      const targetY = y + height / 2 - SCREEN_HEIGHT / 2;
 
-      // 然后恢复
-      setTimeout(() => {
-        scale.value = withTiming(1, { duration: 150 });
-      }, 200);
+      // 从全屏位置开始，动画到格子位置
+      scale.value = withTiming(targetScale, { duration: 350, easing: Easing.in(Easing.cubic) });
+      translateX.value = withTiming(targetX, { duration: 350, easing: Easing.in(Easing.cubic) });
+      translateY.value = withTiming(targetY, { duration: 350, easing: Easing.in(Easing.cubic) }, (finished) => {
+        if (finished) {
+          // 动画结束后隐藏 MonthView，YearView 已经显示在背后
+          // 直接重置到初始状态，不需要额外动画
+          scale.value = 1;
+          translateX.value = 0;
+          translateY.value = 0;
+        }
+      });
     } else {
       // 其他情况重置
       scale.value = withTiming(1, { duration: 200 });

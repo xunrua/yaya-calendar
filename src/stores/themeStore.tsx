@@ -1,7 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type React from "react";
 import { type ReactNode, useEffect, useRef } from "react";
-import { Animated, Appearance, StyleSheet, useColorScheme, View } from "react-native";
+import {
+  Animated,
+  Appearance,
+  StyleSheet,
+  useColorScheme,
+  View,
+} from "react-native";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { Theme, ThemeMode } from "../domain/types";
@@ -50,7 +55,8 @@ export const useThemeStore = create<ThemeState>()(
       toggleTheme: () => {
         const currentMode = get().mode;
         const systemTheme = get().getSystemTheme();
-        const currentEffective = currentMode === "system" ? systemTheme : currentMode;
+        const currentEffective =
+          currentMode === "system" ? systemTheme : currentMode;
         const newMode = currentEffective === "light" ? "dark" : "light";
         set({
           mode: newMode,
@@ -70,7 +76,8 @@ export const useThemeStore = create<ThemeState>()(
         if (state) {
           // Re-apply theme based on stored mode
           const systemTheme = getSystemColorScheme();
-          const effectiveMode = state.mode === "system" ? systemTheme : state.mode;
+          const effectiveMode =
+            state.mode === "system" ? systemTheme : state.mode;
           state.theme = createTheme(effectiveMode === "dark");
         }
       },
@@ -137,7 +144,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
+      >
         {children}
       </View>
     </Animated.View>

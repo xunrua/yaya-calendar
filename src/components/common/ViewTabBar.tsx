@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, Dimensions } from "react-native";
+import { parseISO, getMonth } from "date-fns";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,6 +10,8 @@ import Animated, {
 import { useTheme } from "../../stores/themeStore";
 import { useViewStore } from "../../stores/eventStore";
 import type { ViewType } from "../../domain/types";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 const VIEW_TABS: { key: ViewType; label: string }[] = [
   { key: "month", label: "月" },
@@ -22,9 +25,26 @@ const ANIMATION_CONFIG = {
 
 const PRIMARY_COLOR = "#E8563A";
 
+// 计算月份在年视图网格中的位置
+const calculateMonthPositionInYearView = (month: number): { x: number; y: number; width: number; height: number } => {
+  const col = month % 3; // 0, 1, 2
+  const row = Math.floor(month / 3); // 0, 1, 2, 3
+
+  // 年视图网格参数（参考 YearView 样式）
+  const paddingHorizontal = 12;
+  const headerHeight = 50; // 顶部年份标题 + TabBar
+  const monthWidth = SCREEN_WIDTH / 3 - 16; // 每个月份格子宽度
+  const monthHeight = monthWidth * 0.85; // 高度比例
+
+  const x = paddingHorizontal + col * (SCREEN_WIDTH / 3) + 8;
+  const y = headerHeight + row * (monthHeight + 16);
+
+  return { x, y, width: monthWidth, height: monthHeight };
+};
+
 export const ViewTabBar: React.FC = () => {
   const { theme } = useTheme();
-  const { currentView, setCurrentView } = useViewStore();
+  const { currentView, setCurrentView, selectedDate, setTransitionState } = useViewStore();
   const indicatorPosition = useSharedValue(0);
 
   const activeIndex = VIEW_TABS.findIndex((tab) => tab.key === currentView);
@@ -45,6 +65,13 @@ export const ViewTabBar: React.FC = () => {
 
   const handleTabPress = (view: ViewType) => {
     if (view !== currentView) {
+      if (view === "year" && currentView === "month") {
+        // 月→年：计算当前月份在年视图中的位置
+        const date = parseISO(selectedDate);
+        const month = getMonth(date);
+        const layout = calculateMonthPositionInYearView(month);
+        setTransitionState({ sourceLayout: layout });
+      }
       setCurrentView(view);
     }
   };
