@@ -16,6 +16,7 @@ import { WeekView } from "@/src/components/calendar/WeekView";
 import { YearView } from "@/src/components/calendar/YearView";
 import { FloatingMenu } from "@/src/components/common/FloatingMenu";
 import { FloatingNavBar } from "@/src/components/common/FloatingNavBar";
+import { CalendarHeader } from "@/src/components/common/CalendarHeader";
 import { DebugOverlay } from "@/src/components/common/DebugOverlay";
 import { useViewStore } from "@/src/stores/eventStore";
 import { useTheme } from "@/src/stores/themeStore";
@@ -236,9 +237,11 @@ export default function MainScreen() {
   };
 
   const activeTab: NavTab =
-    currentView === "year" ? "year"
-    : currentView === "events" ? "todo"
-    : "calendar";
+    currentView === "year"
+      ? "year"
+      : currentView === "events"
+        ? "todo"
+        : "calendar";
 
   /** 月→年切换前，设置过渡动画的起始位置 */
   const prepareYearTransition = useCallback(() => {
@@ -262,7 +265,13 @@ export default function MainScreen() {
         height: 185,
       },
     });
-  }, [currentView, selectedDate, yearCellLayouts, insets.top, setTransitionState]);
+  }, [
+    currentView,
+    selectedDate,
+    yearCellLayouts,
+    insets.top,
+    setTransitionState,
+  ]);
 
   const handleMenuPress = () => setMenuVisible(!menuVisible);
   const handleAddPress = () => {};
@@ -281,6 +290,8 @@ export default function MainScreen() {
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
+      {showCalendarLayers && <CalendarHeader />}
+
       {showCalendarLayers ? (
         <View style={styles.contentArea} onLayout={handleContentLayout}>
           <Animated.View
@@ -304,7 +315,6 @@ export default function MainScreen() {
           {currentView === "events" && <ScheduleView />}
         </View>
       )}
-
       <FloatingNavBar
         onMenuPress={handleMenuPress}
         onAddPress={handleAddPress}
@@ -318,7 +328,6 @@ export default function MainScreen() {
         onWeekView={handleWeekView}
         onScheduleView={handleScheduleView}
       />
-
       <DebugOverlay
         monthZoomScale={monthZoomScale}
         monthZoomOriginX={monthZoomOriginX}

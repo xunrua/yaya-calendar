@@ -1,5 +1,4 @@
-import { addMonths, format, getISOWeek, isSameMonth, startOfMonth, subMonths } from "date-fns";
-import { zhCN } from "date-fns/locale";
+import { addMonths, format, startOfMonth, subMonths } from "date-fns";
 import type React from "react";
 import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
@@ -40,21 +39,11 @@ export const MonthView: React.FC = () => {
   const translateX = useSharedValue(0);
   const isAnimating = useSharedValue(false);
 
-  // 折叠状态
   const [isCollapsed, setIsCollapsed] = useState(false);
   const calendarHeight = useSharedValue(EXPANDED_HEIGHT);
 
-  // 计算显示的周数：如果当前显示月份包含 selectedDate，显示 selectedDate 的周数；否则显示该月第一周的周数
   const prevMonth = useMemo(() => subMonths(displayMonth, 1), [displayMonth]);
   const nextMonth = useMemo(() => addMonths(displayMonth, 1), [displayMonth]);
-
-  // 计算显示的周数：如果当前显示月份包含 selectedDate，显示 selectedDate 的周数；否则显示该月第一周的周数
-  const displayWeekNumber = useMemo(() => {
-    if (isSameMonth(displayMonth, selectedDate)) {
-      return getISOWeek(new Date(selectedDate));
-    }
-    return getISOWeek(startOfMonth(displayMonth));
-  }, [displayMonth, selectedDate]);
 
   // 当 selectedDate 从外部变化时（如从年视图点击月份），同步 displayMonth
   // 注意：不将 displayMonth 放入依赖，避免滑动切换时被重置
@@ -182,21 +171,9 @@ export const MonthView: React.FC = () => {
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.colors.background, paddingTop: insets.top },
+        { backgroundColor: theme.colors.background },
       ]}
     >
-      {/* Month header */}
-      <View style={styles.monthHeader}>
-        <View style={styles.titleRow}>
-          <Text style={[styles.monthTitle, { color: theme.colors.text }]}>
-            {format(displayMonth, "yyyy年M月", { locale: zhCN })}
-          </Text>
-          <Text style={[styles.weekNumber, { color: theme.colors.textTertiary }]}>
-            第{displayWeekNumber}周
-          </Text>
-        </View>
-      </View>
-
       {/* Fixed weekday header */}
       <View style={styles.weekdayHeader}>
         {WEEKDAYS.map((day, idx) => (
@@ -258,26 +235,6 @@ export const MonthView: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  monthHeader: {
-    marginLeft: 16,
-    marginRight: 16,
-    paddingTop: 16,
-    paddingBottom: 20,
-  },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginLeft: "5%",
-  },
-  monthTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-  },
-  weekNumber: {
-    fontSize: 14,
-    fontWeight: "400",
-    marginLeft: 8,
   },
   weekdayHeader: {
     flexDirection: "row",
