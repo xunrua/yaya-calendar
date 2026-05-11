@@ -166,13 +166,19 @@ const getTodayString = (): string => {
   return today.toISOString().split("T")[0];
 };
 
+const getMonthStartString = (): string => {
+  const today = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  return monthStart.toISOString().split("T")[0];
+};
+
 export const useViewStore = create<ViewState>((set, get) => ({
   currentView: "month",
   selectedDate: getTodayString(),
   hasNavigatedMonth: false,
   transitionState: {},
   yearCellLayouts: {},
-  displayMonth: getTodayString(),
+  displayMonth: getMonthStartString(),
 
   setCurrentView: (view) => {
     set({ currentView: view });

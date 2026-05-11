@@ -32,7 +32,7 @@ const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05;
 
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
-  const { selectedDate, displayMonth: displayMonthStr, setDisplayMonth } = useViewStore();
+  const { selectedDate, displayMonth: displayMonthStr, setDisplayMonth, hasNavigatedMonth } = useViewStore();
   const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
   const _insets = useSafeAreaInsets();
 
@@ -55,22 +55,32 @@ export const MonthView: React.FC = () => {
   const nextMonth = useMemo(() => addMonths(displayMonth, 1), [displayMonth]);
 
   // 当 selectedDate 从外部变化时（如从年视图点击月份），同步 displayMonth
-  // 注意：不将 displayMonth 放入依赖，避免滑动切换时被重置
+  // 但如果用户已经手动滑动过月份，则不同步
   useLayoutEffect(() => {
-    setDisplayMonth(startOfMonth(new Date(selectedDate)).toISOString().split("T")[0]);
-  }, [selectedDate, setDisplayMonth]);
+    if (!hasNavigatedMonth) {
+      const [year, month] = selectedDate.split("-").map(Number);
+      const monthStartStr = `${year}-${String(month).padStart(2, '0')}-01`;
+      setDisplayMonth(monthStartStr);
+    }
+  }, [selectedDate, setDisplayMonth, hasNavigatedMonth]);
 
   const goToPreviousJS = useCallback(() => {
-    const newMonth = subMonths(displayMonth, 1);
-    setDisplayMonth(newMonth.toISOString().split("T")[0]);
+    const [year, month] = displayMonthStr.split("-").map(Number);
+    const currentDisplayMonth = new Date(year, month - 1, 1);
+    const newMonth = subMonths(currentDisplayMonth, 1);
+    const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, '0')}-01`;
+    setDisplayMonth(newMonthStr);
     setHasNavigatedMonth(true);
-  }, [displayMonth, setDisplayMonth, setHasNavigatedMonth]);
+  }, [displayMonthStr, setDisplayMonth, setHasNavigatedMonth]);
 
   const goToNextJS = useCallback(() => {
-    const newMonth = addMonths(displayMonth, 1);
-    setDisplayMonth(newMonth.toISOString().split("T")[0]);
+    const [year, month] = displayMonthStr.split("-").map(Number);
+    const currentDisplayMonth = new Date(year, month - 1, 1);
+    const newMonth = addMonths(currentDisplayMonth, 1);
+    const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, '0')}-01`;
+    setDisplayMonth(newMonthStr);
     setHasNavigatedMonth(true);
-  }, [displayMonth, setDisplayMonth, setHasNavigatedMonth]);
+  }, [displayMonthStr, setDisplayMonth, setHasNavigatedMonth]);
 
   const toggleCollapse = useCallback(() => {
     setIsCollapsed((prev) => !prev);
@@ -84,12 +94,9 @@ export const MonthView: React.FC = () => {
     prevDisplayMonthRef.current = displayMonthStr;
 
     if (prevMonth && displayMonthStr) {
-      const prevDate = new Date(prevMonth);
-      const currentDate = new Date(displayMonthStr);
-      const monthDiff =
-        (currentDate.getFullYear() - prevDate.getFullYear()) * 12 +
-        currentDate.getMonth() -
-        prevDate.getMonth();
+      const [prevYear, prevMonthNum] = prevMonth.split("-").map(Number);
+      const [currYear, currMonthNum] = displayMonthStr.split("-").map(Number);
+      const monthDiff = (currYear - prevYear) * 12 + (currMonthNum - prevMonthNum);
 
       if (Math.abs(monthDiff) > 1) {
         // 大跨度跳转：使用淡入淡出动画
@@ -113,7 +120,7 @@ export const MonthView: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     displayMonthStr,
-    translateX, // 大跨度跳转：使用淡入淡出动画
+    translateX,
     opacity,
     isAnimating,
   ]);
@@ -149,7 +156,6 @@ export const MonthView: React.FC = () => {
           { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) },
           (finished) => {
             if (finished) {
-              // 只更新 React 状态，translateX 在 useEffect 中重置
               scheduleOnRN(goToNextJS);
             }
           }
@@ -161,7 +167,6 @@ export const MonthView: React.FC = () => {
           { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) },
           (finished) => {
             if (finished) {
-              // 只更新 React 状态，translateX 在 useEffect 中重置
               scheduleOnRN(goToPreviousJS);
             }
           }
