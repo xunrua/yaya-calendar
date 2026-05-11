@@ -12,7 +12,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DayView } from "@/src/components/calendar/DayView";
 import { MonthView } from "@/src/components/calendar/MonthView";
 import { ScheduleView } from "@/src/components/calendar/ScheduleView";
-import { WeekView } from "@/src/components/calendar/WeekView";
 import { YearView } from "@/src/components/calendar/YearView";
 import { CalendarHeader } from "@/src/components/common/CalendarHeader";
 import { FloatingMenu } from "@/src/components/common/FloatingMenu";
@@ -294,9 +293,6 @@ export default function MainScreen() {
     setCurrentView("year");
   };
 
-  const handleWeekView = () => setCurrentView("week");
-  const handleScheduleView = () => setCurrentView("events");
-
   const showCalendarLayers = currentView === "year" || currentView === "month";
 
   return (
@@ -328,7 +324,6 @@ export default function MainScreen() {
       ) : (
         <View style={styles.content}>
           {currentView === "day" && <DayView />}
-          {currentView === "week" && <WeekView />}
           {currentView === "events" && <ScheduleView />}
         </View>
       )}
@@ -341,12 +336,7 @@ export default function MainScreen() {
         onTodayPress={goToToday}
         showTodayButton={showTodayButton}
       />
-      <FloatingMenu
-        visible={menuVisible}
-        onClose={() => setMenuVisible(false)}
-        onWeekView={handleWeekView}
-        onScheduleView={handleScheduleView}
-      />
+      <FloatingMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
     </View>
   );
 }

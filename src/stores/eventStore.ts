@@ -231,7 +231,6 @@ export const useViewStore = create<ViewState>((set, get) => ({
   goToToday: () => {
     const today = getTodayString();
     const monthStart = getMonthStartString();
-    console.log(`[PERF] goToToday called: today=${today}, monthStart=${monthStart}`);
     set({
       selectedDate: today,
       displayMonth: monthStart, // 使用月初日期，而不是今天

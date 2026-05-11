@@ -208,9 +208,6 @@ export default function MonthGrid({
   lunarInfoMap,
   eventsMap,
 }: MonthGridProps) {
-  console.log(
-    `[PERF] MonthGrid render: ${year}-${month + 1}, lunarInfoMap size: ${lunarInfoMap?.size}, eventsMap size: ${eventsMap?.size}`
-  );
   const selectedDate = useViewStore((state) => state.selectedDate);
   const setSelectedDate = useViewStore((state) => state.setSelectedDate);
 

@@ -78,8 +78,6 @@ export const DayView: React.FC = () => {
   const handleTimeSlotPress = (hour: number) => {
     const newStartTime = setMinutes(setHours(currentDate, hour), 0);
     const newEndTime = addHours(newStartTime, 1);
-    // TODO: Open event creation modal
-    console.log("Create event:", format(newStartTime, "HH:mm"), "-", format(newEndTime, "HH:mm"));
   };
 
   const renderTimeSlot = (hour: number) => {

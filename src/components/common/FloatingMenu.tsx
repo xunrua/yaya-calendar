@@ -22,16 +22,9 @@ interface MenuItem {
 interface FloatingMenuProps {
   visible: boolean;
   onClose: () => void;
-  onWeekView: () => void;
-  onScheduleView: () => void;
 }
 
-export const FloatingMenu: React.FC<FloatingMenuProps> = ({
-  visible,
-  onClose,
-  onWeekView,
-  onScheduleView,
-}) => {
+export const FloatingMenu: React.FC<FloatingMenuProps> = ({ visible, onClose }) => {
   const { theme, mode, setMode } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -105,16 +98,6 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
     // Navigate to about (TODO: create about page)
   };
 
-  const handleWeekView = () => {
-    onWeekView();
-    onClose();
-  };
-
-  const handleScheduleView = () => {
-    onScheduleView();
-    onClose();
-  };
-
   const menuItems: MenuItem[] = [
     { id: "settings", label: "设置", icon: "settings-outline", onPress: handleSettings },
     {
@@ -129,8 +112,6 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
       onPress: handleThemeToggle,
     },
     { id: "about", label: "关于", icon: "information-circle-outline", onPress: handleAbout },
-    { id: "week", label: "周视图", icon: "calendar-outline", onPress: handleWeekView },
-    { id: "schedule", label: "日程视图", icon: "list-outline", onPress: handleScheduleView },
   ];
 
   const renderGlassBackground = () => {

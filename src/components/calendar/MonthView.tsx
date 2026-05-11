@@ -60,7 +60,6 @@ export const MonthView: React.FC = () => {
 
   // 从全局状态获取 displayMonth，转换为 Date 对象
   const displayMonth = useMemo(() => {
-    console.log(`[PERF] displayMonthStr changed to: ${displayMonthStr}`);
     const date = new Date(displayMonthStr);
     return startOfMonth(date);
   }, [displayMonthStr]);
@@ -148,23 +147,14 @@ export const MonthView: React.FC = () => {
   // 预计算三屏农历信息
   const prevLunarInfoMap = useMemo(() => {
     const result = getLunarInfoBatch(prevMonth.getFullYear(), prevMonth.getMonth());
-    console.log(
-      `[PERF] prevLunarInfoMap: ${prevMonth.getFullYear()}-${prevMonth.getMonth() + 1}, size: ${result.size}`
-    );
     return result;
   }, [prevMonth]);
   const currentLunarInfoMap = useMemo(() => {
     const result = getLunarInfoBatch(displayMonth.getFullYear(), displayMonth.getMonth());
-    console.log(
-      `[PERF] currentLunarInfoMap: ${displayMonth.getFullYear()}-${displayMonth.getMonth() + 1}, size: ${result.size}`
-    );
     return result;
   }, [displayMonth]);
   const nextLunarInfoMap = useMemo(() => {
     const result = getLunarInfoBatch(nextMonth.getFullYear(), nextMonth.getMonth());
-    console.log(
-      `[PERF] nextLunarInfoMap: ${nextMonth.getFullYear()}-${nextMonth.getMonth() + 1}, size: ${result.size}`
-    );
     return result;
   }, [nextMonth]);
 
@@ -231,13 +221,9 @@ export const MonthView: React.FC = () => {
   // 当 selectedDate 从外部变化时（如从年视图点击月份），同步 displayMonth
   // 但如果用户已经手动滑动过月份，则不同步
   useLayoutEffect(() => {
-    console.log(
-      `[PERF] useLayoutEffect sync: selectedDate=${selectedDate}, hasNavigatedMonth=${hasNavigatedMonth}`
-    );
     if (!hasNavigatedMonth) {
       const [year, month] = selectedDate.split("-").map(Number);
       const monthStartStr = `${year}-${String(month).padStart(2, "0")}-01`;
-      console.log(`[PERF] useLayoutEffect setting displayMonth to: ${monthStartStr}`);
       setDisplayMonth(monthStartStr);
     }
   }, [selectedDate, setDisplayMonth, hasNavigatedMonth]);
