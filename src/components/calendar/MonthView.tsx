@@ -23,6 +23,7 @@ import {
   getRowIndexForDate,
 } from "../../utils/calendar";
 import MonthGrid from "./MonthGrid";
+import DayInfoPanel from "./DayInfoPanel";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const SCREEN_HEIGHT = Dimensions.get("window").height;
@@ -577,6 +578,9 @@ export const MonthView: React.FC = () => {
               color={theme.colors.textTertiary}
             />
           </View>
+
+          {/* 日期信息面板 */}
+          <DayInfoPanel date={selectedDate} />
         </View>
       </GestureDetector>
     </View>
