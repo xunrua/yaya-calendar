@@ -18,12 +18,12 @@ import { Dimensions, StyleSheet, Text, useWindowDimensions, View } from "react-n
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
 import { useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
 import {
@@ -248,7 +248,7 @@ export const MonthView: React.FC = () => {
           foldProgress.value = 0;
         }
         // 下一帧淡入
-        scheduleOnRN(() => {
+        runOnJS(() => {
           opacity.value = withTiming(1, { duration: 200 });
         });
       } else {
@@ -368,12 +368,12 @@ export const MonthView: React.FC = () => {
         if (shouldSwipeLeft) {
           translateX.value = withTiming(-SCREEN_WIDTH, { duration: 150 });
           setTimeout(() => {
-            scheduleOnRN(goToNextWeekJS);
+            runOnJS(goToNextWeekJS);
           }, 150);
         } else if (shouldSwipeRight) {
           translateX.value = withTiming(SCREEN_WIDTH, { duration: 150 });
           setTimeout(() => {
-            scheduleOnRN(goToPrevWeekJS);
+            runOnJS(goToPrevWeekJS);
           }, 150);
         } else {
           // 取消滑动：回弹到当前位置
@@ -396,7 +396,7 @@ export const MonthView: React.FC = () => {
         });
         // 延迟执行跳转，让动画完成
         setTimeout(() => {
-          scheduleOnRN(goToNextJS);
+          runOnJS(goToNextJS);
         }, 200);
       } else if (shouldSwipeRight) {
         isAnimating.value = true;
@@ -410,7 +410,7 @@ export const MonthView: React.FC = () => {
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
         setTimeout(() => {
-          scheduleOnRN(goToPreviousJS);
+          runOnJS(goToPreviousJS);
         }, 200);
       } else {
         // 取消滑动：回弹到当前位置
@@ -461,16 +461,18 @@ export const MonthView: React.FC = () => {
       const shouldFold =
         translationY < -FOLD_DISTANCE_THRESHOLD || velocityY < -FOLD_VELOCITY_THRESHOLD;
 
-      if (shouldFold && !isCollapsed) {
-        scheduleOnRN(toggleCollapse);
-      } else if (shouldExpand && isCollapsed) {
-        scheduleOnRN(toggleCollapse);
+      const currentlyCollapsed = isCollapsedSV.value;
+
+      if (shouldFold && !currentlyCollapsed) {
+        runOnJS(toggleCollapse)();
+      } else if (shouldExpand && currentlyCollapsed) {
+        runOnJS(toggleCollapse)();
       } else {
-        calendarHeight.value = withTiming(isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT, {
+        calendarHeight.value = withTiming(currentlyCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT, {
           duration: 250,
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
-        foldProgress.value = withTiming(isCollapsed ? 1 : 0, {
+        foldProgress.value = withTiming(currentlyCollapsed ? 1 : 0, {
           duration: 250,
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
@@ -500,16 +502,18 @@ export const MonthView: React.FC = () => {
       const shouldFold =
         translationY < -FOLD_DISTANCE_THRESHOLD || velocityY < -FOLD_VELOCITY_THRESHOLD;
 
-      if (shouldFold && !isCollapsed) {
-        scheduleOnRN(toggleCollapse);
-      } else if (shouldExpand && isCollapsed) {
-        scheduleOnRN(toggleCollapse);
+      const currentlyCollapsed = isCollapsedSV.value;
+
+      if (shouldFold && !currentlyCollapsed) {
+        runOnJS(toggleCollapse)();
+      } else if (shouldExpand && currentlyCollapsed) {
+        runOnJS(toggleCollapse)();
       } else {
-        calendarHeight.value = withTiming(isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT, {
+        calendarHeight.value = withTiming(currentlyCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT, {
           duration: 250,
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
-        foldProgress.value = withTiming(isCollapsed ? 1 : 0, {
+        foldProgress.value = withTiming(currentlyCollapsed ? 1 : 0, {
           duration: 250,
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
@@ -519,7 +523,7 @@ export const MonthView: React.FC = () => {
   // 折叠指示器点击手势 - 仅在折叠状态下响应点击展开
   const indicatorTapGesture = Gesture.Tap().onEnd(() => {
     if (isCollapsed) {
-      scheduleOnRN(toggleCollapse);
+      runOnJS(toggleCollapse);
     }
   });
 
