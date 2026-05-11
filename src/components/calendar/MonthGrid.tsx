@@ -286,7 +286,7 @@ export default function MonthGrid({
 
   // 有折叠动画时，分区域渲染
   return (
-    <View style={styles.daysGrid}>
+    <View style={styles.daysGridFold}>
       {/* 上方区域 */}
       {upperRows.length > 0 && (
         <Animated.View style={[styles.rowContainer, { height: upperHeight }, upperStyle]}>
@@ -319,10 +319,16 @@ const styles = StyleSheet.create({
     margin: 0,
     padding: 0,
   },
+  daysGridFold: {
+    flexDirection: "column",
+    margin: 0,
+    padding: 0,
+  },
   rowContainer: {
     width: "100%",
     flexDirection: "row",
     flexWrap: "wrap",
+    rowGap: 8,
   },
   dayCell: {
     width: "14.28%",
