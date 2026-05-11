@@ -21,9 +21,7 @@ export const CalendarHeader = () => {
             : format(date, "yyyy年M月", { locale: zhCN })}
         </Text>
         {currentView === "month" && (
-          <Text
-            style={[styles.weekNumber, { color: theme.colors.textTertiary }]}
-          >
+          <Text style={[styles.weekNumber, { color: theme.colors.textTertiary }]}>
             第{getISOWeek(date)}周
           </Text>
         )}

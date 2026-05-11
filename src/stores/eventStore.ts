@@ -152,7 +152,9 @@ interface ViewState {
   setSelectedDate: (date: string) => void;
   setHasNavigatedMonth: (value: boolean) => void;
   setTransitionState: (state: ViewTransitionState) => void;
-  setYearCellLayouts: (layouts: Record<number, { x: number; y: number; width: number; height: number }>) => void;
+  setYearCellLayouts: (
+    layouts: Record<number, { x: number; y: number; width: number; height: number }>
+  ) => void;
   setDisplayMonth: (date: string) => void;
   goToToday: () => void;
   goToPrevious: () => void;

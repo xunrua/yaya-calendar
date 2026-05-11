@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
 import { isSameDay } from "date-fns";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
 
 const PRIMARY_COLOR = "#E8563A";
 

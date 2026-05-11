@@ -1,20 +1,16 @@
 import {
+  isToday as checkIsToday,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
   format,
   isSameMonth,
-  isToday as checkIsToday,
   startOfMonth,
   startOfWeek,
 } from "date-fns";
-import { useMemo, useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { getLunarInfo } from "../../domain/lunar";
 import { useEventStore, useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
@@ -107,9 +103,7 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
             },
           ]}
         >
-          <Text style={[styles.dayNumber, { color: getTextColor() }]}>
-            {format(day, "d")}
-          </Text>
+          <Text style={[styles.dayNumber, { color: getTextColor() }]}>{format(day, "d")}</Text>
         </Animated.View>
         {workStatus && (
           <Text

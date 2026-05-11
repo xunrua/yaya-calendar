@@ -52,9 +52,7 @@ export function SegmentedControl<K extends string = string>({
   activeTextColor,
   inactiveTextColor,
 }: SegmentedControlProps<K>) {
-  const indicatorPosition = useSharedValue(
-    tabs.findIndex((t) => t.key === activeKey)
-  );
+  const indicatorPosition = useSharedValue(tabs.findIndex((t) => t.key === activeKey));
 
   useEffect(() => {
     const idx = tabs.findIndex((t) => t.key === activeKey);

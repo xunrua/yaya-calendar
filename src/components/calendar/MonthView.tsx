@@ -1,5 +1,5 @@
-import { addMonths, format, startOfMonth, subMonths } from "date-fns";
 import { Ionicons } from "@expo/vector-icons";
+import { addMonths, startOfMonth, subMonths } from "date-fns";
 import type React from "react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
@@ -34,7 +34,7 @@ export const MonthView: React.FC = () => {
   const { theme } = useTheme();
   const { selectedDate, displayMonth: displayMonthStr, setDisplayMonth } = useViewStore();
   const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
-  const insets = useSafeAreaInsets();
+  const _insets = useSafeAreaInsets();
 
   // 从全局状态获取 displayMonth，转换为 Date 对象
   const displayMonth = useMemo(() => {
@@ -86,8 +86,10 @@ export const MonthView: React.FC = () => {
     if (prevMonth && displayMonthStr) {
       const prevDate = new Date(prevMonth);
       const currentDate = new Date(displayMonthStr);
-      const monthDiff = (currentDate.getFullYear() - prevDate.getFullYear()) * 12
-        + currentDate.getMonth() - prevDate.getMonth();
+      const monthDiff =
+        (currentDate.getFullYear() - prevDate.getFullYear()) * 12 +
+        currentDate.getMonth() -
+        prevDate.getMonth();
 
       if (Math.abs(monthDiff) > 1) {
         // 大跨度跳转：使用淡入淡出动画
@@ -109,14 +111,19 @@ export const MonthView: React.FC = () => {
       isAnimating.value = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayMonthStr]);
+  }, [
+    displayMonthStr,
+    translateX, // 大跨度跳转：使用淡入淡出动画
+    opacity,
+    isAnimating,
+  ]);
 
   // 折叠高度动画
   useLayoutEffect(() => {
-    calendarHeight.value = withTiming(
-      isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT,
-      { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
-    );
+    calendarHeight.value = withTiming(isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT, {
+      duration: 200,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+    });
   }, [isCollapsed, calendarHeight]);
 
   const panGesture = Gesture.Pan()
@@ -211,20 +218,15 @@ export const MonthView: React.FC = () => {
         scheduleOnRN(toggleCollapse);
       } else {
         // 没有达到阈值，恢复到当前状态的高度
-        calendarHeight.value = withTiming(
-          isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT,
-          { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
-        );
+        calendarHeight.value = withTiming(isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT, {
+          duration: 200,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
       }
     });
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: theme.colors.background },
-      ]}
-    >
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Fixed weekday header */}
       <View style={styles.weekdayHeader}>
         {WEEKDAYS.map((day, idx) => (
@@ -244,9 +246,7 @@ export const MonthView: React.FC = () => {
       <GestureDetector gesture={Gesture.Simultaneous(panGesture, foldGesture)}>
         <View style={styles.foldableArea}>
           <Animated.View style={[styles.monthsContainer, calendarHeightStyle]}>
-            <Animated.View
-              style={[styles.monthPanel, prevMonthStyle]}
-            >
+            <Animated.View style={[styles.monthPanel, prevMonthStyle]}>
               <MonthGrid
                 year={prevMonth.getFullYear()}
                 month={prevMonth.getMonth()}
@@ -262,9 +262,7 @@ export const MonthView: React.FC = () => {
               />
             </Animated.View>
 
-            <Animated.View
-              style={[styles.monthPanel, nextMonthStyle]}
-            >
+            <Animated.View style={[styles.monthPanel, nextMonthStyle]}>
               <MonthGrid
                 year={nextMonth.getFullYear()}
                 month={nextMonth.getMonth()}
@@ -275,11 +273,7 @@ export const MonthView: React.FC = () => {
 
           {/* Collapse indicator */}
           <View style={styles.collapseIndicator}>
-            <Ionicons
-              name="remove"
-              size={20}
-              color={theme.colors.textTertiary}
-            />
+            <Ionicons name="remove" size={20} color={theme.colors.textTertiary} />
           </View>
         </View>
       </GestureDetector>

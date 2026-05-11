@@ -1,10 +1,6 @@
 import { useCallback, useState } from "react";
-import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
-import {
-  useAnimatedReaction,
-  runOnJS,
-  type SharedValue,
-} from "react-native-reanimated";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { runOnJS, type SharedValue, useAnimatedReaction } from "react-native-reanimated";
 
 type DebugState = {
   monthScale: number;
@@ -49,8 +45,7 @@ function DebugPanel({ state }: { state: DebugState }) {
         content: {state.contentW.toFixed(0)} × {state.contentH.toFixed(0)}
       </Text>
       <Text style={styles.row}>
-        lastCell center: ({state.lastCellCX.toFixed(1)},{" "}
-        {state.lastCellCY.toFixed(1)})
+        lastCell center: ({state.lastCellCX.toFixed(1)}, {state.lastCellCY.toFixed(1)})
       </Text>
       <Text style={[styles.row, { color: "#4af" }]}>
         [Month] scale={state.monthScale.toFixed(3)} opacity=
@@ -129,30 +124,21 @@ export function DebugOverlay({
     lastCellCYRef,
   ]);
 
-  useAnimatedReaction(
-    () => ({
-      ms: monthZoomScale.value,
-      ys: yearZoomScale.value,
-      mo: monthOpacity.value,
-      yo: yearOpacity.value,
-    }),
-    () => {
-      if (showDebug) runOnJS(updateDebug)();
-    },
-    [showDebug, updateDebug]
-  );
+  useAnimatedReaction(() => ({
+    ms: monthZoomScale.value,
+    ys: yearZoomScale.value,
+    mo: monthOpacity.value,
+    yo: yearOpacity.value,
+  }), () => {
+    if (showDebug) runOnJS(updateDebug)();
+  }, [showDebug, updateDebug]);
 
   return (
     <>
       {showDebug && <DebugPanel state={debugState} />}
       {debug && (
-        <TouchableOpacity
-          style={styles.debugToggle}
-          onPress={() => setShowDebug((v) => !v)}
-        >
-          <Text style={styles.debugToggleText}>
-            {showDebug ? "隐藏调试" : "🔧"}
-          </Text>
+        <TouchableOpacity style={styles.debugToggle} onPress={() => setShowDebug((v) => !v)}>
+          <Text style={styles.debugToggleText}>{showDebug ? "隐藏调试" : "🔧"}</Text>
         </TouchableOpacity>
       )}
     </>

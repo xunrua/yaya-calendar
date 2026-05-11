@@ -1,26 +1,26 @@
+import { getMonth, isSameMonth, parseISO, startOfMonth } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, View, Dimensions } from "react-native";
+import { Dimensions, StyleSheet, View } from "react-native";
 import Animated, {
   cancelAnimation,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
   Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
 } from "react-native-reanimated";
-import { getMonth, isSameMonth, parseISO, startOfMonth } from "date-fns";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DayView } from "@/src/components/calendar/DayView";
 import { MonthView } from "@/src/components/calendar/MonthView";
 import { ScheduleView } from "@/src/components/calendar/ScheduleView";
 import { WeekView } from "@/src/components/calendar/WeekView";
 import { YearView } from "@/src/components/calendar/YearView";
-import { FloatingMenu } from "@/src/components/common/FloatingMenu";
-import { FloatingNavBar } from "@/src/components/common/FloatingNavBar";
 import { CalendarHeader } from "@/src/components/common/CalendarHeader";
 import { DebugOverlay } from "@/src/components/common/DebugOverlay";
+import { FloatingMenu } from "@/src/components/common/FloatingMenu";
+import { FloatingNavBar } from "@/src/components/common/FloatingNavBar";
+import type { ViewType } from "@/src/domain/types";
 import { useViewStore } from "@/src/stores/eventStore";
 import { useTheme } from "@/src/stores/themeStore";
-import type { ViewType } from "@/src/domain/types";
 
 type NavTab = "year" | "calendar" | "todo";
 
@@ -136,8 +136,7 @@ export default function MainScreen() {
         const col = month % 3;
         const row = Math.floor(month / 3);
         const cellWidth = cl.width / 3;
-        const gridH =
-          cl.height - insets.top - YEAR_HEADER_HEIGHT - YEAR_PANEL_BOTTOM;
+        const gridH = cl.height - insets.top - YEAR_HEADER_HEIGHT - YEAR_PANEL_BOTTOM;
         const cellH = gridH / 4;
         cellCenterX = (col + 0.5) * cellWidth;
         cellCenterY = insets.top + YEAR_HEADER_HEIGHT + (row + 0.5) * cellH;
@@ -163,12 +162,7 @@ export default function MainScreen() {
       yearZoomScale.value = withTiming(1, ZOOM_TIMING);
       yearOpacity.value = withTiming(1, { duration: ANIM_DURATION });
     } else if (fromYear && toMonth && transitionState.sourceLayout) {
-      const {
-        x: pageX,
-        y: pageY,
-        width,
-        height,
-      } = transitionState.sourceLayout;
+      const { x: pageX, y: pageY, width, height } = transitionState.sourceLayout;
       const cl = contentLayout.current;
       const cellCenterX = pageX + width / 2 - cl.x;
       const cellCenterY = pageY + height / 2 - cl.y;
@@ -209,7 +203,21 @@ export default function MainScreen() {
 
     prevViewRef.current = curr;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentView, transitionState]);
+  }, [
+    currentView,
+    transitionState,
+    yearZoomScale,
+    yearZoomOriginY, // 年层：从格子位置放大到满屏
+    yearZoomOriginX,
+    selectedDate,
+    yearOpacity,
+    monthZoomScale,
+    monthOpacity,
+    yearCellLayouts,
+    monthZoomOriginY, // 月层：从格子位置展开到满屏
+    monthZoomOriginX,
+    insets.top,
+  ]);
 
   // ── Animated styles ────────────────────────────────────────────────────────
   // 三明治公式：translate(dx,dy) → scale → translate(-dx,-dy)
@@ -249,11 +257,7 @@ export default function MainScreen() {
   };
 
   const activeTab: NavTab =
-    currentView === "year"
-      ? "year"
-      : currentView === "events"
-        ? "todo"
-        : "calendar";
+    currentView === "year" ? "year" : currentView === "events" ? "todo" : "calendar";
 
   /** 月→年切换前，设置过渡动画的起始位置 */
   const prepareYearTransition = useCallback(() => {
@@ -277,13 +281,7 @@ export default function MainScreen() {
         height: 185,
       },
     });
-  }, [
-    currentView,
-    selectedDate,
-    yearCellLayouts,
-    insets.top,
-    setTransitionState,
-  ]);
+  }, [currentView, selectedDate, yearCellLayouts, insets.top, setTransitionState]);
 
   const handleMenuPress = () => setMenuVisible(!menuVisible);
   const handleAddPress = () => {};
@@ -299,9 +297,7 @@ export default function MainScreen() {
   const showCalendarLayers = currentView === "year" || currentView === "month";
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {showCalendarLayers && <CalendarHeader />}
 
       {showCalendarLayers ? (

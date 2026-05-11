@@ -1,22 +1,16 @@
+import { getMonth, parseISO } from "date-fns";
 import { useEffect } from "react";
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  Dimensions,
-} from "react-native";
-import { parseISO, getMonth } from "date-fns";
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { useTheme } from "../../stores/themeStore";
-import { useViewStore } from "../../stores/eventStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { ViewType } from "../../domain/types";
+import { useViewStore } from "../../stores/eventStore";
+import { useTheme } from "../../stores/themeStore";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -53,13 +47,8 @@ const calculateMonthPositionInYearView = (
 
 export const ViewTabBar: React.FC = () => {
   const { theme } = useTheme();
-  const {
-    currentView,
-    setCurrentView,
-    selectedDate,
-    setTransitionState,
-    yearCellLayouts,
-  } = useViewStore();
+  const { currentView, setCurrentView, selectedDate, setTransitionState, yearCellLayouts } =
+    useViewStore();
   const insets = useSafeAreaInsets();
   const indicatorPosition = useSharedValue(0);
 
@@ -103,9 +92,7 @@ export const ViewTabBar: React.FC = () => {
           styles.tabContainer,
           {
             backgroundColor:
-              theme.mode === "dark"
-                ? "rgba(58, 58, 60, 0.6)"
-                : "rgba(240, 240, 240, 0.8)",
+              theme.mode === "dark" ? "rgba(58, 58, 60, 0.6)" : "rgba(240, 240, 240, 0.8)",
           },
         ]}
       >
@@ -113,8 +100,7 @@ export const ViewTabBar: React.FC = () => {
           style={[
             styles.tabIndicator,
             {
-              backgroundColor:
-                theme.mode === "dark" ? "rgba(255, 255, 255, 0.9)" : "#FFFFFF",
+              backgroundColor: theme.mode === "dark" ? "rgba(255, 255, 255, 0.9)" : "#FFFFFF",
             },
             animatedIndicatorStyle,
           ]}
@@ -133,9 +119,7 @@ export const ViewTabBar: React.FC = () => {
                 style={[
                   styles.tabLabel,
                   {
-                    color: isActive
-                      ? PRIMARY_COLOR
-                      : theme.colors.textSecondary,
+                    color: isActive ? PRIMARY_COLOR : theme.colors.textSecondary,
                     fontWeight: isActive ? "600" : "400",
                   },
                 ]}

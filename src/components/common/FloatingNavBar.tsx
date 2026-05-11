@@ -64,7 +64,7 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
       todayButtonOpacity.value = withTiming(0, { duration: 150 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showTodayButton]);
+  }, [showTodayButton, todayButtonScale, todayButtonOpacity]);
 
   const animatedTodayStyle = useAnimatedStyle(() => ({
     transform: [{ scale: todayButtonScale.value }],
@@ -98,7 +98,12 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
                 onPress={onTodayPress}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.todayButtonText, { color: theme.mode === "dark" ? "#1C1C1E" : "#FAFAFA" }]}>
+                <Text
+                  style={[
+                    styles.todayButtonText,
+                    { color: theme.mode === "dark" ? "#1C1C1E" : "#FAFAFA" },
+                  ]}
+                >
                   今
                 </Text>
               </TouchableOpacity>
@@ -117,9 +122,7 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
           containerStyle={[
             styles.segmentedContainer,
             {
-              backgroundColor: isDark
-                ? "rgba(58, 58, 60, 0.6)"
-                : "rgba(235, 235, 235, 0.6)",
+              backgroundColor: isDark ? "rgba(58, 58, 60, 0.6)" : "rgba(235, 235, 235, 0.6)",
               borderColor: theme.colors.border,
             },
           ]}
