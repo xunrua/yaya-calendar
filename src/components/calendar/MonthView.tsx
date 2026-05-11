@@ -32,7 +32,12 @@ const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05;
 
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
-  const { selectedDate, displayMonth: displayMonthStr, setDisplayMonth, hasNavigatedMonth } = useViewStore();
+  const {
+    selectedDate,
+    displayMonth: displayMonthStr,
+    setDisplayMonth,
+    hasNavigatedMonth,
+  } = useViewStore();
   const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
   const _insets = useSafeAreaInsets();
 
@@ -59,7 +64,7 @@ export const MonthView: React.FC = () => {
   useLayoutEffect(() => {
     if (!hasNavigatedMonth) {
       const [year, month] = selectedDate.split("-").map(Number);
-      const monthStartStr = `${year}-${String(month).padStart(2, '0')}-01`;
+      const monthStartStr = `${year}-${String(month).padStart(2, "0")}-01`;
       setDisplayMonth(monthStartStr);
     }
   }, [selectedDate, setDisplayMonth, hasNavigatedMonth]);
@@ -68,7 +73,7 @@ export const MonthView: React.FC = () => {
     const [year, month] = displayMonthStr.split("-").map(Number);
     const currentDisplayMonth = new Date(year, month - 1, 1);
     const newMonth = subMonths(currentDisplayMonth, 1);
-    const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, '0')}-01`;
+    const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, "0")}-01`;
     setDisplayMonth(newMonthStr);
     setHasNavigatedMonth(true);
   }, [displayMonthStr, setDisplayMonth, setHasNavigatedMonth]);
@@ -77,7 +82,7 @@ export const MonthView: React.FC = () => {
     const [year, month] = displayMonthStr.split("-").map(Number);
     const currentDisplayMonth = new Date(year, month - 1, 1);
     const newMonth = addMonths(currentDisplayMonth, 1);
-    const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, '0')}-01`;
+    const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, "0")}-01`;
     setDisplayMonth(newMonthStr);
     setHasNavigatedMonth(true);
   }, [displayMonthStr, setDisplayMonth, setHasNavigatedMonth]);
@@ -118,12 +123,7 @@ export const MonthView: React.FC = () => {
       isAnimating.value = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    displayMonthStr,
-    translateX,
-    opacity,
-    isAnimating,
-  ]);
+  }, [displayMonthStr, translateX, opacity, isAnimating]);
 
   // 折叠高度动画
   useLayoutEffect(() => {
