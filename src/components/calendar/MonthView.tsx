@@ -107,6 +107,26 @@ export const MonthView: React.FC = () => {
     return getRowIndexForDate(targetDate, displayMonth.getFullYear(), displayMonth.getMonth());
   }, [selectedDate, displayMonth]);
 
+  // 折叠状态下：计算上一周/下一周所在的月份和行索引（用于三屏预渲染）
+  const currentWeekTargetDate = useMemo(() => {
+    const targetDateStr = selectedDate || new Date().toISOString().split("T")[0];
+    return new Date(targetDateStr);
+  }, [selectedDate]);
+
+  const prevWeekInfo = useMemo(() => {
+    const prevWeekDate = subDays(currentWeekTargetDate, 7);
+    const prevWeekMonth = startOfMonth(prevWeekDate);
+    const rowIndex = getRowIndexForDate(prevWeekDate, prevWeekMonth.getFullYear(), prevWeekMonth.getMonth());
+    return { month: prevWeekMonth, rowIndex, date: prevWeekDate };
+  }, [currentWeekTargetDate]);
+
+  const nextWeekInfo = useMemo(() => {
+    const nextWeekDate = addDays(currentWeekTargetDate, 7);
+    const nextWeekMonth = startOfMonth(nextWeekDate);
+    const rowIndex = getRowIndexForDate(nextWeekDate, nextWeekMonth.getFullYear(), nextWeekMonth.getMonth());
+    return { month: nextWeekMonth, rowIndex, date: nextWeekDate };
+  }, [currentWeekTargetDate]);
+
   // 初始化三屏高度
   useLayoutEffect(() => {
     currentHeight.value = calculateGridHeight(currentRowCount, screenWidth);
@@ -477,32 +497,73 @@ export const MonthView: React.FC = () => {
       {/* Swipeable month grids with fold gesture */}
       <GestureDetector gesture={Gesture.Simultaneous(panGesture, foldGesture)}>
         <Animated.View style={[styles.monthsContainer, calendarHeightStyle]}>
-          <Animated.View style={[styles.monthPanel, prevMonthStyle]}>
-            <MonthGrid
-              year={prevMonth.getFullYear()}
-              month={prevMonth.getMonth()}
-              fidelity="full"
-            />
-          </Animated.View>
+          {isCollapsed ? (
+            // 折叠状态：周级别三屏渲染
+            <>
+              <Animated.View style={[styles.monthPanel, prevMonthStyle]}>
+                <MonthGrid
+                  year={prevWeekInfo.month.getFullYear()}
+                  month={prevWeekInfo.month.getMonth()}
+                  fidelity="full"
+                  targetRowIndex={prevWeekInfo.rowIndex}
+                  foldProgress={foldProgress}
+                  screenWidth={screenWidth}
+                />
+              </Animated.View>
 
-          <Animated.View style={[styles.monthPanel, animatedStyle]}>
-            <MonthGrid
-              year={displayMonth.getFullYear()}
-              month={displayMonth.getMonth()}
-              fidelity="full"
-              targetRowIndex={targetRowIndex}
-              foldProgress={foldProgress}
-              screenWidth={screenWidth}
-            />
-          </Animated.View>
+              <Animated.View style={[styles.monthPanel, animatedStyle]}>
+                <MonthGrid
+                  year={displayMonth.getFullYear()}
+                  month={displayMonth.getMonth()}
+                  fidelity="full"
+                  targetRowIndex={targetRowIndex}
+                  foldProgress={foldProgress}
+                  screenWidth={screenWidth}
+                />
+              </Animated.View>
 
-          <Animated.View style={[styles.monthPanel, nextMonthStyle]}>
-            <MonthGrid
-              year={nextMonth.getFullYear()}
-              month={nextMonth.getMonth()}
-              fidelity="full"
-            />
-          </Animated.View>
+              <Animated.View style={[styles.monthPanel, nextMonthStyle]}>
+                <MonthGrid
+                  year={nextWeekInfo.month.getFullYear()}
+                  month={nextWeekInfo.month.getMonth()}
+                  fidelity="full"
+                  targetRowIndex={nextWeekInfo.rowIndex}
+                  foldProgress={foldProgress}
+                  screenWidth={screenWidth}
+                />
+              </Animated.View>
+            </>
+          ) : (
+            // 展开状态：月份级别三屏渲染
+            <>
+              <Animated.View style={[styles.monthPanel, prevMonthStyle]}>
+                <MonthGrid
+                  year={prevMonth.getFullYear()}
+                  month={prevMonth.getMonth()}
+                  fidelity="full"
+                />
+              </Animated.View>
+
+              <Animated.View style={[styles.monthPanel, animatedStyle]}>
+                <MonthGrid
+                  year={displayMonth.getFullYear()}
+                  month={displayMonth.getMonth()}
+                  fidelity="full"
+                  targetRowIndex={targetRowIndex}
+                  foldProgress={foldProgress}
+                  screenWidth={screenWidth}
+                />
+              </Animated.View>
+
+              <Animated.View style={[styles.monthPanel, nextMonthStyle]}>
+                <MonthGrid
+                  year={nextMonth.getFullYear()}
+                  month={nextMonth.getMonth()}
+                  fidelity="full"
+                />
+              </Animated.View>
+            </>
+          )}
         </Animated.View>
       </GestureDetector>
 
