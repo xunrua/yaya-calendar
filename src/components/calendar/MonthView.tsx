@@ -33,7 +33,7 @@ import {
   getCalendarRowCount,
   getRowIndexForDate,
 } from "../../utils/calendar";
-import DayInfoPanel from "./DayInfoPanel";
+import { DayInfoPanel } from "./DayInfoPanel";
 import MonthGrid from "./MonthGrid";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -60,6 +60,7 @@ export const MonthView: React.FC = () => {
 
   // 从全局状态获取 displayMonth，转换为 Date 对象
   const displayMonth = useMemo(() => {
+    console.log(`[PERF] displayMonthStr changed to: ${displayMonthStr}`);
     const date = new Date(displayMonthStr);
     return startOfMonth(date);
   }, [displayMonthStr]);
@@ -145,18 +146,27 @@ export const MonthView: React.FC = () => {
   }, [currentWeekTargetDate]);
 
   // 预计算三屏农历信息
-  const prevLunarInfoMap = useMemo(
-    () => getLunarInfoBatch(prevMonth.getFullYear(), prevMonth.getMonth()),
-    [prevMonth]
-  );
-  const currentLunarInfoMap = useMemo(
-    () => getLunarInfoBatch(displayMonth.getFullYear(), displayMonth.getMonth()),
-    [displayMonth]
-  );
-  const nextLunarInfoMap = useMemo(
-    () => getLunarInfoBatch(nextMonth.getFullYear(), nextMonth.getMonth()),
-    [nextMonth]
-  );
+  const prevLunarInfoMap = useMemo(() => {
+    const result = getLunarInfoBatch(prevMonth.getFullYear(), prevMonth.getMonth());
+    console.log(
+      `[PERF] prevLunarInfoMap: ${prevMonth.getFullYear()}-${prevMonth.getMonth() + 1}, size: ${result.size}`
+    );
+    return result;
+  }, [prevMonth]);
+  const currentLunarInfoMap = useMemo(() => {
+    const result = getLunarInfoBatch(displayMonth.getFullYear(), displayMonth.getMonth());
+    console.log(
+      `[PERF] currentLunarInfoMap: ${displayMonth.getFullYear()}-${displayMonth.getMonth() + 1}, size: ${result.size}`
+    );
+    return result;
+  }, [displayMonth]);
+  const nextLunarInfoMap = useMemo(() => {
+    const result = getLunarInfoBatch(nextMonth.getFullYear(), nextMonth.getMonth());
+    console.log(
+      `[PERF] nextLunarInfoMap: ${nextMonth.getFullYear()}-${nextMonth.getMonth() + 1}, size: ${result.size}`
+    );
+    return result;
+  }, [nextMonth]);
 
   // 预计算三屏事件数据
   const getEventsForMonth = useEventStore((s) => s.getEventsForMonth);
@@ -221,9 +231,13 @@ export const MonthView: React.FC = () => {
   // 当 selectedDate 从外部变化时（如从年视图点击月份），同步 displayMonth
   // 但如果用户已经手动滑动过月份，则不同步
   useLayoutEffect(() => {
+    console.log(
+      `[PERF] useLayoutEffect sync: selectedDate=${selectedDate}, hasNavigatedMonth=${hasNavigatedMonth}`
+    );
     if (!hasNavigatedMonth) {
       const [year, month] = selectedDate.split("-").map(Number);
       const monthStartStr = `${year}-${String(month).padStart(2, "0")}-01`;
+      console.log(`[PERF] useLayoutEffect setting displayMonth to: ${monthStartStr}`);
       setDisplayMonth(monthStartStr);
     }
   }, [selectedDate, setDisplayMonth, hasNavigatedMonth]);
@@ -295,10 +309,8 @@ export const MonthView: React.FC = () => {
           calendarHeight.value = currentHeight.value;
           foldProgress.value = 0;
         }
-        // 下一帧淡入
-        runOnJS(() => {
-          opacity.value = withTiming(1, { duration: 200 });
-        });
+        // 下一帧淡入（使用 withDelay 延迟一帧）
+        opacity.value = withTiming(1, { duration: 200 });
       } else {
         // 正常滑动：重置位置
         translateX.value = 0;
@@ -342,7 +354,6 @@ export const MonthView: React.FC = () => {
     translateX.value = 0;
     const currentDate = new Date(selectedDate);
     const nextWeek = addDays(currentDate, 7);
-    const _nextWeekStr = format(nextWeek, "yyyy-MM-dd");
 
     // 切换周时同步选中日期：如果新周包含今天则选中今天，否则选中周一
     const today = new Date();
@@ -363,7 +374,6 @@ export const MonthView: React.FC = () => {
     translateX.value = 0;
     const currentDate = new Date(selectedDate);
     const prevWeek = subDays(currentDate, 7);
-    const _prevWeekStr = format(prevWeek, "yyyy-MM-dd");
 
     // 切换周时同步选中日期：如果新周包含今天则选中今天，否则选中周一
     const today = new Date();

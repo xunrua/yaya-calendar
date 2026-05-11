@@ -179,14 +179,21 @@ interface ViewState {
 /** 获取今天的 ISO 日期字符串 */
 const getTodayString = (): string => {
   const today = new Date();
-  return today.toISOString().split("T")[0];
+  // 使用本地时间格式化，避免 toISOString() 的 UTC 转换问题
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 /** 获取本月月初的 ISO 日期字符串 */
 const getMonthStartString = (): string => {
   const today = new Date();
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  return monthStart.toISOString().split("T")[0];
+  // 使用本地时间格式化，避免 toISOString() 的 UTC 转换问题
+  const year = monthStart.getFullYear();
+  const month = String(monthStart.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}-01`;
 };
 
 export const useViewStore = create<ViewState>((set, get) => ({
@@ -223,9 +230,12 @@ export const useViewStore = create<ViewState>((set, get) => ({
 
   goToToday: () => {
     const today = getTodayString();
+    const monthStart = getMonthStartString();
+    console.log(`[PERF] goToToday called: today=${today}, monthStart=${monthStart}`);
     set({
       selectedDate: today,
-      displayMonth: today,
+      displayMonth: monthStart, // 使用月初日期，而不是今天
+      hasNavigatedMonth: false,
     });
   },
 
