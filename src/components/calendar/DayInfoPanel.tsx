@@ -53,7 +53,7 @@ export const DayInfoPanel: React.FC<DayInfoPanelProps> = ({ date }) => {
     // 过滤出传统节日和法定假日（排除节气）
     const festivals = holidays.filter((h) => h.type !== "solar_term");
 
-    // 构建农历信息字符串
+    // 农历信息（不含节日）
     const lunarParts: string[] = [];
     lunarParts.push(lunar.day === 1 ? lunar.monthName : lunar.dayName);
     lunarParts.push(`${lunar.yearGanZhi}(${lunar.yearShengXiao})`);
@@ -61,14 +61,15 @@ export const DayInfoPanel: React.FC<DayInfoPanelProps> = ({ date }) => {
     if (solarTerm) {
       lunarParts.push(solarTerm.name);
     }
-    if (festivals.length > 0) {
-      lunarParts.push(festivals[0].name);
-    }
+
+    // 节日信息
+    const festivalName = festivals.length > 0 ? festivals[0].name : null;
 
     return {
       relativeLabel: getRelativeDateLabel(dateObj),
       formattedDate: format(dateObj, "M月d日"),
       lunarInfo: lunarParts.join(" "),
+      festival: festivalName,
     };
   }, [date]);
 
@@ -90,6 +91,11 @@ export const DayInfoPanel: React.FC<DayInfoPanelProps> = ({ date }) => {
           {dateInfo.lunarInfo}
         </Text>
       </View>
+      {dateInfo.festival && (
+        <Text style={[styles.festivalInfo, { color: theme.colors.textSecondary }]}>
+          {dateInfo.festival}
+        </Text>
+      )}
 
       {/* 事件列表区域 */}
       {hasEvents && (
@@ -172,6 +178,10 @@ const styles = StyleSheet.create({
   lunarInfo: {
     fontSize: 12,
   },
+  festivalInfo: {
+    fontSize: 12,
+    marginBottom: 12,
+  },
   // 事件列表区域
   eventsSection: {
     maxHeight: 200,
@@ -205,11 +215,11 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 14,
     fontWeight: "500",
-    marginBottom: 2,
   },
   eventDescription: {
     fontSize: 12,
     lineHeight: 16,
+    marginTop: 4,
   },
 });
 
