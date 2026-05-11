@@ -1,6 +1,3 @@
-import { getHolidays } from "@/src/domain/lunar";
-import { useViewStore } from "@/src/stores/eventStore";
-import { useTheme } from "@/src/stores/themeStore";
 import {
   addYears,
   eachDayOfInterval,
@@ -16,24 +13,21 @@ import {
   startOfWeek,
   subYears,
 } from "date-fns";
-import React, { useCallback, useMemo, useState, useRef } from "react";
-import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withTiming,
   withSpring,
-  runOnJS,
+  withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getHolidays } from "@/src/domain/lunar";
+import { useViewStore } from "@/src/stores/eventStore";
+import { useTheme } from "@/src/stores/themeStore";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const PRIMARY_COLOR = "#E8563A";
@@ -42,15 +36,7 @@ const SWIPE_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.3;
 const SPRING_CONFIG = { damping: 20, stiffness: 100 };
 
 // 法定假日列表
-const STATUTORY_HOLIDAYS = [
-  "元旦",
-  "春节",
-  "清明节",
-  "劳动节",
-  "端午节",
-  "中秋节",
-  "国庆节",
-];
+const STATUTORY_HOLIDAYS = ["元旦", "春节", "清明节", "劳动节", "端午节", "中秋节", "国庆节"];
 
 const isStatutoryHoliday = (date: Date): boolean => {
   const holidays = getHolidays(date);
@@ -97,18 +83,18 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
   const isSelectedMonth = isSameMonth(monthDate, selectedDate);
 
   const handlePress = () => {
-    ref.current?.measure((x, y, width, height, pageX, pageY) => {
+    ref.current?.measure((_x, _y, width, height, pageX, pageY) => {
       onMonthPress(monthDate, { x: pageX, y: pageY, width, height });
     });
   };
 
   React.useEffect(() => {
     requestAnimationFrame(() => {
-      ref.current?.measure((x, y, width, height, pageX, pageY) => {
+      ref.current?.measure((_x, _y, width, height, pageX, pageY) => {
         onMeasureRef.current?.(month, { x: pageX, y: pageY, width, height });
       });
     });
-  }, [month, year]);
+  }, [month]);
 
   return (
     <TouchableOpacity
@@ -131,12 +117,7 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
       <View style={styles.miniWeekRow}>
         {WEEKDAY_LABELS.map((label) => (
           <View key={label} style={[styles.miniCell, styles.miniWeekCell]}>
-            <Text
-              style={[
-                styles.miniWeekText,
-                { color: theme.colors.textSecondary },
-              ]}
-            >
+            <Text style={[styles.miniWeekText, { color: theme.colors.textSecondary }]}>
               {label}
             </Text>
           </View>
@@ -144,24 +125,21 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
       </View>
 
       <View style={styles.miniDaysGrid}>
-        {days.map((day, idx) => {
+        {days.map((day) => {
           const isCurrentMonth = isSameMonth(day, monthDate);
           const isToday = isSameDay(day, today);
           const isHolidayDay = isStatutoryHoliday(day);
+          const dayKey = format(day, "yyyy-MM-dd");
 
           if (!isCurrentMonth) {
-            return <View key={idx} style={styles.miniCell} />;
+            return <View key={dayKey} style={styles.miniCell} />;
           }
 
-          const textColor = isToday
-            ? "#FFFFFF"
-            : isHolidayDay
-              ? PRIMARY_COLOR
-              : theme.colors.text;
+          const textColor = isToday ? "#FFFFFF" : isHolidayDay ? PRIMARY_COLOR : theme.colors.text;
 
           return (
             <View
-              key={idx}
+              key={dayKey}
               style={[
                 styles.miniCell,
                 isToday && {
@@ -205,14 +183,8 @@ export const YearView: React.FC = () => {
   const translateX = useSharedValue(0);
   const isAnimating = useSharedValue(false);
 
-  const prevYear = useMemo(
-    () => subYears(new Date(displayYear, 0, 1), 1),
-    [displayYear]
-  );
-  const nextYear = useMemo(
-    () => addYears(new Date(displayYear, 0, 1), 1),
-    [displayYear]
-  );
+  const prevYear = useMemo(() => subYears(new Date(displayYear, 0, 1), 1), [displayYear]);
+  const nextYear = useMemo(() => addYears(new Date(displayYear, 0, 1), 1), [displayYear]);
 
   const goToPreviousYearJS = useCallback(() => {
     const newYear = displayYear - 1;
@@ -229,10 +201,7 @@ export const YearView: React.FC = () => {
   }, [displayYear, selectedDate, setSelectedDate, hasNavigatedMonth]);
 
   const handleMonthPress = useCallback(
-    (
-      monthDate: Date,
-      layout: { x: number; y: number; width: number; height: number }
-    ) => {
+    (monthDate: Date, layout: { x: number; y: number; width: number; height: number }) => {
       setTransitionState({
         sourceLayout: layout,
       });
@@ -248,10 +217,7 @@ export const YearView: React.FC = () => {
   >({});
 
   const handleCellMeasure = useCallback(
-    (
-      month: number,
-      layout: { x: number; y: number; width: number; height: number }
-    ) => {
+    (month: number, layout: { x: number; y: number; width: number; height: number }) => {
       pendingMeasurements.current[month] = layout;
       if (Object.keys(pendingMeasurements.current).length === 12) {
         setYearCellLayouts({ ...pendingMeasurements.current });
@@ -264,7 +230,7 @@ export const YearView: React.FC = () => {
     translateX.value = 0;
     isAnimating.value = false;
     pendingMeasurements.current = {};
-  }, [displayYear, translateX, isAnimating]);
+  }, [translateX, isAnimating]);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -278,11 +244,9 @@ export const YearView: React.FC = () => {
 
       const { translationX, velocityX } = event;
       const shouldSwipeLeft =
-        translationX < -SWIPE_DISTANCE_THRESHOLD ||
-        velocityX < -SWIPE_VELOCITY_THRESHOLD;
+        translationX < -SWIPE_DISTANCE_THRESHOLD || velocityX < -SWIPE_VELOCITY_THRESHOLD;
       const shouldSwipeRight =
-        translationX > SWIPE_DISTANCE_THRESHOLD ||
-        velocityX > SWIPE_VELOCITY_THRESHOLD;
+        translationX > SWIPE_DISTANCE_THRESHOLD || velocityX > SWIPE_VELOCITY_THRESHOLD;
 
       if (shouldSwipeLeft) {
         isAnimating.value = true;
