@@ -23,6 +23,7 @@ interface EventState {
   selectEvent: (id: string | null) => void;
   getEventById: (id: string) => Event | undefined;
   getEventsForDate: (date: string) => Event[];
+  getEventsForMonth: (year: number, month: number) => Map<string, Event[]>;
   getEventsForDateRange: (startDate: Date, endDate: Date) => Map<string, Event[]>;
 }
 
@@ -117,6 +118,15 @@ export const useEventStore = create<EventState>((set, get) => ({
     }
 
     return eventsForDate.sort((a, b) => a.startTime.localeCompare(b.startTime));
+  },
+
+  getEventsForMonth: (year, month) => {
+    const monthStart = new Date(year, month, 1);
+    monthStart.setHours(0, 0, 0, 0);
+    const monthEnd = new Date(year, month + 1, 0);
+    monthEnd.setHours(23, 59, 59, 999);
+
+    return getEventOccurrencesInRange(get().events, monthStart, monthEnd);
   },
 
   getEventsForDateRange: (startDate, endDate) => {

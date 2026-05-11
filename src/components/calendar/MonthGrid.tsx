@@ -10,10 +10,11 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
-import { useEffect, useMemo } from "react";
+import { memo, useEffect, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import type { Event } from "../../domain/types";
 import { getLunarInfo } from "../../domain/lunar";
 import { useEventStore, useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
@@ -25,6 +26,15 @@ const POP_ANIMATION_CONFIG = { damping: 18, stiffness: 200 };
 
 type Fidelity = "full" | "skeleton";
 
+/** 农历信息缓存结构 */
+interface LunarInfo {
+  lunarDay: string;
+  solarTerm?: string;
+  holiday?: string;
+  isHoliday: boolean;
+  isSolarTerm: boolean;
+}
+
 interface MonthGridProps {
   year: number;
   month: number; // 0-indexed（0 = 一月）
@@ -32,6 +42,8 @@ interface MonthGridProps {
   targetRowIndex?: number; // 目标行索引（用于折叠动画）
   foldProgress?: SharedValue<number>; // 折叠进度（0-1）
   screenWidth?: number; // 屏幕宽度（用于计算折叠高度）
+  lunarInfoMap?: Map<string, LunarInfo>; // 预计算的农历信息
+  eventsMap?: Map<string, Event[]>; // 预计算的事件数据
 }
 
 interface AnimatedDayCellProps {
@@ -43,9 +55,11 @@ interface AnimatedDayCellProps {
   fidelity: Fidelity;
   isDimmed?: boolean; // 是否淡化显示（非当月日期）
   onPress?: () => void;
+  lunarInfo?: LunarInfo; // 预计算的农历信息
+  events?: Event[]; // 预计算的事件数据
 }
 
-const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
+const AnimatedDayCell = memo(function AnimatedDayCell({
   day,
   isSelected,
   isToday,
@@ -54,7 +68,9 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
   fidelity,
   isDimmed = false,
   onPress,
-}) => {
+  lunarInfo,
+  events = [],
+}: AnimatedDayCellProps) {
   const { theme } = useTheme();
   const c = theme.colors;
   const scale = useSharedValue(1);
@@ -75,8 +91,9 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
   }));
 
   const dateStr = format(day, "yyyy-MM-dd");
-  const lunarInfo = fidelity === "full" ? getLunarInfo(day) : null;
-  const events = fidelity === "full" ? useEventStore.getState().getEventsForDate(dateStr) : [];
+  // 使用预计算数据或实时计算（fallback）
+  const lunarData = lunarInfo ?? (fidelity === "full" ? getLunarInfo(day) : null);
+  const eventData = events.length > 0 ? events : (fidelity === "full" ? useEventStore.getState().getEventsForDate(dateStr) : []);
   const workStatus = fidelity === "full" ? getWorkStatus(day) : null;
 
   const getBackgroundColor = () => {
@@ -109,8 +126,8 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
   const getLunarColor = () => {
     if (isDimmed) return c.textTertiary;
     if (!isCurrentMonth) return c.textTertiary;
-    if (lunarInfo?.isHoliday) return c.holidayText;
-    if (lunarInfo?.isSolarTerm) return c.solarTermText;
+    if (lunarData?.isHoliday) return c.holidayText;
+    if (lunarData?.isSolarTerm) return c.solarTermText;
     return c.lunarText;
   };
 
@@ -143,14 +160,14 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
           </Text>
         )}
       </View>
-      {fidelity === "full" && lunarInfo && (
+      {fidelity === "full" && lunarData && (
         <Text style={[styles.lunarText, { color: getLunarColor() }]} numberOfLines={1}>
-          {lunarInfo.holiday || lunarInfo.solarTerm || lunarInfo.lunarDay}
+          {lunarData.holiday || lunarData.solarTerm || lunarData.lunarDay}
         </Text>
       )}
-      {fidelity === "full" && events.length > 0 && (
+      {fidelity === "full" && eventData.length > 0 && (
         <View style={styles.eventDots}>
-          {events.slice(0, 3).map((event) => (
+          {eventData.slice(0, 3).map((event) => (
             <View
               key={event.id}
               style={[
@@ -174,7 +191,7 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
       {cellContent}
     </Pressable>
   );
-};
+});
 
 export default function MonthGrid({
   year,
@@ -183,6 +200,8 @@ export default function MonthGrid({
   targetRowIndex,
   foldProgress,
   screenWidth = 400,
+  lunarInfoMap,
+  eventsMap,
 }: MonthGridProps) {
   const selectedDate = useViewStore((state) => state.selectedDate);
   const setSelectedDate = useViewStore((state) => state.setSelectedDate);
@@ -259,6 +278,10 @@ export default function MonthGrid({
     const dayOfWeek = day.getDay();
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
+    // 使用预计算数据
+    const cellLunarInfo = lunarInfoMap?.get(dateStr);
+    const cellEvents = eventsMap?.get(dateStr) ?? [];
+
     return (
       <AnimatedDayCell
         key={dateStr}
@@ -270,6 +293,8 @@ export default function MonthGrid({
         fidelity={fidelity}
         isDimmed={!isCurrentMonth}
         onPress={isCurrentMonth ? () => handleDayPress(day) : undefined}
+        lunarInfo={cellLunarInfo}
+        events={cellEvents}
       />
     );
   };

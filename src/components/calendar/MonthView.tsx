@@ -24,7 +24,8 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { useViewStore } from "../../stores/eventStore";
+import { getLunarInfoBatch } from "../../domain/lunar";
+import { useEventStore, useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
 import {
   calculateGridHeight,
@@ -142,6 +143,53 @@ export const MonthView: React.FC = () => {
     );
     return { month: nextWeekMonth, rowIndex, date: nextWeekDate };
   }, [currentWeekTargetDate]);
+
+  // 预计算三屏农历信息
+  const prevLunarInfoMap = useMemo(
+    () => getLunarInfoBatch(prevMonth.getFullYear(), prevMonth.getMonth()),
+    [prevMonth]
+  );
+  const currentLunarInfoMap = useMemo(
+    () => getLunarInfoBatch(displayMonth.getFullYear(), displayMonth.getMonth()),
+    [displayMonth]
+  );
+  const nextLunarInfoMap = useMemo(
+    () => getLunarInfoBatch(nextMonth.getFullYear(), nextMonth.getMonth()),
+    [nextMonth]
+  );
+
+  // 预计算三屏事件数据
+  const getEventsForMonth = useEventStore((s) => s.getEventsForMonth);
+  const prevEventsMap = useMemo(
+    () => getEventsForMonth(prevMonth.getFullYear(), prevMonth.getMonth()),
+    [prevMonth, getEventsForMonth]
+  );
+  const currentEventsMap = useMemo(
+    () => getEventsForMonth(displayMonth.getFullYear(), displayMonth.getMonth()),
+    [displayMonth, getEventsForMonth]
+  );
+  const nextEventsMap = useMemo(
+    () => getEventsForMonth(nextMonth.getFullYear(), nextMonth.getMonth()),
+    [nextMonth, getEventsForMonth]
+  );
+
+  // 折叠状态下的农历和事件预计算
+  const prevWeekLunarInfoMap = useMemo(
+    () => getLunarInfoBatch(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth()),
+    [prevWeekInfo.month]
+  );
+  const nextWeekLunarInfoMap = useMemo(
+    () => getLunarInfoBatch(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth()),
+    [nextWeekInfo.month]
+  );
+  const prevWeekEventsMap = useMemo(
+    () => getEventsForMonth(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth()),
+    [prevWeekInfo.month, getEventsForMonth]
+  );
+  const nextWeekEventsMap = useMemo(
+    () => getEventsForMonth(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth()),
+    [nextWeekInfo.month, getEventsForMonth]
+  );
 
   // 初始化三屏高度
   useLayoutEffect(() => {
@@ -558,6 +606,8 @@ export const MonthView: React.FC = () => {
                   targetRowIndex={prevWeekInfo.rowIndex}
                   foldProgress={foldProgress}
                   screenWidth={screenWidth}
+                  lunarInfoMap={prevWeekLunarInfoMap}
+                  eventsMap={prevWeekEventsMap}
                 />
               </Animated.View>
 
@@ -569,6 +619,8 @@ export const MonthView: React.FC = () => {
                   targetRowIndex={targetRowIndex}
                   foldProgress={foldProgress}
                   screenWidth={screenWidth}
+                  lunarInfoMap={currentLunarInfoMap}
+                  eventsMap={currentEventsMap}
                 />
               </Animated.View>
 
@@ -580,6 +632,8 @@ export const MonthView: React.FC = () => {
                   targetRowIndex={nextWeekInfo.rowIndex}
                   foldProgress={foldProgress}
                   screenWidth={screenWidth}
+                  lunarInfoMap={nextWeekLunarInfoMap}
+                  eventsMap={nextWeekEventsMap}
                 />
               </Animated.View>
             </>
@@ -591,6 +645,8 @@ export const MonthView: React.FC = () => {
                   year={prevMonth.getFullYear()}
                   month={prevMonth.getMonth()}
                   fidelity="full"
+                  lunarInfoMap={prevLunarInfoMap}
+                  eventsMap={prevEventsMap}
                 />
               </Animated.View>
 
@@ -602,6 +658,8 @@ export const MonthView: React.FC = () => {
                   targetRowIndex={targetRowIndex}
                   foldProgress={foldProgress}
                   screenWidth={screenWidth}
+                  lunarInfoMap={currentLunarInfoMap}
+                  eventsMap={currentEventsMap}
                 />
               </Animated.View>
 
@@ -610,6 +668,8 @@ export const MonthView: React.FC = () => {
                   year={nextMonth.getFullYear()}
                   month={nextMonth.getMonth()}
                   fidelity="full"
+                  lunarInfoMap={nextLunarInfoMap}
+                  eventsMap={nextEventsMap}
                 />
               </Animated.View>
             </>

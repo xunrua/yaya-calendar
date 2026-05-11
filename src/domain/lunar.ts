@@ -1,5 +1,32 @@
 import { Lunar, Solar, SolarMonth } from "lunar-javascript";
+import { eachDayOfInterval, endOfMonth, endOfWeek, startOfMonth, startOfWeek } from "date-fns";
 import type { Holiday, LunarDate, SolarTerm } from "../domain/types";
+
+// ============================================================================
+// Lunar Calendar Cache
+// ============================================================================
+
+/** 农历信息缓存结构 */
+interface CachedLunarInfo {
+  lunarDay: string;
+  solarTerm?: string;
+  holiday?: string;
+  isHoliday: boolean;
+  isSolarTerm: boolean;
+}
+
+/** 月级缓存，key 为 "yyyy-MM"，value 为日期到农历信息的映射 */
+const lunarMonthCache = new Map<string, Map<string, CachedLunarInfo>>();
+
+/** 最大缓存月份数 */
+const MAX_CACHE_SIZE = 12;
+
+/**
+ * 清除农历缓存（事件变更时调用）
+ */
+export const clearLunarCache = () => {
+  lunarMonthCache.clear();
+};
 
 // ============================================================================
 // Lunar Calendar Service
@@ -288,6 +315,60 @@ export const getLunarInfo = (
 };
 
 /**
+ * 批量获取整月的农历信息（带缓存）
+ * @param year 年份
+ * @param month 月份（0-indexed，0 = 一月）
+ * @returns 日期字符串到农历信息的映射
+ */
+export const getLunarInfoBatch = (year: number, month: number): Map<string, CachedLunarInfo> => {
+  const cacheKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+
+  // 检查缓存
+  if (lunarMonthCache.has(cacheKey)) {
+    return lunarMonthCache.get(cacheKey)!;
+  }
+
+  // LRU 淘汰：缓存超过上限时清除最早的
+  if (lunarMonthCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = lunarMonthCache.keys().next().value;
+    if (firstKey) {
+      lunarMonthCache.delete(firstKey);
+    }
+  }
+
+  // 计算整月的农历信息
+  const result = new Map<string, CachedLunarInfo>();
+  const monthDate = new Date(year, month, 1);
+  const monthStart = startOfMonth(monthDate);
+  const monthEnd = endOfMonth(monthDate);
+  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+
+  const days = eachDayOfInterval({ start: calStart, end: calEnd });
+
+  for (const day of days) {
+    const dateStr = day.toISOString().split("T")[0];
+    const lunarDay = getLunarDayDisplay(day);
+    const solarTerm = getSolarTerm(day);
+    const holiday = getHolidayDisplay(day);
+    const isHolidayDay = isHoliday(day);
+    const isSolarTermDayFlag = isSolarTermDay(day);
+
+    result.set(dateStr, {
+      lunarDay,
+      solarTerm: solarTerm?.name ?? undefined,
+      holiday: holiday ?? undefined,
+      isHoliday: isHolidayDay,
+      isSolarTerm: isSolarTermDayFlag,
+    });
+  }
+
+  // 存入缓存
+  lunarMonthCache.set(cacheKey, result);
+  return result;
+};
+
+/**
  * Get Gan-Zhi (干支) representation for a date
  */
 export const getGanZhi = (date: Date): { year: string; month: string; day: string } => {
@@ -318,6 +399,8 @@ export default {
   isSolarTermDay,
   getHolidayDisplay,
   getLunarInfo,
+  getLunarInfoBatch,
+  clearLunarCache,
   getGanZhi,
   getShengXiao,
 };
