@@ -49,13 +49,11 @@ const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05; // 折叠距离阈值
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
-  const {
-    selectedDate,
-    displayMonth: displayMonthStr,
-    setDisplayMonth,
-    setSelectedDate,
-    hasNavigatedMonth,
-  } = useViewStore();
+  const selectedDate = useViewStore((s) => s.selectedDate);
+  const displayMonthStr = useViewStore((s) => s.displayMonth);
+  const setDisplayMonth = useViewStore((s) => s.setDisplayMonth);
+  const setSelectedDate = useViewStore((s) => s.setSelectedDate);
+  const hasNavigatedMonth = useViewStore((s) => s.hasNavigatedMonth);
   const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
 
   // 从全局状态获取 displayMonth，转换为 Date 对象

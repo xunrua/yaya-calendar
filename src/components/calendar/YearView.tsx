@@ -167,14 +167,11 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
 
 export const YearView: React.FC = () => {
   const { theme } = useTheme();
-  const {
-    selectedDate,
-    setSelectedDate,
-    setCurrentView,
-    setTransitionState,
-    setYearCellLayouts,
-    hasNavigatedMonth,
-  } = useViewStore();
+  const selectedDate = useViewStore((s) => s.selectedDate);
+  const setSelectedDate = useViewStore((s) => s.setSelectedDate);
+  const setCurrentView = useViewStore((s) => s.setCurrentView);
+  const setTransitionState = useViewStore((s) => s.setTransitionState);
+  const hasNavigatedMonth = useViewStore((s) => s.hasNavigatedMonth);
 
   const currentSelectedDate = parseISO(selectedDate);
   const [displayYear, setDisplayYear] = useState(getYear(currentSelectedDate));
@@ -224,10 +221,10 @@ export const YearView: React.FC = () => {
     (month: number, layout: { x: number; y: number; width: number; height: number }) => {
       pendingMeasurements.current[month] = layout;
       if (Object.keys(pendingMeasurements.current).length === 12) {
-        setYearCellLayouts({ ...pendingMeasurements.current });
+        useViewStore.getState().setYearCellLayouts({ ...pendingMeasurements.current });
       }
     },
-    [setYearCellLayouts]
+    []
   );
 
   React.useLayoutEffect(() => {

@@ -36,16 +36,13 @@ const YEAR_PANEL_BOTTOM = 100;
 
 export default function MainScreen() {
   const { theme } = useTheme();
-  const {
-    currentView,
-    setCurrentView,
-    transitionState,
-    setTransitionState,
-    selectedDate,
-    yearCellLayouts,
-    displayMonth,
-    goToToday,
-  } = useViewStore();
+  const currentView = useViewStore((s) => s.currentView);
+  const setCurrentView = useViewStore((s) => s.setCurrentView);
+  const transitionState = useViewStore((s) => s.transitionState);
+  const setTransitionState = useViewStore((s) => s.setTransitionState);
+  const selectedDate = useViewStore((s) => s.selectedDate);
+  const displayMonth = useViewStore((s) => s.displayMonth);
+  const goToToday = useViewStore((s) => s.goToToday);
   const insets = useSafeAreaInsets();
   const [menuVisible, setMenuVisible] = useState(false);
   const prevViewRef = useRef(currentView);
@@ -122,7 +119,7 @@ export default function MainScreen() {
     if (fromMonth && toYear) {
       const cl = contentLayout.current;
       const month = getMonth(parseISO(selectedDate));
-      const storedLayout = yearCellLayouts[month];
+      const storedLayout = useViewStore.getState().yearCellLayouts[month];
 
       let cellCenterX: number;
       let cellCenterY: number;
@@ -213,7 +210,6 @@ export default function MainScreen() {
     yearOpacity,
     monthZoomScale,
     monthOpacity,
-    yearCellLayouts,
     monthZoomOriginY, // 月层：从格子位置展开到满屏
     monthZoomOriginX,
     insets.top,
@@ -262,7 +258,7 @@ export default function MainScreen() {
     if (currentView !== "month") return;
 
     const month = getMonth(parseISO(selectedDate));
-    const storedLayout = yearCellLayouts[month];
+    const storedLayout = useViewStore.getState().yearCellLayouts[month];
     if (storedLayout) {
       setTransitionState({ sourceLayout: storedLayout });
       return;
@@ -279,7 +275,7 @@ export default function MainScreen() {
         height: 185,
       },
     });
-  }, [currentView, selectedDate, yearCellLayouts, insets.top, setTransitionState]);
+  }, [currentView, selectedDate, insets.top, setTransitionState]);
 
   const handleMenuPress = () => setMenuVisible(!menuVisible);
   const handleAddPress = () => {};
