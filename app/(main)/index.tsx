@@ -22,7 +22,7 @@ import type { ViewType } from "@/src/domain/types";
 import { useViewStore } from "@/src/stores/eventStore";
 import { useTheme } from "@/src/stores/themeStore";
 
-type NavTab = "year" | "calendar" | "todo";
+type NavTab = "calendar" | "todo";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -251,13 +251,11 @@ export default function MainScreen() {
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const VIEW_FROM_TAB: Record<NavTab, ViewType> = {
-    year: "year",
     calendar: "month",
     todo: "events",
   };
 
-  const activeTab: NavTab =
-    currentView === "year" ? "year" : currentView === "events" ? "todo" : "calendar";
+  const activeTab: NavTab = currentView === "events" ? "todo" : "calendar";
 
   /** 月→年切换前，设置过渡动画的起始位置 */
   const prepareYearTransition = useCallback(() => {
@@ -287,8 +285,12 @@ export default function MainScreen() {
   const handleAddPress = () => {};
 
   const handleTabChange = (tab: NavTab) => {
-    if (tab === "year") prepareYearTransition();
     setCurrentView(VIEW_FROM_TAB[tab]);
+  };
+
+  const handleYearViewPress = () => {
+    prepareYearTransition();
+    setCurrentView("year");
   };
 
   const handleWeekView = () => setCurrentView("week");
@@ -298,7 +300,7 @@ export default function MainScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {showCalendarLayers && <CalendarHeader />}
+      {showCalendarLayers && <CalendarHeader onYearViewPress={handleYearViewPress} />}
 
       {showCalendarLayers ? (
         <View style={styles.contentArea} onLayout={handleContentLayout}>

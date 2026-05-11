@@ -12,12 +12,11 @@ import { useTheme } from "../../stores/themeStore";
 import { SegmentedControl } from "./SegmentedControl";
 
 const TABS: { key: NavTab; label: string }[] = [
-  { key: "year", label: "年" },
   { key: "calendar", label: "日历" },
   { key: "todo", label: "日程" },
 ];
 
-type NavTab = "year" | "calendar" | "todo";
+type NavTab = "calendar" | "todo";
 
 interface FloatingNavBarProps {
   onMenuPress: () => void;

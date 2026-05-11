@@ -1,20 +1,35 @@
+import { Ionicons } from "@expo/vector-icons";
 import { format, getISOWeek, getYear } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
 
-export const CalendarHeader = () => {
+interface CalendarHeaderProps {
+  onYearViewPress?: () => void;
+}
+
+export const CalendarHeader: React.FC<CalendarHeaderProps> = ({ onYearViewPress }) => {
   const { theme } = useTheme();
   const { selectedDate, currentView } = useViewStore();
   const insets = useSafeAreaInsets();
 
   const date = new Date(selectedDate);
+  const showArrow = currentView === "month" && onYearViewPress;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.titleRow}>
+        {showArrow && (
+          <TouchableOpacity
+            onPress={onYearViewPress}
+            activeOpacity={0.7}
+            style={styles.arrowButton}
+          >
+            <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+        )}
         <Text style={[styles.title, { color: theme.colors.text }]}>
           {currentView === "year"
             ? `${getYear(date)}年`
@@ -38,8 +53,12 @@ const styles = StyleSheet.create({
   },
   titleRow: {
     flexDirection: "row",
-    alignItems: "baseline",
+    alignItems: "center",
     paddingTop: 16,
+  },
+  arrowButton: {
+    marginRight: 4,
+    padding: 4,
   },
   title: {
     fontSize: 28,
