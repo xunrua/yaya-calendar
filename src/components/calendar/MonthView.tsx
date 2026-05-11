@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { addMonths, isSameMonth, startOfMonth, subMonths } from "date-fns";
 import type React from "react";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Dimensions, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Dimensions, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
@@ -14,6 +14,7 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 import { useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
+import { calculateGridHeight, getCalendarRowCount } from "../../utils/calendar";
 import MonthGrid from "./MonthGrid";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -23,13 +24,13 @@ const SWIPE_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.3;
 const SPRING_CONFIG = { damping: 20, stiffness: 100 };
 
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
-const EXPANDED_HEIGHT = 320;
 const COLLAPSED_HEIGHT = 64;
 const FOLD_VELOCITY_THRESHOLD = 300;
 const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05;
 
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
   const {
     selectedDate,
     displayMonth: displayMonthStr,
@@ -51,11 +52,55 @@ export const MonthView: React.FC = () => {
   const prevDisplayMonthRef = useRef(displayMonthStr);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const calendarHeight = useSharedValue(EXPANDED_HEIGHT);
-  const dragStartHeight = useSharedValue(EXPANDED_HEIGHT);
+  const calendarHeight = useSharedValue(320); // 初始值，会在 useLayoutEffect 中更新
+  const dragStartHeight = useSharedValue(320);
+
+  // 三屏高度 shared values（用于动态高度计算）
+  const currentHeight = useSharedValue(0);
+  const prevHeight = useSharedValue(0);
+  const nextHeight = useSharedValue(0);
+  // 折叠状态同步为 shared value（用于 worklet 中访问）
+  const isCollapsedSV = useSharedValue(false);
 
   const prevMonth = useMemo(() => subMonths(displayMonth, 1), [displayMonth]);
   const nextMonth = useMemo(() => addMonths(displayMonth, 1), [displayMonth]);
+
+  // 预计算三屏行数
+  const prevRowCount = useMemo(
+    () => getCalendarRowCount(prevMonth.getFullYear(), prevMonth.getMonth()),
+    [prevMonth]
+  );
+  const currentRowCount = useMemo(
+    () => getCalendarRowCount(displayMonth.getFullYear(), displayMonth.getMonth()),
+    [displayMonth]
+  );
+  const nextRowCount = useMemo(
+    () => getCalendarRowCount(nextMonth.getFullYear(), nextMonth.getMonth()),
+    [nextMonth]
+  );
+
+  // 展开高度 = 当月高度（用于折叠动画）
+  const EXPANDED_HEIGHT = useMemo(
+    () => calculateGridHeight(currentRowCount, screenWidth),
+    [currentRowCount, screenWidth]
+  );
+
+  // 初始化三屏高度
+  useLayoutEffect(() => {
+    currentHeight.value = calculateGridHeight(currentRowCount, screenWidth);
+    prevHeight.value = calculateGridHeight(prevRowCount, screenWidth);
+    nextHeight.value = calculateGridHeight(nextRowCount, screenWidth);
+    // 初始化 calendarHeight
+    if (calendarHeight.value === 320) {
+      calendarHeight.value = currentHeight.value;
+      dragStartHeight.value = currentHeight.value;
+    }
+  }, [currentRowCount, prevRowCount, nextRowCount, screenWidth, currentHeight, prevHeight, nextHeight, calendarHeight, dragStartHeight]);
+
+  // 同步折叠状态到 shared value
+  useEffect(() => {
+    isCollapsedSV.value = isCollapsed;
+  }, [isCollapsed, isCollapsedSV]);
 
   // 当 selectedDate 从外部变化时（如从年视图点击月份），同步 displayMonth
   // 但如果用户已经手动滑动过月份，则不同步
@@ -126,6 +171,10 @@ export const MonthView: React.FC = () => {
         opacity.value = 0;
         translateX.value = 0;
         isAnimating.value = false;
+        // 重置高度到当月高度
+        if (!isCollapsedSV.value) {
+          calendarHeight.value = currentHeight.value;
+        }
         // 下一帧淡入
         scheduleOnRN(() => {
           opacity.value = withTiming(1, { duration: 200 });
@@ -134,12 +183,13 @@ export const MonthView: React.FC = () => {
         // 正常滑动：重置位置
         translateX.value = 0;
         isAnimating.value = false;
+        // 高度已在滑动动画中完成，无需额外处理
       }
     } else {
       translateX.value = 0;
       isAnimating.value = false;
     }
-  }, [displayMonthStr, translateX, opacity, isAnimating]);
+  }, [displayMonthStr, translateX, opacity, isAnimating, calendarHeight, currentHeight, isCollapsedSV]);
 
   // 折叠高度动画
   useLayoutEffect(() => {
@@ -147,7 +197,7 @@ export const MonthView: React.FC = () => {
       duration: 200,
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     });
-  }, [isCollapsed, calendarHeight]);
+  }, [isCollapsed, EXPANDED_HEIGHT, calendarHeight]);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -155,6 +205,19 @@ export const MonthView: React.FC = () => {
     .onUpdate((event) => {
       if (isAnimating.value) return;
       translateX.value = event.translationX;
+
+      // 折叠状态下不动态调整高度
+      if (isCollapsedSV.value) return;
+
+      // 动态高度计算（clamp progress 到 [0, 1]）
+      const progress = Math.min(1, Math.max(0, Math.abs(event.translationX) / SCREEN_WIDTH));
+      if (event.translationX < 0) {
+        // 向左滑 → 下月
+        calendarHeight.value = currentHeight.value + (nextHeight.value - currentHeight.value) * progress;
+      } else {
+        // 向右滑 → 上月
+        calendarHeight.value = currentHeight.value + (prevHeight.value - currentHeight.value) * progress;
+      }
     })
     .onEnd((event) => {
       if (isAnimating.value) return;
@@ -169,26 +232,36 @@ export const MonthView: React.FC = () => {
         isAnimating.value = true;
         translateX.value = withTiming(
           -SCREEN_WIDTH,
-          { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) },
-          (finished) => {
-            if (finished) {
-              scheduleOnRN(goToNextJS);
-            }
-          }
+          { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
         );
+        // 高度动画到下月高度
+        if (!isCollapsedSV.value) {
+          calendarHeight.value = withTiming(nextHeight.value, { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) });
+        }
+        // 延迟执行跳转，让动画完成
+        setTimeout(() => {
+          scheduleOnRN(goToNextJS);
+        }, 200);
       } else if (shouldSwipeRight) {
         isAnimating.value = true;
         translateX.value = withTiming(
           SCREEN_WIDTH,
-          { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) },
-          (finished) => {
-            if (finished) {
-              scheduleOnRN(goToPreviousJS);
-            }
-          }
+          { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
         );
+        // 高度动画到上月高度
+        if (!isCollapsedSV.value) {
+          calendarHeight.value = withTiming(prevHeight.value, { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) });
+        }
+        setTimeout(() => {
+          scheduleOnRN(goToPreviousJS);
+        }, 200);
       } else {
+        // 取消滑动：回弹到当前位置
         translateX.value = withSpring(0, SPRING_CONFIG);
+        // 高度回弹到当月高度
+        if (!isCollapsedSV.value) {
+          calendarHeight.value = withTiming(currentHeight.value, { duration: 200 });
+        }
       }
     });
 
