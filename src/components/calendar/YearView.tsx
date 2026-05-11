@@ -205,7 +205,13 @@ export const YearView: React.FC = () => {
       setTransitionState({
         sourceLayout: layout,
       });
-      setSelectedDate(format(monthDate, "yyyy-MM-dd"));
+      // 当前月份：选中今天；非当前月份：选中首日
+      const today = new Date();
+      if (isSameMonth(monthDate, today)) {
+        setSelectedDate(format(today, "yyyy-MM-dd"));
+      } else {
+        setSelectedDate(format(monthDate, "yyyy-MM-dd"));
+      }
       setCurrentView("month");
     },
     [setSelectedDate, setCurrentView, setTransitionState]
