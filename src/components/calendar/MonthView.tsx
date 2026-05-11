@@ -347,6 +347,13 @@ export const MonthView: React.FC = () => {
       }
     });
 
+  // 折叠指示器点击手势 - 仅在折叠状态下响应点击展开
+  const indicatorTapGesture = Gesture.Tap().onEnd(() => {
+    if (isCollapsed) {
+      scheduleOnRN(toggleCollapse);
+    }
+  });
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Fixed weekday header */}
@@ -394,10 +401,14 @@ export const MonthView: React.FC = () => {
       </GestureDetector>
 
       {/* Collapse indicator area - includes indicator and space below it */}
-      <GestureDetector gesture={indicatorFoldGesture}>
+      <GestureDetector gesture={Gesture.Simultaneous(indicatorFoldGesture, indicatorTapGesture)}>
         <View style={styles.collapseIndicatorArea}>
           <View style={styles.collapseIndicator}>
-            <Ionicons name="remove" size={20} color={theme.colors.textTertiary} />
+            <Ionicons
+              name={isCollapsed ? "chevron-down" : "remove"}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
           </View>
         </View>
       </GestureDetector>
