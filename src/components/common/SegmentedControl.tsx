@@ -57,10 +57,16 @@ export function SegmentedControl<K extends string = string>({
   useEffect(() => {
     const idx = tabs.findIndex((t) => t.key === activeKey);
     if (idx >= 0) {
-      indicatorPosition.value = withTiming(idx, {
-        duration: 250,
-        easing: Easing.bezier(0.4, 0, 0.2, 1),
-      });
+      // 先滑动到目标位置稍过一点，再回弹，模拟弹性效果
+      indicatorPosition.value = withTiming(
+        idx + 0.03,
+        { duration: 280, easing: Easing.bezier(0.4, 0, 0.2, 1) },
+        (finished) => {
+          if (finished) {
+            indicatorPosition.value = withTiming(idx, { duration: 150, easing: Easing.bezier(0.4, 0, 0.2, 1) });
+          }
+        }
+      );
     }
   }, [activeKey, tabs, indicatorPosition]);
 
