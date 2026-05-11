@@ -202,7 +202,6 @@ export default function MainScreen() {
     }
 
     prevViewRef.current = curr;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentView,
     transitionState,

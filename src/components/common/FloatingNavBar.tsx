@@ -62,7 +62,6 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
       todayButtonScale.value = withTiming(0, { duration: 150 });
       todayButtonOpacity.value = withTiming(0, { duration: 150 });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showTodayButton, todayButtonScale, todayButtonOpacity]);
 
   const animatedTodayStyle = useAnimatedStyle(() => ({

@@ -139,7 +139,6 @@ export const MonthView: React.FC = () => {
       translateX.value = 0;
       isAnimating.value = false;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayMonthStr, translateX, opacity, isAnimating]);
 
   // 折叠高度动画
