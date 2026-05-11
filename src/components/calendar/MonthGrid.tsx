@@ -14,8 +14,8 @@ import { memo, useEffect, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
-import type { Event } from "../../domain/types";
 import { getLunarInfo } from "../../domain/lunar";
+import type { Event } from "../../domain/types";
 import { useEventStore, useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
 import { calculateSingleRowHeight } from "../../utils/calendar";
@@ -93,7 +93,12 @@ const AnimatedDayCell = memo(function AnimatedDayCell({
   const dateStr = format(day, "yyyy-MM-dd");
   // 使用预计算数据或实时计算（fallback）
   const lunarData = lunarInfo ?? (fidelity === "full" ? getLunarInfo(day) : null);
-  const eventData = events.length > 0 ? events : (fidelity === "full" ? useEventStore.getState().getEventsForDate(dateStr) : []);
+  const eventData =
+    events.length > 0
+      ? events
+      : fidelity === "full"
+        ? useEventStore.getState().getEventsForDate(dateStr)
+        : [];
   const workStatus = fidelity === "full" ? getWorkStatus(day) : null;
 
   const getBackgroundColor = () => {

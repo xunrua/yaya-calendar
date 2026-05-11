@@ -63,7 +63,10 @@ export function SegmentedControl<K extends string = string>({
         { duration: 280, easing: Easing.bezier(0.4, 0, 0.2, 1) },
         (finished) => {
           if (finished) {
-            indicatorPosition.value = withTiming(idx, { duration: 150, easing: Easing.bezier(0.4, 0, 0.2, 1) });
+            indicatorPosition.value = withTiming(idx, {
+              duration: 150,
+              easing: Easing.bezier(0.4, 0, 0.2, 1),
+            });
           }
         }
       );
