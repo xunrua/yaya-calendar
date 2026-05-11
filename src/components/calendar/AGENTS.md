@@ -1,19 +1,21 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-06 | Updated: 2026-05-06 -->
+<!-- Generated: 2026-05-11 | Updated: 2026-05-11 -->
 
 # calendar
 
 ## Purpose
-日历视图组件，提供多种日历显示模式：月视图、周视图、日视图和日程视图。
+日历视图组件，提供多种日历显示模式：月视图、周视图、日视图、年视图和日程视图。
 
 ## Key Files
 | File | Description |
 |------|-------------|
 | `MonthView.tsx` | 月视图组件，显示完整月历网格，包含农历信息 |
+| `MonthGrid.tsx` | 月历网格组件，渲染日期单元格 |
 | `WeekView.tsx` | 周视图组件，显示一周的详细日程 |
 | `DayView.tsx` | 日视图组件，显示单日详细时间线 |
+| `DayInfoPanel.tsx` | 日期信息面板，显示选中日期的详细信息 |
+| `YearView.tsx` | 年视图组件，显示全年月份概览 |
 | `ScheduleView.tsx` | 日程视图，列表形式显示事件 |
-| `EventList.tsx` | 事件列表组件，待办事项视图 |
 
 ## Subdirectories
 无子目录。

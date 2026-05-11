@@ -19,7 +19,7 @@
 | `styles/` | 主题和样式定义 |
 | `types/` | TypeScript 类型声明 |
 | `hooks/` | 自定义 React Hooks（当前为空） |
-| `utils/` | 工具函数（当前为空） |
+| `utils/` | 工具函数（日期计算、工作日安排） |
 
 ## For AI Agents
 
