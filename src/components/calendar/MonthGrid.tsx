@@ -34,7 +34,8 @@ interface AnimatedDayCellProps {
   isCurrentMonth: boolean;
   isWeekend: boolean;
   fidelity: Fidelity;
-  onPress: () => void;
+  isDimmed?: boolean;
+  onPress?: () => void;
 }
 
 const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
@@ -44,6 +45,7 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
   isCurrentMonth,
   isWeekend,
   fidelity,
+  isDimmed = false,
   onPress,
 }) => {
   const { theme } = useTheme();
@@ -71,12 +73,14 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
   const workStatus = fidelity === "full" ? getWorkStatus(day) : null;
 
   const getBackgroundColor = () => {
+    if (isDimmed) return "transparent";
     if (isToday) return PRIMARY_COLOR;
     if (isSelected) return "transparent";
     return "transparent";
   };
 
   const getTextColor = () => {
+    if (isDimmed) return c.textTertiary;
     if (!isCurrentMonth) return c.textTertiary;
     if (isToday) return "#FFFFFF";
     if (isSelected) return PRIMARY_COLOR;
@@ -85,12 +89,21 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
   };
 
   const getBorderColor = () => {
+    if (isDimmed) return "transparent";
     if (isSelected && !isToday) return PRIMARY_COLOR;
     return "transparent";
   };
 
-  return (
-    <Pressable onPress={onPress} style={styles.dayCell}>
+  const getLunarColor = () => {
+    if (isDimmed) return c.textTertiary;
+    if (!isCurrentMonth) return c.textTertiary;
+    if (lunarInfo?.isHoliday) return c.holidayText;
+    if (lunarInfo?.isSolarTerm) return c.solarTermText;
+    return c.lunarText;
+  };
+
+  const cellContent = (
+    <>
       <View style={styles.dayNumberWrapper}>
         <Animated.View
           style={[
@@ -98,7 +111,7 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
             animatedStyle,
             {
               backgroundColor: getBackgroundColor(),
-              borderWidth: isSelected && !isToday ? 1.5 : 0,
+              borderWidth: isSelected && !isToday && !isDimmed ? 1.5 : 0,
               borderColor: getBorderColor(),
             },
           ]}
@@ -109,7 +122,7 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
           <Text
             style={[
               styles.workStatusText,
-              { color: workStatus === "班" ? c.textTertiary : "#60A5FA" },
+              { color: isDimmed ? c.textTertiary : workStatus === "班" ? c.textTertiary : "#60A5FA" },
             ]}
           >
             {workStatus}
@@ -120,15 +133,7 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
         <Text
           style={[
             styles.lunarText,
-            {
-              color: !isCurrentMonth
-                ? c.textTertiary
-                : lunarInfo.isHoliday
-                  ? c.holidayText
-                  : lunarInfo.isSolarTerm
-                    ? c.solarTermText
-                    : c.lunarText,
-            },
+            { color: getLunarColor() },
           ]}
           numberOfLines={1}
         >
@@ -140,11 +145,25 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
           {events.slice(0, 3).map((event) => (
             <View
               key={event.id}
-              style={[styles.eventDot, { backgroundColor: event.color || c.eventDefault }]}
+              style={[
+                styles.eventDot,
+                { backgroundColor: isDimmed ? c.textTertiary : event.color || c.eventDefault },
+              ]}
             />
           ))}
         </View>
       )}
+    </>
+  );
+
+  // 非当月日期（isDimmed）不可交互
+  if (isDimmed || !onPress) {
+    return <View style={styles.dayCell}>{cellContent}</View>;
+  }
+
+  return (
+    <Pressable onPress={onPress} style={styles.dayCell}>
+      {cellContent}
     </Pressable>
   );
 };
@@ -177,16 +196,6 @@ export default function MonthGrid({ year, month, fidelity = "full" }: MonthGridP
     const dayOfWeek = day.getDay();
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-    if (!isCurrentMonth) {
-      return (
-        <View key={dateStr} style={styles.dayCell}>
-          <View style={styles.dayNumberContainer}>
-            <Text style={[styles.dayNumber, { color: c.textTertiary }]}>{format(day, "d")}</Text>
-          </View>
-        </View>
-      );
-    }
-
     return (
       <AnimatedDayCell
         key={dateStr}
@@ -196,7 +205,8 @@ export default function MonthGrid({ year, month, fidelity = "full" }: MonthGridP
         isCurrentMonth={isCurrentMonth}
         isWeekend={isWeekend}
         fidelity={fidelity}
-        onPress={() => handleDayPress(day)}
+        isDimmed={!isCurrentMonth}
+        onPress={isCurrentMonth ? () => handleDayPress(day) : undefined}
       />
     );
   };
