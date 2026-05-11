@@ -15,7 +15,6 @@ import { ScheduleView } from "@/src/components/calendar/ScheduleView";
 import { WeekView } from "@/src/components/calendar/WeekView";
 import { YearView } from "@/src/components/calendar/YearView";
 import { CalendarHeader } from "@/src/components/common/CalendarHeader";
-import { DebugOverlay } from "@/src/components/common/DebugOverlay";
 import { FloatingMenu } from "@/src/components/common/FloatingMenu";
 import { FloatingNavBar } from "@/src/components/common/FloatingNavBar";
 import type { ViewType } from "@/src/domain/types";
@@ -79,8 +78,6 @@ export default function MainScreen() {
   const monthOpacity = useSharedValue(1);
   const yearOpacity = useSharedValue(0);
 
-  const lastCellCXRef = useRef(0);
-  const lastCellCYRef = useRef(0);
 
   // ── Layout ─────────────────────────────────────────────────────────────────
   const handleContentLayout = useCallback((e: any) => {
@@ -143,9 +140,6 @@ export default function MainScreen() {
         cellScale = 1 / 3;
       }
 
-      lastCellCXRef.current = cellCenterX;
-      lastCellCYRef.current = cellCenterY;
-
       const { dx, dy } = toDelta(cellCenterX, cellCenterY);
 
       // 月层：直接跳到收缩态（隐藏）
@@ -167,9 +161,6 @@ export default function MainScreen() {
       const cellCenterX = pageX + width / 2 - cl.x;
       const cellCenterY = pageY + height / 2 - cl.y;
       const cellScale = width / cl.width;
-
-      lastCellCXRef.current = cellCenterX;
-      lastCellCYRef.current = cellCenterY;
 
       const { dx, dy } = toDelta(cellCenterX, cellCenterY);
 
@@ -338,19 +329,6 @@ export default function MainScreen() {
         onClose={() => setMenuVisible(false)}
         onWeekView={handleWeekView}
         onScheduleView={handleScheduleView}
-      />
-      <DebugOverlay
-        monthZoomScale={monthZoomScale}
-        monthZoomOriginX={monthZoomOriginX}
-        monthZoomOriginY={monthZoomOriginY}
-        monthOpacity={monthOpacity}
-        yearZoomScale={yearZoomScale}
-        yearZoomOriginX={yearZoomOriginX}
-        yearZoomOriginY={yearZoomOriginY}
-        yearOpacity={yearOpacity}
-        contentLayout={contentLayout}
-        lastCellCXRef={lastCellCXRef}
-        lastCellCYRef={lastCellCYRef}
       />
     </View>
   );

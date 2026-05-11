@@ -1,7 +1,7 @@
 // 月视图组件
 
 import { Ionicons } from "@expo/vector-icons";
-import { addMonths, isSameMonth, startOfMonth, subMonths } from "date-fns";
+import { addDays, addMonths, endOfWeek, format, isSameMonth, startOfMonth, startOfWeek, subDays, subMonths } from "date-fns";
 import type React from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, StyleSheet, Text, View, useWindowDimensions } from "react-native";
@@ -233,6 +233,49 @@ export const MonthView: React.FC = () => {
     });
   }, [isCollapsed, EXPANDED_HEIGHT, COLLAPSED_HEIGHT, calendarHeight, foldProgress]);
 
+  // 切换周的回调（折叠状态下使用）
+  const goToNextWeekJS = useCallback(() => {
+    translateX.value = 0;
+    const currentDate = new Date(selectedDate);
+    const nextWeek = addDays(currentDate, 7);
+    const nextWeekStr = format(nextWeek, "yyyy-MM-dd");
+
+    // 切换周时同步选中日期：如果新周包含今天则选中今天，否则选中周一
+    const today = new Date();
+    const weekStart = startOfWeek(nextWeek, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(nextWeek, { weekStartsOn: 1 });
+    if (today >= weekStart && today <= weekEnd) {
+      setSelectedDate(format(today, "yyyy-MM-dd"));
+    } else {
+      setSelectedDate(format(weekStart, "yyyy-MM-dd"));
+    }
+
+    if (!isSameMonth(nextWeek, displayMonth)) {
+      setDisplayMonth(format(startOfMonth(nextWeek), "yyyy-MM-dd"));
+    }
+  }, [selectedDate, displayMonth, setSelectedDate, setDisplayMonth, translateX]);
+
+  const goToPrevWeekJS = useCallback(() => {
+    translateX.value = 0;
+    const currentDate = new Date(selectedDate);
+    const prevWeek = subDays(currentDate, 7);
+    const prevWeekStr = format(prevWeek, "yyyy-MM-dd");
+
+    // 切换周时同步选中日期：如果新周包含今天则选中今天，否则选中周一
+    const today = new Date();
+    const weekStart = startOfWeek(prevWeek, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(prevWeek, { weekStartsOn: 1 });
+    if (today >= weekStart && today <= weekEnd) {
+      setSelectedDate(format(today, "yyyy-MM-dd"));
+    } else {
+      setSelectedDate(format(weekStart, "yyyy-MM-dd"));
+    }
+
+    if (!isSameMonth(prevWeek, displayMonth)) {
+      setDisplayMonth(format(startOfMonth(prevWeek), "yyyy-MM-dd"));
+    }
+  }, [selectedDate, displayMonth, setSelectedDate, setDisplayMonth, translateX]);
+
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
     .failOffsetY([-20, 20])
@@ -262,6 +305,26 @@ export const MonthView: React.FC = () => {
       const shouldSwipeRight =
         translationX > SWIPE_DISTANCE_THRESHOLD || velocityX > SWIPE_VELOCITY_THRESHOLD;
 
+      // 折叠状态：切换周
+      if (isCollapsedSV.value) {
+        if (shouldSwipeLeft) {
+          translateX.value = withTiming(-SCREEN_WIDTH, { duration: 150 });
+          setTimeout(() => {
+            scheduleOnRN(goToNextWeekJS);
+          }, 150);
+        } else if (shouldSwipeRight) {
+          translateX.value = withTiming(SCREEN_WIDTH, { duration: 150 });
+          setTimeout(() => {
+            scheduleOnRN(goToPrevWeekJS);
+          }, 150);
+        } else {
+          // 取消滑动：回弹到当前位置
+          translateX.value = withSpring(0, SPRING_CONFIG);
+        }
+        return;
+      }
+
+      // 展开状态：切换月份
       if (shouldSwipeLeft) {
         isAnimating.value = true;
         translateX.value = withTiming(
@@ -269,9 +332,7 @@ export const MonthView: React.FC = () => {
           { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
         );
         // 高度动画到下月高度
-        if (!isCollapsedSV.value) {
-          calendarHeight.value = withTiming(nextHeight.value, { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) });
-        }
+        calendarHeight.value = withTiming(nextHeight.value, { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) });
         // 延迟执行跳转，让动画完成
         setTimeout(() => {
           scheduleOnRN(goToNextJS);
@@ -283,9 +344,7 @@ export const MonthView: React.FC = () => {
           { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
         );
         // 高度动画到上月高度
-        if (!isCollapsedSV.value) {
-          calendarHeight.value = withTiming(prevHeight.value, { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) });
-        }
+        calendarHeight.value = withTiming(prevHeight.value, { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) });
         setTimeout(() => {
           scheduleOnRN(goToPreviousJS);
         }, 200);
@@ -293,9 +352,7 @@ export const MonthView: React.FC = () => {
         // 取消滑动：回弹到当前位置
         translateX.value = withSpring(0, SPRING_CONFIG);
         // 高度回弹到当月高度
-        if (!isCollapsedSV.value) {
-          calendarHeight.value = withTiming(currentHeight.value, { duration: 200 });
-        }
+        calendarHeight.value = withTiming(currentHeight.value, { duration: 200 });
       }
     });
 
