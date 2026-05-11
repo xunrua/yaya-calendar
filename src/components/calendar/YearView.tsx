@@ -24,7 +24,6 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getHolidays } from "@/src/domain/lunar";
 import { useViewStore } from "@/src/stores/eventStore";
 import { useTheme } from "@/src/stores/themeStore";
@@ -176,7 +175,6 @@ export const YearView: React.FC = () => {
     setYearCellLayouts,
     hasNavigatedMonth,
   } = useViewStore();
-  const insets = useSafeAreaInsets();
 
   const currentSelectedDate = parseISO(selectedDate);
   const [displayYear, setDisplayYear] = useState(getYear(currentSelectedDate));
@@ -316,7 +314,7 @@ export const YearView: React.FC = () => {
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.colors.background, paddingTop: insets.top },
+        { backgroundColor: theme.colors.background },
       ]}
     >
       {/* <View style={styles.yearHeader}>
