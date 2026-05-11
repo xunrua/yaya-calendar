@@ -1,6 +1,6 @@
 // 日期信息面板组件 - 显示农历详情和事件列表
 
-import { format, parseISO } from "date-fns";
+import { differenceInDays, format, isSameDay, parseISO, startOfDay } from "date-fns";
 import type React from "react";
 import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
@@ -14,6 +14,26 @@ interface DayInfoPanelProps {
 }
 
 /**
+ * 获取相对日期描述
+ */
+const getRelativeDateLabel = (date: Date): string => {
+  const today = startOfDay(new Date());
+  const targetDate = startOfDay(date);
+
+  if (isSameDay(today, targetDate)) {
+    return "今天";
+  }
+
+  const diff = differenceInDays(targetDate, today);
+
+  if (diff > 0) {
+    return `${diff}天后`;
+  } else {
+    return `${Math.abs(diff)}天前`;
+  }
+};
+
+/**
  * 日期信息面板 - 显示选中日期的农历详情和事件列表
  */
 export const DayInfoPanel: React.FC<DayInfoPanelProps> = ({ date }) => {
@@ -23,8 +43,8 @@ export const DayInfoPanel: React.FC<DayInfoPanelProps> = ({ date }) => {
   // 获取当天事件
   const events = useMemo(() => getEventsForDate(date), [date, getEventsForDate]);
 
-  // 获取农历详情
-  const lunarDetails = useMemo(() => {
+  // 获取日期显示信息
+  const dateInfo = useMemo(() => {
     const dateObj = parseISO(date);
     const lunar = toLunarDate(dateObj);
     const solarTerm = getSolarTerm(dateObj);
@@ -33,12 +53,22 @@ export const DayInfoPanel: React.FC<DayInfoPanelProps> = ({ date }) => {
     // 过滤出传统节日和法定假日（排除节气）
     const festivals = holidays.filter((h) => h.type !== "solar_term");
 
+    // 构建农历信息字符串
+    const lunarParts: string[] = [];
+    lunarParts.push(lunar.day === 1 ? lunar.monthName : lunar.dayName);
+    lunarParts.push(`${lunar.yearGanZhi}(${lunar.yearShengXiao})`);
+
+    if (solarTerm) {
+      lunarParts.push(solarTerm.name);
+    }
+    if (festivals.length > 0) {
+      lunarParts.push(festivals[0].name);
+    }
+
     return {
-      lunarDate: lunar.day === 1 ? lunar.monthName : lunar.dayName,
-      yearGanZhi: lunar.yearGanZhi,
-      shengXiao: lunar.yearShengXiao,
-      solarTerm: solarTerm?.name,
-      festival: festivals.length > 0 ? festivals[0].name : undefined,
+      relativeLabel: getRelativeDateLabel(dateObj),
+      formattedDate: format(dateObj, "M月d日"),
+      lunarInfo: lunarParts.join(" "),
     };
   }, [date]);
 
@@ -46,31 +76,19 @@ export const DayInfoPanel: React.FC<DayInfoPanelProps> = ({ date }) => {
 
   return (
     <View style={styles.container}>
-      {/* 农历详情区域 */}
-      <View style={styles.lunarSection}>
-        <View style={styles.lunarRow}>
-          <Text style={[styles.lunarDate, { color: theme.colors.text }]}>
-            {lunarDetails.lunarDate}
+      {/* 日期信息区域 */}
+      <View style={styles.dateSection}>
+        <View style={styles.dateLeft}>
+          <Text style={[styles.relativeLabel, { color: theme.colors.primary }]}>
+            {dateInfo.relativeLabel}
           </Text>
-          <Text style={[styles.ganZhi, { color: theme.colors.textSecondary }]}>
-            {lunarDetails.yearGanZhi}({lunarDetails.shengXiao})
+          <Text style={[styles.formattedDate, { color: theme.colors.text }]}>
+            {dateInfo.formattedDate}
           </Text>
         </View>
-        {(lunarDetails.solarTerm || lunarDetails.festival) && (
-          <View style={styles.lunarRow}>
-            {lunarDetails.solarTerm && (
-              <Text style={[styles.solarTerm, { color: theme.colors.solarTermText }]}>
-                节气: {lunarDetails.solarTerm}
-              </Text>
-            )}
-            {lunarDetails.festival && (
-              <Text style={[styles.festival, { color: theme.colors.holidayText }]}>
-                {lunarDetails.solarTerm ? "  " : ""}
-                节日: {lunarDetails.festival}
-              </Text>
-            )}
-          </View>
-        )}
+        <Text style={[styles.lunarInfo, { color: theme.colors.textSecondary }]}>
+          {dateInfo.lunarInfo}
+        </Text>
       </View>
 
       {/* 事件列表区域 */}
@@ -133,27 +151,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  // 农历详情区域
-  lunarSection: {
+  // 日期信息区域
+  dateSection: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
-  lunarRow: {
+  dateLeft: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
+    alignItems: "baseline",
   },
-  lunarDate: {
+  relativeLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginRight: 8,
+  },
+  formattedDate: {
     fontSize: 14,
     fontWeight: "500",
   },
-  ganZhi: {
-    fontSize: 12,
-    marginLeft: 12,
-  },
-  solarTerm: {
-    fontSize: 12,
-  },
-  festival: {
+  lunarInfo: {
     fontSize: 12,
   },
   // 事件列表区域
