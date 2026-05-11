@@ -13,7 +13,7 @@ import {
   startOfWeek,
   subYears,
 } from "date-fns";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -24,7 +24,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { getHolidays } from "@/src/domain/lunar";
+import { getStatutoryHolidaySetForMonth } from "@/src/domain/lunar";
 import { useViewStore } from "@/src/stores/eventStore";
 import { useTheme } from "@/src/stores/themeStore";
 
@@ -33,14 +33,6 @@ const PRIMARY_COLOR = "#E8563A";
 const SWIPE_VELOCITY_THRESHOLD = 500;
 const SWIPE_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.3;
 const SPRING_CONFIG = { damping: 20, stiffness: 100 };
-
-// 法定假日列表
-const STATUTORY_HOLIDAYS = ["元旦", "春节", "清明节", "劳动节", "端午节", "中秋节", "国庆节"];
-
-const isStatutoryHoliday = (date: Date): boolean => {
-  const holidays = getHolidays(date);
-  return holidays.some((h) => STATUTORY_HOLIDAYS.includes(h.name));
-};
 
 interface MiniMonthGridProps {
   year: number;
@@ -60,28 +52,41 @@ const WEEKDAY_LABELS = ["日", "一", "二", "三", "四", "五", "六"];
 const GRID_MARGIN = 16;
 const CELL_WIDTH = ((SCREEN_WIDTH - GRID_MARGIN * 2) / 3 - 12) / 7;
 
-const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
+const MiniMonthGrid = React.memo<MiniMonthGridProps>(function MiniMonthGrid({
   year,
   month,
   onMonthPress,
   selectedDate,
   onMeasure,
-}) => {
+}) {
   const { theme } = useTheme();
   const ref = useRef<View>(null);
   const onMeasureRef = useRef(onMeasure);
   onMeasureRef.current = onMeasure;
-  const monthDate = new Date(year, month, 1);
-  const monthStart = startOfMonth(monthDate);
-  const monthEnd = endOfMonth(monthDate);
-  const calStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-  const calEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
-  const days = eachDayOfInterval({ start: calStart, end: calEnd });
 
-  const today = new Date();
+  const monthDate = useMemo(() => new Date(year, month, 1), [year, month]);
+  const days = useMemo(() => {
+    const monthStart = startOfMonth(monthDate);
+    const monthEnd = endOfMonth(monthDate);
+    const calStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+    const calEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+    return eachDayOfInterval({ start: calStart, end: calEnd });
+  }, [monthDate]);
+
+  const holidaySet = useMemo(
+    () => getStatutoryHolidaySetForMonth(year, month),
+    [year, month]
+  );
+
+  const today = useMemo(() => new Date(), []);
   const isSelectedMonth = isSameMonth(monthDate, selectedDate);
 
   const handlePress = () => {
+    const cached = useViewStore.getState().yearCellLayouts[month];
+    if (cached) {
+      onMonthPress(monthDate, cached);
+      return;
+    }
     ref.current?.measure((_x, _y, width, height, pageX, pageY) => {
       onMonthPress(monthDate, { x: pageX, y: pageY, width, height });
     });
@@ -127,8 +132,8 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
         {days.map((day) => {
           const isCurrentMonth = isSameMonth(day, monthDate);
           const isToday = isSameDay(day, today);
-          const isHolidayDay = isStatutoryHoliday(day);
           const dayKey = format(day, "yyyy-MM-dd");
+          const isHolidayDay = holidaySet.has(dayKey);
 
           if (!isCurrentMonth) {
             return <View key={dayKey} style={styles.miniCell} />;
@@ -163,9 +168,17 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
+MiniMonthGrid.displayName = "MiniMonthGrid";
 
-export const YearView: React.FC = () => {
+interface YearViewProps {
+  onMonthPress?: (
+    date: Date,
+    layout: { x: number; y: number; width: number; height: number }
+  ) => void;
+}
+
+export const YearView: React.FC<YearViewProps> = ({ onMonthPress: externalOnMonthPress }) => {
   const { theme } = useTheme();
   const selectedDate = useViewStore((s) => s.selectedDate);
   const setSelectedDate = useViewStore((s) => s.setSelectedDate);
@@ -175,8 +188,17 @@ export const YearView: React.FC = () => {
 
   const currentSelectedDate = parseISO(selectedDate);
   const [displayYear, setDisplayYear] = useState(getYear(currentSelectedDate));
+  const [renderAdjacent, setRenderAdjacent] = useState(false);
   const translateX = useSharedValue(0);
   const isAnimating = useSharedValue(false);
+
+  // 首屏先渲染当前年面板,下一帧再挂 prev/next 以避免首次进入年视图时阻塞动画
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setRenderAdjacent(true));
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   const prevYear = useMemo(() => subYears(new Date(displayYear, 0, 1), 1), [displayYear]);
   const nextYear = useMemo(() => addYears(new Date(displayYear, 0, 1), 1), [displayYear]);
@@ -197,6 +219,11 @@ export const YearView: React.FC = () => {
 
   const handleMonthPress = useCallback(
     (monthDate: Date, layout: { x: number; y: number; width: number; height: number }) => {
+      if (externalOnMonthPress) {
+        externalOnMonthPress(monthDate, layout);
+        return;
+      }
+
       setTransitionState({
         sourceLayout: layout,
       });
@@ -209,7 +236,7 @@ export const YearView: React.FC = () => {
       }
       setCurrentView("month");
     },
-    [setSelectedDate, setCurrentView, setTransitionState]
+    [setSelectedDate, setCurrentView, setTransitionState, externalOnMonthPress]
   );
 
   // Collect cell measurements for Month→Year animation
@@ -323,7 +350,7 @@ export const YearView: React.FC = () => {
       <GestureDetector gesture={panGesture}>
         <View style={styles.yearsContainer}>
           <Animated.View style={[styles.yearPanel, prevYearStyle]}>
-            {renderYearGrid(getYear(prevYear), false)}
+            {renderAdjacent && renderYearGrid(getYear(prevYear), false)}
           </Animated.View>
 
           <Animated.View style={[styles.yearPanel, animatedStyle]}>
@@ -331,7 +358,7 @@ export const YearView: React.FC = () => {
           </Animated.View>
 
           <Animated.View style={[styles.yearPanel, nextYearStyle]}>
-            {renderYearGrid(getYear(nextYear), false)}
+            {renderAdjacent && renderYearGrid(getYear(nextYear), false)}
           </Animated.View>
         </View>
       </GestureDetector>
