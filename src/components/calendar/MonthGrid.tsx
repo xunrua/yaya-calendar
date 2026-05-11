@@ -12,17 +12,13 @@ import {
 } from "date-fns";
 import { useEffect, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
 import type { SharedValue } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { getLunarInfo } from "../../domain/lunar";
 import { useEventStore, useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
-import { getWorkStatus } from "../../utils/workSchedule";
 import { calculateSingleRowHeight } from "../../utils/calendar";
+import { getWorkStatus } from "../../utils/workSchedule";
 
 const PRIMARY_COLOR = "#E8563A"; // 主题强调色
 const POP_ANIMATION_CONFIG = { damping: 18, stiffness: 200 };
@@ -85,15 +81,19 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
 
   const getBackgroundColor = () => {
     if (isDimmed) return "transparent";
-    if (isToday) return PRIMARY_COLOR;
-    if (isSelected) return "transparent";
+    // 只有选中今天时才显示背景高亮
+    if (isToday && isSelected) return PRIMARY_COLOR;
     return "transparent";
   };
 
   const getTextColor = () => {
     if (isDimmed) return c.textTertiary;
     if (!isCurrentMonth) return c.textTertiary;
-    if (isToday) return "#FFFFFF";
+    // 选中今天时白色
+    if (isToday && isSelected) return "#FFFFFF";
+    // 今天未选中时普通颜色
+    if (isToday) return c.text;
+    // 其他日期选中时显示选中颜色
     if (isSelected) return PRIMARY_COLOR;
     if (isWeekend) return c.weekendText;
     return c.text;
@@ -101,6 +101,7 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
 
   const getBorderColor = () => {
     if (isDimmed) return "transparent";
+    // 选中非今天的日期时显示边框
     if (isSelected && !isToday) return PRIMARY_COLOR;
     return "transparent";
   };
@@ -133,7 +134,9 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
           <Text
             style={[
               styles.workStatusText,
-              { color: isDimmed ? c.textTertiary : workStatus === "班" ? c.textTertiary : "#60A5FA" },
+              {
+                color: isDimmed ? c.textTertiary : workStatus === "班" ? c.textTertiary : "#60A5FA",
+              },
             ]}
           >
             {workStatus}
@@ -141,13 +144,7 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
         )}
       </View>
       {fidelity === "full" && lunarInfo && (
-        <Text
-          style={[
-            styles.lunarText,
-            { color: getLunarColor() },
-          ]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.lunarText, { color: getLunarColor() }]} numberOfLines={1}>
           {lunarInfo.holiday || lunarInfo.solarTerm || lunarInfo.lunarDay}
         </Text>
       )}
@@ -216,10 +213,7 @@ export default function MonthGrid({
   }, [calendarDays, targetRowIndex, foldProgress]);
 
   // 计算各区域高度
-  const singleRowHeight = useMemo(
-    () => calculateSingleRowHeight(screenWidth),
-    [screenWidth]
-  );
+  const singleRowHeight = useMemo(() => calculateSingleRowHeight(screenWidth), [screenWidth]);
   const upperHeight = upperRows.length * singleRowHeight;
   const lowerHeight = lowerRows.length * singleRowHeight;
   const targetRowOffset = (targetRowIndex ?? 0) * singleRowHeight;

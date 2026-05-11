@@ -4,8 +4,8 @@ import { differenceInDays, format, isSameDay, parseISO, startOfDay } from "date-
 import type React from "react";
 import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import type { Event } from "../../domain/types";
 import { getHolidays, getSolarTerm, toLunarDate } from "../../domain/lunar";
+import type { Event } from "../../domain/types";
 import { useEventStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
 
@@ -127,9 +127,7 @@ const EventCard: React.FC<{ event: Event }> = ({ event }) => {
 
       {/* 事件内容 */}
       <View style={styles.eventContent}>
-        <Text style={[styles.eventTime, { color: theme.colors.textTertiary }]}>
-          {timeRange}
-        </Text>
+        <Text style={[styles.eventTime, { color: theme.colors.textTertiary }]}>{timeRange}</Text>
         <Text style={[styles.eventTitle, { color: theme.colors.text }]} numberOfLines={1}>
           {event.title}
         </Text>

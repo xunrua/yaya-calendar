@@ -78,7 +78,6 @@ export default function MainScreen() {
   const monthOpacity = useSharedValue(1);
   const yearOpacity = useSharedValue(0);
 
-
   // ── Layout ─────────────────────────────────────────────────────────────────
   const handleContentLayout = useCallback((e: any) => {
     const { x, y, width, height } = e.nativeEvent.layout;

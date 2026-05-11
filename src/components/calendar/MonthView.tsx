@@ -1,10 +1,20 @@
 // 月视图组件
 
 import { Ionicons } from "@expo/vector-icons";
-import { addDays, addMonths, endOfWeek, format, isSameMonth, startOfMonth, startOfWeek, subDays, subMonths } from "date-fns";
+import {
+  addDays,
+  addMonths,
+  endOfWeek,
+  format,
+  isSameMonth,
+  startOfMonth,
+  startOfWeek,
+  subDays,
+  subMonths,
+} from "date-fns";
 import type React from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Dimensions, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Dimensions, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
@@ -22,8 +32,8 @@ import {
   getCalendarRowCount,
   getRowIndexForDate,
 } from "../../utils/calendar";
-import MonthGrid from "./MonthGrid";
 import DayInfoPanel from "./DayInfoPanel";
+import MonthGrid from "./MonthGrid";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const SCREEN_HEIGHT = Dimensions.get("window").height;
@@ -96,10 +106,7 @@ export const MonthView: React.FC = () => {
   );
 
   // 折叠高度 = 单行高度
-  const COLLAPSED_HEIGHT = useMemo(
-    () => calculateSingleRowHeight(screenWidth),
-    [screenWidth]
-  );
+  const COLLAPSED_HEIGHT = useMemo(() => calculateSingleRowHeight(screenWidth), [screenWidth]);
 
   // 计算目标行索引（优先选中日期，否则用今天）
   const targetRowIndex = useMemo(() => {
@@ -117,14 +124,22 @@ export const MonthView: React.FC = () => {
   const prevWeekInfo = useMemo(() => {
     const prevWeekDate = subDays(currentWeekTargetDate, 7);
     const prevWeekMonth = startOfMonth(prevWeekDate);
-    const rowIndex = getRowIndexForDate(prevWeekDate, prevWeekMonth.getFullYear(), prevWeekMonth.getMonth());
+    const rowIndex = getRowIndexForDate(
+      prevWeekDate,
+      prevWeekMonth.getFullYear(),
+      prevWeekMonth.getMonth()
+    );
     return { month: prevWeekMonth, rowIndex, date: prevWeekDate };
   }, [currentWeekTargetDate]);
 
   const nextWeekInfo = useMemo(() => {
     const nextWeekDate = addDays(currentWeekTargetDate, 7);
     const nextWeekMonth = startOfMonth(nextWeekDate);
-    const rowIndex = getRowIndexForDate(nextWeekDate, nextWeekMonth.getFullYear(), nextWeekMonth.getMonth());
+    const rowIndex = getRowIndexForDate(
+      nextWeekDate,
+      nextWeekMonth.getFullYear(),
+      nextWeekMonth.getMonth()
+    );
     return { month: nextWeekMonth, rowIndex, date: nextWeekDate };
   }, [currentWeekTargetDate]);
 
@@ -138,7 +153,17 @@ export const MonthView: React.FC = () => {
       calendarHeight.value = currentHeight.value;
       dragStartHeight.value = currentHeight.value;
     }
-  }, [currentRowCount, prevRowCount, nextRowCount, screenWidth, currentHeight, prevHeight, nextHeight, calendarHeight, dragStartHeight]);
+  }, [
+    currentRowCount,
+    prevRowCount,
+    nextRowCount,
+    screenWidth,
+    currentHeight,
+    prevHeight,
+    nextHeight,
+    calendarHeight,
+    dragStartHeight,
+  ]);
 
   // 同步折叠状态到 shared value
   useEffect(() => {
@@ -240,7 +265,17 @@ export const MonthView: React.FC = () => {
       translateX.value = 0;
       isAnimating.value = false;
     }
-  }, [displayMonthStr, translateX, opacity, isAnimating, calendarHeight, currentHeight, isCollapsedSV, COLLAPSED_HEIGHT, foldProgress]);
+  }, [
+    displayMonthStr,
+    translateX,
+    opacity,
+    isAnimating,
+    calendarHeight,
+    currentHeight,
+    isCollapsedSV,
+    COLLAPSED_HEIGHT,
+    foldProgress,
+  ]);
 
   // 折叠高度动画
   useLayoutEffect(() => {
@@ -259,7 +294,7 @@ export const MonthView: React.FC = () => {
     translateX.value = 0;
     const currentDate = new Date(selectedDate);
     const nextWeek = addDays(currentDate, 7);
-    const nextWeekStr = format(nextWeek, "yyyy-MM-dd");
+    const _nextWeekStr = format(nextWeek, "yyyy-MM-dd");
 
     // 切换周时同步选中日期：如果新周包含今天则选中今天，否则选中周一
     const today = new Date();
@@ -280,7 +315,7 @@ export const MonthView: React.FC = () => {
     translateX.value = 0;
     const currentDate = new Date(selectedDate);
     const prevWeek = subDays(currentDate, 7);
-    const prevWeekStr = format(prevWeek, "yyyy-MM-dd");
+    const _prevWeekStr = format(prevWeek, "yyyy-MM-dd");
 
     // 切换周时同步选中日期：如果新周包含今天则选中今天，否则选中周一
     const today = new Date();
@@ -311,10 +346,12 @@ export const MonthView: React.FC = () => {
       const progress = Math.min(1, Math.max(0, Math.abs(event.translationX) / SCREEN_WIDTH));
       if (event.translationX < 0) {
         // 向左滑 → 下月
-        calendarHeight.value = currentHeight.value + (nextHeight.value - currentHeight.value) * progress;
+        calendarHeight.value =
+          currentHeight.value + (nextHeight.value - currentHeight.value) * progress;
       } else {
         // 向右滑 → 上月
-        calendarHeight.value = currentHeight.value + (prevHeight.value - currentHeight.value) * progress;
+        calendarHeight.value =
+          currentHeight.value + (prevHeight.value - currentHeight.value) * progress;
       }
     })
     .onEnd((event) => {
@@ -348,24 +385,30 @@ export const MonthView: React.FC = () => {
       // 展开状态：切换月份
       if (shouldSwipeLeft) {
         isAnimating.value = true;
-        translateX.value = withTiming(
-          -SCREEN_WIDTH,
-          { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
-        );
+        translateX.value = withTiming(-SCREEN_WIDTH, {
+          duration: 200,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
         // 高度动画到下月高度
-        calendarHeight.value = withTiming(nextHeight.value, { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) });
+        calendarHeight.value = withTiming(nextHeight.value, {
+          duration: 200,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
         // 延迟执行跳转，让动画完成
         setTimeout(() => {
           scheduleOnRN(goToNextJS);
         }, 200);
       } else if (shouldSwipeRight) {
         isAnimating.value = true;
-        translateX.value = withTiming(
-          SCREEN_WIDTH,
-          { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
-        );
+        translateX.value = withTiming(SCREEN_WIDTH, {
+          duration: 200,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
         // 高度动画到上月高度
-        calendarHeight.value = withTiming(prevHeight.value, { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) });
+        calendarHeight.value = withTiming(prevHeight.value, {
+          duration: 200,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
         setTimeout(() => {
           scheduleOnRN(goToPreviousJS);
         }, 200);
@@ -408,7 +451,8 @@ export const MonthView: React.FC = () => {
       );
       calendarHeight.value = newHeight;
       // 同步更新折叠进度
-      foldProgress.value = 1 - (newHeight - COLLAPSED_HEIGHT) / (EXPANDED_HEIGHT - COLLAPSED_HEIGHT);
+      foldProgress.value =
+        1 - (newHeight - COLLAPSED_HEIGHT) / (EXPANDED_HEIGHT - COLLAPSED_HEIGHT);
     })
     .onEnd((event) => {
       const { translationY, velocityY } = event;
@@ -446,7 +490,8 @@ export const MonthView: React.FC = () => {
       );
       calendarHeight.value = newHeight;
       // 同步更新折叠进度
-      foldProgress.value = 1 - (newHeight - COLLAPSED_HEIGHT) / (EXPANDED_HEIGHT - COLLAPSED_HEIGHT);
+      foldProgress.value =
+        1 - (newHeight - COLLAPSED_HEIGHT) / (EXPANDED_HEIGHT - COLLAPSED_HEIGHT);
     })
     .onEnd((event) => {
       const { translationY, velocityY } = event;
