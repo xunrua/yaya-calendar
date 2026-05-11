@@ -1,3 +1,5 @@
+// 月网格组件
+
 import {
   isToday as checkIsToday,
   eachDayOfInterval,
@@ -10,21 +12,30 @@ import {
 } from "date-fns";
 import { useEffect, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
+import type { SharedValue } from "react-native-reanimated";
 import { getLunarInfo } from "../../domain/lunar";
 import { useEventStore, useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
 import { getWorkStatus } from "../../utils/workSchedule";
+import { calculateSingleRowHeight } from "../../utils/calendar";
 
-const PRIMARY_COLOR = "#E8563A";
+const PRIMARY_COLOR = "#E8563A"; // 主题强调色
 const POP_ANIMATION_CONFIG = { damping: 18, stiffness: 200 };
 
 type Fidelity = "full" | "skeleton";
 
 interface MonthGridProps {
   year: number;
-  month: number; // 0-indexed (0=January)
+  month: number; // 0-indexed（0 = 一月）
   fidelity?: Fidelity;
+  targetRowIndex?: number; // 目标行索引（用于折叠动画）
+  foldProgress?: SharedValue<number>; // 折叠进度（0-1）
+  screenWidth?: number; // 屏幕宽度（用于计算折叠高度）
 }
 
 interface AnimatedDayCellProps {
@@ -34,7 +45,7 @@ interface AnimatedDayCellProps {
   isCurrentMonth: boolean;
   isWeekend: boolean;
   fidelity: Fidelity;
-  isDimmed?: boolean;
+  isDimmed?: boolean; // 是否淡化显示（非当月日期）
   onPress?: () => void;
 }
 
@@ -168,9 +179,14 @@ const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
   );
 };
 
-export default function MonthGrid({ year, month, fidelity = "full" }: MonthGridProps) {
-  const { theme } = useTheme();
-  const c = theme.colors;
+export default function MonthGrid({
+  year,
+  month,
+  fidelity = "full",
+  targetRowIndex,
+  foldProgress,
+  screenWidth = 400,
+}: MonthGridProps) {
   const selectedDate = useViewStore((state) => state.selectedDate);
   const setSelectedDate = useViewStore((state) => state.setSelectedDate);
 
@@ -182,6 +198,58 @@ export default function MonthGrid({ year, month, fidelity = "full" }: MonthGridP
     const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
     return eachDayOfInterval({ start: calStart, end: calEnd });
   }, [year, month]);
+
+  // 按行分割日历数据
+  const { upperRows, targetRow, lowerRows } = useMemo(() => {
+    if (targetRowIndex === undefined || !foldProgress) {
+      return { upperRows: calendarDays, targetRow: null, lowerRows: [] };
+    }
+    const rows: Date[][] = [];
+    for (let i = 0; i < calendarDays.length; i += 7) {
+      rows.push(calendarDays.slice(i, i + 7));
+    }
+    return {
+      upperRows: rows.slice(0, targetRowIndex),
+      targetRow: rows[targetRowIndex] || null,
+      lowerRows: rows.slice(targetRowIndex + 1),
+    };
+  }, [calendarDays, targetRowIndex, foldProgress]);
+
+  // 计算各区域高度
+  const singleRowHeight = useMemo(
+    () => calculateSingleRowHeight(screenWidth),
+    [screenWidth]
+  );
+  const upperHeight = upperRows.length * singleRowHeight;
+  const lowerHeight = lowerRows.length * singleRowHeight;
+  const targetRowOffset = (targetRowIndex ?? 0) * singleRowHeight;
+
+  // 上方区域动画样式
+  const upperStyle = useAnimatedStyle(() => {
+    if (!foldProgress) return {};
+    const progress = foldProgress.value;
+    return {
+      opacity: 1 - progress,
+      transform: [{ translateY: -progress * upperHeight }],
+    };
+  });
+
+  // 目标行动画样式
+  const targetStyle = useAnimatedStyle(() => {
+    if (!foldProgress) return {};
+    return {
+      transform: [{ translateY: -foldProgress.value * targetRowOffset }],
+    };
+  });
+
+  // 下方区域动画样式
+  const lowerStyle = useAnimatedStyle(() => {
+    if (!foldProgress) return {};
+    const progress = foldProgress.value;
+    return {
+      opacity: 1 - progress,
+    };
+  });
 
   const handleDayPress = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
@@ -211,7 +279,36 @@ export default function MonthGrid({ year, month, fidelity = "full" }: MonthGridP
     );
   };
 
-  return <View style={styles.daysGrid}>{calendarDays.map((day) => renderDayCell(day))}</View>;
+  // 无折叠动画时，使用原有渲染方式
+  if (!foldProgress || targetRowIndex === undefined) {
+    return <View style={styles.daysGrid}>{calendarDays.map(renderDayCell)}</View>;
+  }
+
+  // 有折叠动画时，分区域渲染
+  return (
+    <View style={styles.daysGrid}>
+      {/* 上方区域 */}
+      {upperRows.length > 0 && (
+        <Animated.View style={[styles.rowContainer, { height: upperHeight }, upperStyle]}>
+          {upperRows.flat().map(renderDayCell)}
+        </Animated.View>
+      )}
+
+      {/* 目标行 */}
+      {targetRow && (
+        <Animated.View style={[styles.rowContainer, { height: singleRowHeight }, targetStyle]}>
+          {targetRow.map(renderDayCell)}
+        </Animated.View>
+      )}
+
+      {/* 下方区域 */}
+      {lowerRows.length > 0 && (
+        <Animated.View style={[styles.rowContainer, { height: lowerHeight }, lowerStyle]}>
+          {lowerRows.flat().map(renderDayCell)}
+        </Animated.View>
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -221,6 +318,11 @@ const styles = StyleSheet.create({
     rowGap: 8,
     margin: 0,
     padding: 0,
+  },
+  rowContainer: {
+    width: "100%",
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   dayCell: {
     width: "14.28%",

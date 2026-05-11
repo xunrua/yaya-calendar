@@ -1,3 +1,5 @@
+// 主题状态管理 Store
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { type ReactNode, useEffect, useRef } from "react";
 import { Animated, Appearance, StyleSheet, useColorScheme, View } from "react-native";
@@ -7,30 +9,32 @@ import type { Theme, ThemeMode } from "../domain/types";
 import { createTheme, lightTheme } from "../styles/theme";
 
 // ============================================================================
-// Theme Store State
+// 主题 Store 状态
 // ============================================================================
 
 interface ThemeState {
-  mode: ThemeMode;
-  theme: Theme;
+  mode: ThemeMode; // 主题模式：light、dark、system
+  theme: Theme; // 当前主题对象
   setMode: (mode: ThemeMode) => void;
   toggleTheme: () => void;
   getSystemTheme: () => "light" | "dark";
 }
 
 // ============================================================================
-// System Theme Detection
+// 系统主题检测
 // ============================================================================
 
+/** 获取系统当前颜色模式 */
 const getSystemColorScheme = (): "light" | "dark" => {
   const colorScheme = Appearance.getColorScheme();
   return colorScheme === "dark" ? "dark" : "light";
 };
 
 // ============================================================================
-// Theme Store
+// 主题 Store
 // ============================================================================
 
+/** 主题状态管理 Store，支持持久化存储 */
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
@@ -78,9 +82,13 @@ export const useThemeStore = create<ThemeState>()(
 );
 
 // ============================================================================
-// Theme Hook
+// 主题 Hook
 // ============================================================================
 
+/**
+ * 获取主题数据的 Hook
+ * @returns 主题对象、模式、设置方法、是否深色模式
+ */
 export const useTheme = () => {
   const { theme, mode, setMode, toggleTheme } = useThemeStore();
 
@@ -94,32 +102,36 @@ export const useTheme = () => {
 };
 
 // ============================================================================
-// Theme Provider Component with Animation
+// 主题提供者组件（带过渡动画）
 // ============================================================================
 
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
+/**
+ * 主题提供者组件
+ * 提供主题切换时的淡入淡出动画效果
+ */
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const systemColorScheme = useColorScheme();
   const { mode, setMode, theme } = useThemeStore();
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const prevModeRef = useRef(mode);
 
-  // Animate theme transition
+  // 主题切换动画
   useEffect(() => {
     if (prevModeRef.current !== mode) {
-      // Fade out
+      // 淡出
       Animated.timing(fadeAnim, {
         toValue: 0.8,
-        duration: 100,
+        duration: 100, // 淡出时长
         useNativeDriver: true,
       }).start(() => {
-        // Fade in
+        // 淡入
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 200,
+          duration: 200, // 淡入时长
           useNativeDriver: true,
         }).start();
       });
@@ -127,7 +139,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     prevModeRef.current = mode;
   }, [mode, fadeAnim]);
 
-  // Update theme when system preference changes
+  // 系统主题变化时更新
   useEffect(() => {
     if (mode === "system" && systemColorScheme) {
       setMode("system");

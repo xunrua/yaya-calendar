@@ -1,19 +1,21 @@
+// 事件状态管理 Store
+
 import { create } from "zustand";
 import { expandRecurrence, getEventOccurrencesInRange } from "../domain/recurrence";
 import type { Event, ViewType } from "../domain/types";
 import * as database from "../services/database";
 
 // ============================================================================
-// Event Store State
+// 事件 Store 状态
 // ============================================================================
 
 interface EventState {
-  events: Event[];
-  loading: boolean;
-  error: string | null;
-  selectedEventId: string | null;
+  events: Event[]; // 所有事件列表
+  loading: boolean; // 是否正在加载
+  error: string | null; // 错误信息
+  selectedEventId: string | null; // 当前选中的事件 ID
 
-  // Actions
+  // 操作方法
   loadEvents: () => Promise<void>;
   createEvent: (event: Omit<Event, "id" | "createdAt" | "updatedAt">) => Promise<Event>;
   updateEvent: (id: string, updates: Partial<Event>) => Promise<Event>;
@@ -25,9 +27,10 @@ interface EventState {
 }
 
 // ============================================================================
-// Event Store
+// 事件 Store
 // ============================================================================
 
+/** 事件状态管理 Store */
 export const useEventStore = create<EventState>((set, get) => ({
   events: [],
   loading: false,
@@ -122,9 +125,10 @@ export const useEventStore = create<EventState>((set, get) => ({
 }));
 
 // ============================================================================
-// View Store (for calendar navigation)
+// 视图 Store（日历导航）
 // ============================================================================
 
+/** 视图过渡动画状态 */
 interface ViewTransitionState {
   sourceLayout?: {
     x: number;
@@ -140,14 +144,15 @@ interface ViewTransitionState {
   };
 }
 
+/** 视图状态 */
 interface ViewState {
-  currentView: ViewType;
-  selectedDate: string; // ISO date string
+  currentView: ViewType; // 当前视图类型
+  selectedDate: string; // 选中日期（ISO 格式）
   /** 用户是否在月视图中主动滑动过月份 */
   hasNavigatedMonth: boolean;
   transitionState: ViewTransitionState;
   yearCellLayouts: Record<number, { x: number; y: number; width: number; height: number }>;
-  displayMonth: string; // ISO date string (月初日期)
+  displayMonth: string; // 显示月份（ISO 格式，月初日期）
   setCurrentView: (view: ViewType) => void;
   setSelectedDate: (date: string) => void;
   setHasNavigatedMonth: (value: boolean) => void;
@@ -161,11 +166,13 @@ interface ViewState {
   goToNext: () => void;
 }
 
+/** 获取今天的 ISO 日期字符串 */
 const getTodayString = (): string => {
   const today = new Date();
   return today.toISOString().split("T")[0];
 };
 
+/** 获取本月月初的 ISO 日期字符串 */
 const getMonthStartString = (): string => {
   const today = new Date();
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -267,6 +274,12 @@ export const useViewStore = create<ViewState>((set, get) => ({
 // Hooks
 // ============================================================================
 
+/**
+ * 获取事件数据的 Hook
+ * @param startDate 可选，开始日期
+ * @param endDate 可选，结束日期
+ * @returns 事件数据、加载状态、刷新方法
+ */
 export const useEvents = (startDate?: Date, endDate?: Date) => {
   const { events, loading, error, loadEvents } = useEventStore();
 
@@ -289,6 +302,10 @@ export const useEvents = (startDate?: Date, endDate?: Date) => {
   };
 };
 
+/**
+ * 获取当前选中事件的 Hook
+ * @returns 选中的事件、事件 ID、选择方法
+ */
 export const useSelectedEvent = () => {
   const { selectedEventId, selectEvent, getEventById } = useEventStore();
   const selectedEvent = selectedEventId ? getEventById(selectedEventId) : null;

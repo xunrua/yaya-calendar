@@ -1,3 +1,5 @@
+// 排班计算工具
+
 import { differenceInDays } from "date-fns";
 
 /**
@@ -6,13 +8,15 @@ import { differenceInDays } from "date-fns";
  * - 周期：2天班 + 2天休，循环往复
  */
 
-const BASE_DATE = new Date(2026, 4, 7); // 2026-05-07
-const CYCLE_DAYS = 4; // 2班 + 2休
+const BASE_DATE = new Date(2026, 4, 7); // 排班周期基准日期：2026-05-07
+const CYCLE_DAYS = 4; // 排班周期：2天班 + 2天休
 
 export type WorkStatus = "班" | "休";
 
 /**
  * 计算给定日期的班休状态
+ * @param date 要计算的日期
+ * @returns 班休状态："班" 或 "休"
  */
 export function getWorkStatus(date: Date): WorkStatus {
   const diffDays = differenceInDays(date, BASE_DATE);

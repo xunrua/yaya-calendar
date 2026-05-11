@@ -1,3 +1,5 @@
+// 月视图组件
+
 import { Ionicons } from "@expo/vector-icons";
 import { addMonths, isSameMonth, startOfMonth, subMonths } from "date-fns";
 import type React from "react";
@@ -14,19 +16,23 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 import { useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
-import { calculateGridHeight, getCalendarRowCount } from "../../utils/calendar";
+import {
+  calculateGridHeight,
+  calculateSingleRowHeight,
+  getCalendarRowCount,
+  getRowIndexForDate,
+} from "../../utils/calendar";
 import MonthGrid from "./MonthGrid";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const SCREEN_HEIGHT = Dimensions.get("window").height;
-const SWIPE_VELOCITY_THRESHOLD = 500;
-const SWIPE_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.3;
+const SWIPE_VELOCITY_THRESHOLD = 500; // 滑动速度阈值（px/s）
+const SWIPE_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.3; // 滑动距离阈值
 const SPRING_CONFIG = { damping: 20, stiffness: 100 };
 
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
-const COLLAPSED_HEIGHT = 64;
-const FOLD_VELOCITY_THRESHOLD = 300;
-const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05;
+const FOLD_VELOCITY_THRESHOLD = 300; // 折叠速度阈值
+const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05; // 折叠距离阈值
 
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
@@ -54,6 +60,9 @@ export const MonthView: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const calendarHeight = useSharedValue(320); // 初始值，会在 useLayoutEffect 中更新
   const dragStartHeight = useSharedValue(320);
+
+  // 折叠进度 shared value（0=展开, 1=折叠）
+  const foldProgress = useSharedValue(0);
 
   // 三屏高度 shared values（用于动态高度计算）
   const currentHeight = useSharedValue(0);
@@ -84,6 +93,19 @@ export const MonthView: React.FC = () => {
     () => calculateGridHeight(currentRowCount, screenWidth),
     [currentRowCount, screenWidth]
   );
+
+  // 折叠高度 = 单行高度
+  const COLLAPSED_HEIGHT = useMemo(
+    () => calculateSingleRowHeight(screenWidth),
+    [screenWidth]
+  );
+
+  // 计算目标行索引（优先选中日期，否则用今天）
+  const targetRowIndex = useMemo(() => {
+    const targetDateStr = selectedDate || new Date().toISOString().split("T")[0];
+    const targetDate = new Date(targetDateStr);
+    return getRowIndexForDate(targetDate, displayMonth.getFullYear(), displayMonth.getMonth());
+  }, [selectedDate, displayMonth]);
 
   // 初始化三屏高度
   useLayoutEffect(() => {
@@ -171,9 +193,13 @@ export const MonthView: React.FC = () => {
         opacity.value = 0;
         translateX.value = 0;
         isAnimating.value = false;
-        // 重置高度到当月高度
-        if (!isCollapsedSV.value) {
+        // 重置高度到当月高度或折叠高度
+        if (isCollapsedSV.value) {
+          calendarHeight.value = COLLAPSED_HEIGHT;
+          foldProgress.value = 1;
+        } else {
           calendarHeight.value = currentHeight.value;
+          foldProgress.value = 0;
         }
         // 下一帧淡入
         scheduleOnRN(() => {
@@ -183,21 +209,29 @@ export const MonthView: React.FC = () => {
         // 正常滑动：重置位置
         translateX.value = 0;
         isAnimating.value = false;
-        // 高度已在滑动动画中完成，无需额外处理
+        // 折叠状态下保持折叠高度
+        if (isCollapsedSV.value) {
+          calendarHeight.value = COLLAPSED_HEIGHT;
+          foldProgress.value = 1;
+        }
       }
     } else {
       translateX.value = 0;
       isAnimating.value = false;
     }
-  }, [displayMonthStr, translateX, opacity, isAnimating, calendarHeight, currentHeight, isCollapsedSV]);
+  }, [displayMonthStr, translateX, opacity, isAnimating, calendarHeight, currentHeight, isCollapsedSV, COLLAPSED_HEIGHT, foldProgress]);
 
   // 折叠高度动画
   useLayoutEffect(() => {
     calendarHeight.value = withTiming(isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT, {
-      duration: 200,
+      duration: 250,
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     });
-  }, [isCollapsed, EXPANDED_HEIGHT, calendarHeight]);
+    foldProgress.value = withTiming(isCollapsed ? 1 : 0, {
+      duration: 250,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+    });
+  }, [isCollapsed, EXPANDED_HEIGHT, COLLAPSED_HEIGHT, calendarHeight, foldProgress]);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -295,6 +329,8 @@ export const MonthView: React.FC = () => {
         Math.min(EXPANDED_HEIGHT, dragStartHeight.value + event.translationY)
       );
       calendarHeight.value = newHeight;
+      // 同步更新折叠进度
+      foldProgress.value = 1 - (newHeight - COLLAPSED_HEIGHT) / (EXPANDED_HEIGHT - COLLAPSED_HEIGHT);
     })
     .onEnd((event) => {
       const { translationY, velocityY } = event;
@@ -309,7 +345,11 @@ export const MonthView: React.FC = () => {
         scheduleOnRN(toggleCollapse);
       } else {
         calendarHeight.value = withTiming(isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT, {
-          duration: 200,
+          duration: 250,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
+        foldProgress.value = withTiming(isCollapsed ? 1 : 0, {
+          duration: 250,
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
       }
@@ -327,6 +367,8 @@ export const MonthView: React.FC = () => {
         Math.min(EXPANDED_HEIGHT, dragStartHeight.value + event.translationY)
       );
       calendarHeight.value = newHeight;
+      // 同步更新折叠进度
+      foldProgress.value = 1 - (newHeight - COLLAPSED_HEIGHT) / (EXPANDED_HEIGHT - COLLAPSED_HEIGHT);
     })
     .onEnd((event) => {
       const { translationY, velocityY } = event;
@@ -341,7 +383,11 @@ export const MonthView: React.FC = () => {
         scheduleOnRN(toggleCollapse);
       } else {
         calendarHeight.value = withTiming(isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT, {
-          duration: 200,
+          duration: 250,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
+        foldProgress.value = withTiming(isCollapsed ? 1 : 0, {
+          duration: 250,
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
       }
@@ -387,6 +433,9 @@ export const MonthView: React.FC = () => {
               year={displayMonth.getFullYear()}
               month={displayMonth.getMonth()}
               fidelity="full"
+              targetRowIndex={targetRowIndex}
+              foldProgress={foldProgress}
+              screenWidth={screenWidth}
             />
           </Animated.View>
 
