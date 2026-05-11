@@ -4,15 +4,24 @@ import {
   endOfWeek,
   format,
   isSameMonth,
+  isToday as checkIsToday,
   startOfMonth,
   startOfWeek,
 } from "date-fns";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
 import { getLunarInfo } from "../../domain/lunar";
 import { useEventStore, useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
 import { getWorkStatus } from "../../utils/workSchedule";
+
+const PRIMARY_COLOR = "#E8563A";
+const POP_ANIMATION_CONFIG = { damping: 18, stiffness: 200 };
 
 type Fidelity = "full" | "skeleton";
 
@@ -22,12 +31,135 @@ interface MonthGridProps {
   fidelity?: Fidelity;
 }
 
+interface AnimatedDayCellProps {
+  day: Date;
+  isSelected: boolean;
+  isToday: boolean;
+  isCurrentMonth: boolean;
+  isWeekend: boolean;
+  fidelity: Fidelity;
+  onPress: () => void;
+}
+
+const AnimatedDayCell: React.FC<AnimatedDayCellProps> = ({
+  day,
+  isSelected,
+  isToday,
+  isCurrentMonth,
+  isWeekend,
+  fidelity,
+  onPress,
+}) => {
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const scale = useSharedValue(1);
+  const prevSelected = useSharedValue(false);
+
+  useEffect(() => {
+    if (isSelected && !prevSelected.value) {
+      scale.value = withSpring(1.15, POP_ANIMATION_CONFIG);
+      setTimeout(() => {
+        scale.value = withSpring(1, POP_ANIMATION_CONFIG);
+      }, 100);
+    }
+    prevSelected.value = isSelected;
+  }, [isSelected, scale, prevSelected]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const dateStr = format(day, "yyyy-MM-dd");
+  const lunarInfo = fidelity === "full" ? getLunarInfo(day) : null;
+  const events = fidelity === "full" ? useEventStore.getState().getEventsForDate(dateStr) : [];
+  const workStatus = fidelity === "full" ? getWorkStatus(day) : null;
+
+  const getBackgroundColor = () => {
+    if (isToday) return PRIMARY_COLOR;
+    if (isSelected) return "transparent";
+    return "transparent";
+  };
+
+  const getTextColor = () => {
+    if (!isCurrentMonth) return c.textTertiary;
+    if (isToday) return "#FFFFFF";
+    if (isSelected) return PRIMARY_COLOR;
+    if (isWeekend) return c.weekendText;
+    return c.text;
+  };
+
+  const getBorderColor = () => {
+    if (isSelected && !isToday) return PRIMARY_COLOR;
+    return "transparent";
+  };
+
+  return (
+    <Pressable onPress={onPress} style={styles.dayCell}>
+      <View style={styles.dayNumberWrapper}>
+        <Animated.View
+          style={[
+            styles.dayNumberContainer,
+            animatedStyle,
+            {
+              backgroundColor: getBackgroundColor(),
+              borderWidth: isSelected && !isToday ? 1.5 : 0,
+              borderColor: getBorderColor(),
+            },
+          ]}
+        >
+          <Text style={[styles.dayNumber, { color: getTextColor() }]}>
+            {format(day, "d")}
+          </Text>
+        </Animated.View>
+        {workStatus && (
+          <Text
+            style={[
+              styles.workStatusText,
+              { color: workStatus === "班" ? c.textTertiary : "#60A5FA" },
+            ]}
+          >
+            {workStatus}
+          </Text>
+        )}
+      </View>
+      {fidelity === "full" && lunarInfo && (
+        <Text
+          style={[
+            styles.lunarText,
+            {
+              color: !isCurrentMonth
+                ? c.textTertiary
+                : lunarInfo.isHoliday
+                  ? c.holidayText
+                  : lunarInfo.isSolarTerm
+                    ? c.solarTermText
+                    : c.lunarText,
+            },
+          ]}
+          numberOfLines={1}
+        >
+          {lunarInfo.holiday || lunarInfo.solarTerm || lunarInfo.lunarDay}
+        </Text>
+      )}
+      {fidelity === "full" && events.length > 0 && (
+        <View style={styles.eventDots}>
+          {events.slice(0, 3).map((event) => (
+            <View
+              key={event.id}
+              style={[styles.eventDot, { backgroundColor: event.color || c.eventDefault }]}
+            />
+          ))}
+        </View>
+      )}
+    </Pressable>
+  );
+};
+
 export default function MonthGrid({ year, month, fidelity = "full" }: MonthGridProps) {
   const { theme } = useTheme();
   const c = theme.colors;
   const selectedDate = useViewStore((state) => state.selectedDate);
   const setSelectedDate = useViewStore((state) => state.setSelectedDate);
-  const { getEventsForDate } = useEventStore();
 
   const calendarDays = useMemo(() => {
     const monthDate = new Date(year, month, 1);
@@ -47,7 +179,9 @@ export default function MonthGrid({ year, month, fidelity = "full" }: MonthGridP
     const dateStr = format(day, "yyyy-MM-dd");
     const isCurrentMonth = isSameMonth(day, new Date(year, month, 1));
     const isSelectedDate = selectedDate === dateStr;
+    const isToday = checkIsToday(day);
     const dayOfWeek = day.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
     if (!isCurrentMonth) {
       return (
@@ -59,82 +193,17 @@ export default function MonthGrid({ year, month, fidelity = "full" }: MonthGridP
       );
     }
 
-    const lunarInfo = fidelity === "full" ? getLunarInfo(day) : null;
-    const events = fidelity === "full" ? getEventsForDate(dateStr) : [];
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-    const workStatus = fidelity === "full" ? getWorkStatus(day) : null;
-
     return (
-      <Pressable key={dateStr} onPress={() => handleDayPress(day)} style={styles.dayCell}>
-        <View style={styles.dayNumberWrapper}>
-          <View
-            style={[
-              styles.dayNumberContainer,
-              {
-                backgroundColor: isSelectedDate ? c.selectedBackground : "transparent",
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.dayNumber,
-                {
-                  color: !isCurrentMonth
-                    ? c.textTertiary
-                    : isWeekend
-                      ? c.weekendText
-                      : isSelectedDate
-                        ? c.selectedText
-                        : c.text,
-                },
-              ]}
-            >
-              {format(day, "d")}
-            </Text>
-          </View>
-          {workStatus && (
-            <Text
-              style={[
-                styles.workStatusText,
-                {
-                  color: workStatus === "班" ? c.textTertiary : "#60A5FA",
-                },
-              ]}
-            >
-              {workStatus}
-            </Text>
-          )}
-        </View>
-        {fidelity === "full" && lunarInfo && (
-          <Text
-            style={[
-              styles.lunarText,
-              {
-                color: !isCurrentMonth
-                  ? c.textTertiary
-                  : lunarInfo.isHoliday
-                    ? c.holidayText
-                    : lunarInfo.isSolarTerm
-                      ? c.solarTermText
-                      : c.lunarText,
-              },
-            ]}
-            numberOfLines={1}
-          >
-            {lunarInfo.holiday || lunarInfo.solarTerm || lunarInfo.lunarDay}
-          </Text>
-        )}
-        {fidelity === "full" && events.length > 0 && (
-          <View style={styles.eventDots}>
-            {events.slice(0, 3).map((event) => (
-              <View
-                key={event.id}
-                style={[styles.eventDot, { backgroundColor: event.color || c.eventDefault }]}
-              />
-            ))}
-          </View>
-        )}
-      </Pressable>
+      <AnimatedDayCell
+        key={dateStr}
+        day={day}
+        isSelected={isSelectedDate}
+        isToday={isToday}
+        isCurrentMonth={isCurrentMonth}
+        isWeekend={isWeekend}
+        fidelity={fidelity}
+        onPress={() => handleDayPress(day)}
+      />
     );
   };
 

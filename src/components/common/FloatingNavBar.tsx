@@ -9,12 +9,21 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../stores/themeStore";
+import { SegmentedControl } from "./SegmentedControl";
+
+const TABS: { key: NavTab; label: string }[] = [
+  { key: "year", label: "年" },
+  { key: "calendar", label: "日历" },
+  { key: "todo", label: "日程" },
+];
+
+type NavTab = "year" | "calendar" | "todo";
 
 interface FloatingNavBarProps {
   onMenuPress: () => void;
   onAddPress: () => void;
-  activeTab: "calendar" | "todo";
-  onTabChange: (tab: "calendar" | "todo") => void;
+  activeTab: NavTab;
+  onTabChange: (tab: NavTab) => void;
   menuOpen?: boolean;
   onTodayPress?: () => void;
   showTodayButton?: boolean;
@@ -31,20 +40,11 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
 }) => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-
-  // Animation values for segmented control
-  const indicatorPosition = useSharedValue(activeTab === "calendar" ? 0 : 1);
+  const isDark = theme.mode === "dark";
 
   // Animation values for "今" button
   const todayButtonScale = useSharedValue(0);
   const todayButtonOpacity = useSharedValue(0);
-
-  React.useEffect(() => {
-    indicatorPosition.value = withTiming(activeTab === "calendar" ? 0 : 1, {
-      duration: 250,
-      easing: Easing.bezier(0.4, 0, 0.2, 1),
-    });
-  }, [activeTab, indicatorPosition]);
 
   // "今"按钮显示/隐藏动画（参考 FloatingMenu 的回弹效果）
   React.useEffect(() => {
@@ -66,29 +66,10 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showTodayButton]);
 
-  const animatedIndicatorStyle = useAnimatedStyle(() => {
-    const segmentWidth = 80;
-    const gap = 8;
-    const totalOffset = indicatorPosition.value * (segmentWidth + gap);
-    return {
-      transform: [{ translateX: totalOffset }],
-    };
-  });
-
   const animatedTodayStyle = useAnimatedStyle(() => ({
     transform: [{ scale: todayButtonScale.value }],
     opacity: todayButtonOpacity.value,
   }));
-
-  const handleTabPress = (tab: "calendar" | "todo") => {
-    if (tab !== activeTab) {
-      onTabChange(tab);
-    }
-  };
-
-  const handleMenuPress = () => {
-    onMenuPress();
-  };
 
   return (
     <View style={[styles.container, { bottom: Math.max(insets.bottom, 8) + 8, paddingBottom: 8 }]}>
@@ -103,7 +84,7 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
                   theme.mode === "dark" ? "rgba(58, 58, 60, 0.8)" : "rgba(235, 235, 235, 0.8)",
               },
             ]}
-            onPress={handleMenuPress}
+            onPress={onMenuPress}
             activeOpacity={0.7}
           >
             <Ionicons name={menuOpen ? "close" : "menu"} size={24} color={theme.colors.text} />
@@ -126,75 +107,26 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
         </View>
 
         {/* Segmented Control - Centered */}
-        <View
-          style={[
+        <SegmentedControl
+          tabs={TABS}
+          activeKey={activeTab}
+          onChange={(key) => onTabChange(key as NavTab)}
+          segmentWidth={80}
+          segmentHeight={36}
+          gap={8}
+          containerStyle={[
             styles.segmentedContainer,
             {
-              backgroundColor:
-                theme.mode === "dark" ? "rgba(58, 58, 60, 0.6)" : "rgba(235, 235, 235, 0.6)",
+              backgroundColor: isDark
+                ? "rgba(58, 58, 60, 0.6)"
+                : "rgba(235, 235, 235, 0.6)",
               borderColor: theme.colors.border,
             },
           ]}
-        >
-          {/* Sliding Indicator */}
-          <Animated.View
-            style={[
-              styles.segmentedIndicator,
-              {
-                backgroundColor: theme.colors.primary,
-              },
-              animatedIndicatorStyle,
-            ]}
-          />
-
-          {/* Calendar Tab */}
-          <TouchableOpacity
-            style={styles.segment}
-            onPress={() => handleTabPress("calendar")}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.segmentText,
-                {
-                  color:
-                    activeTab === "calendar"
-                      ? theme.mode === "dark"
-                        ? "#1C1C1E"
-                        : "#FAFAFA"
-                      : theme.colors.textSecondary,
-                  fontWeight: activeTab === "calendar" ? "600" : "400",
-                },
-              ]}
-            >
-              日历
-            </Text>
-          </TouchableOpacity>
-
-          {/* Todo Tab */}
-          <TouchableOpacity
-            style={styles.segment}
-            onPress={() => handleTabPress("todo")}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.segmentText,
-                {
-                  color:
-                    activeTab === "todo"
-                      ? theme.mode === "dark"
-                        ? "#1C1C1E"
-                        : "#FAFAFA"
-                      : theme.colors.textSecondary,
-                  fontWeight: activeTab === "todo" ? "600" : "400",
-                },
-              ]}
-            >
-              日程
-            </Text>
-          </TouchableOpacity>
-        </View>
+          indicatorStyle={{ backgroundColor: theme.colors.primary }}
+          activeTextColor={isDark ? "#1C1C1E" : "#FAFAFA"}
+          inactiveTextColor={theme.colors.textSecondary}
+        />
 
         {/* Right Group: Add Button */}
         <View style={styles.rightGroup}>
@@ -252,36 +184,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   segmentedContainer: {
-    flex: 1,
-    flexDirection: "row",
     borderRadius: 22,
     borderWidth: 1,
-    padding: 4,
     height: 46,
-    gap: 8,
     overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-    maxWidth: 180,
-  },
-  segmentedIndicator: {
-    position: "absolute",
-    width: 80,
-    height: 36,
-    borderRadius: 18,
-    top: 4,
-    left: 4,
-  },
-  segment: {
-    width: 80,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-  },
-  segmentText: {
-    fontSize: 14,
-    lineHeight: 14,
   },
   todayButtonContainer: {
     marginRight: 8,

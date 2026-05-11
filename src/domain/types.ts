@@ -31,7 +31,7 @@ export interface RecurrenceRule {
 // View Types
 // ============================================================================
 
-export type ViewType = "day" | "week" | "month" | "events";
+export type ViewType = "year" | "month" | "week" | "day" | "events";
 
 export interface ViewState {
   currentView: ViewType;

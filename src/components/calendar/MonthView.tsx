@@ -1,7 +1,7 @@
-import { addMonths, format, getISOWeek, isSameMonth, startOfMonth, subMonths } from "date-fns";
-import { zhCN } from "date-fns/locale";
+import { addMonths, format, startOfMonth, subMonths } from "date-fns";
+import { Ionicons } from "@expo/vector-icons";
 import type React from "react";
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -19,15 +19,21 @@ import { useTheme } from "../../stores/themeStore";
 import MonthGrid from "./MonthGrid";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
+const SCREEN_HEIGHT = Dimensions.get("window").height;
 const SWIPE_VELOCITY_THRESHOLD = 500;
 const SWIPE_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.3;
 const SPRING_CONFIG = { damping: 20, stiffness: 100 };
 
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
+const EXPANDED_HEIGHT = 320;
+const COLLAPSED_HEIGHT = 64;
+const FOLD_VELOCITY_THRESHOLD = 300;
+const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05;
 
 export const MonthView: React.FC = () => {
   const { theme } = useTheme();
   const { selectedDate, displayMonth: displayMonthStr, setDisplayMonth } = useViewStore();
+  const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
   const insets = useSafeAreaInsets();
 
   // 从全局状态获取 displayMonth，转换为 Date 对象
@@ -41,27 +47,34 @@ export const MonthView: React.FC = () => {
   const isAnimating = useSharedValue(false);
   const prevDisplayMonthRef = useRef(displayMonthStr);
 
-  // 计算显示的周数：如果当前显示月份包含 selectedDate，显示 selectedDate 的周数；否则显示该月第一周的周数
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const calendarHeight = useSharedValue(EXPANDED_HEIGHT);
+  const dragStartHeight = useSharedValue(EXPANDED_HEIGHT);
+
   const prevMonth = useMemo(() => subMonths(displayMonth, 1), [displayMonth]);
   const nextMonth = useMemo(() => addMonths(displayMonth, 1), [displayMonth]);
 
-  // 计算显示的周数：如果当前显示月份包含 selectedDate，显示 selectedDate 的周数；否则显示该月第一周的周数
-  const displayWeekNumber = useMemo(() => {
-    if (isSameMonth(displayMonth, selectedDate)) {
-      return getISOWeek(new Date(selectedDate));
-    }
-    return getISOWeek(startOfMonth(displayMonth));
-  }, [displayMonth, selectedDate]);
+  // 当 selectedDate 从外部变化时（如从年视图点击月份），同步 displayMonth
+  // 注意：不将 displayMonth 放入依赖，避免滑动切换时被重置
+  useLayoutEffect(() => {
+    setDisplayMonth(startOfMonth(new Date(selectedDate)).toISOString().split("T")[0]);
+  }, [selectedDate, setDisplayMonth]);
 
   const goToPreviousJS = useCallback(() => {
     const newMonth = subMonths(displayMonth, 1);
     setDisplayMonth(newMonth.toISOString().split("T")[0]);
-  }, [displayMonth, setDisplayMonth]);
+    setHasNavigatedMonth(true);
+  }, [displayMonth, setDisplayMonth, setHasNavigatedMonth]);
 
   const goToNextJS = useCallback(() => {
     const newMonth = addMonths(displayMonth, 1);
     setDisplayMonth(newMonth.toISOString().split("T")[0]);
-  }, [displayMonth, setDisplayMonth]);
+    setHasNavigatedMonth(true);
+  }, [displayMonth, setDisplayMonth, setHasNavigatedMonth]);
+
+  const toggleCollapse = useCallback(() => {
+    setIsCollapsed((prev) => !prev);
+  }, []);
 
   // 当 displayMonth 更新后，使用 useLayoutEffect 同步重置 translateX
   // 这确保在浏览器绘制之前完成重置，避免闪烁
@@ -97,6 +110,14 @@ export const MonthView: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayMonthStr]);
+
+  // 折叠高度动画
+  useLayoutEffect(() => {
+    calendarHeight.value = withTiming(
+      isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT,
+      { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
+    );
+  }, [isCollapsed, calendarHeight]);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -156,25 +177,54 @@ export const MonthView: React.FC = () => {
     transform: [{ translateX: translateX.value + SCREEN_WIDTH }],
   }));
 
+  const calendarHeightStyle = useAnimatedStyle(() => ({
+    height: calendarHeight.value,
+  }));
+
+  // 折叠手势（垂直滑动）- 实现手势跟随
+  const foldGesture = Gesture.Pan()
+    .activeOffsetY([-15, 15])
+    .failOffsetX([-20, 20])
+    .onBegin(() => {
+      // 记录开始拖动时的高度
+      dragStartHeight.value = calendarHeight.value;
+    })
+    .onUpdate((event) => {
+      // 实时跟随手指移动
+      // 向下拖动（translationY > 0）= 展开，向上拖动（translationY < 0）= 折叠
+      const newHeight = Math.max(
+        COLLAPSED_HEIGHT,
+        Math.min(EXPANDED_HEIGHT, dragStartHeight.value + event.translationY)
+      );
+      calendarHeight.value = newHeight;
+    })
+    .onEnd((event) => {
+      const { translationY, velocityY } = event;
+      const shouldExpand =
+        translationY > FOLD_DISTANCE_THRESHOLD || velocityY > FOLD_VELOCITY_THRESHOLD;
+      const shouldFold =
+        translationY < -FOLD_DISTANCE_THRESHOLD || velocityY < -FOLD_VELOCITY_THRESHOLD;
+
+      if (shouldFold && !isCollapsed) {
+        scheduleOnRN(toggleCollapse);
+      } else if (shouldExpand && isCollapsed) {
+        scheduleOnRN(toggleCollapse);
+      } else {
+        // 没有达到阈值，恢复到当前状态的高度
+        calendarHeight.value = withTiming(
+          isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT,
+          { duration: 200, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
+        );
+      }
+    });
+
   return (
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.colors.background, paddingTop: insets.top },
+        { backgroundColor: theme.colors.background },
       ]}
     >
-      {/* Month header */}
-      <View style={styles.monthHeader}>
-        <View style={styles.titleRow}>
-          <Text style={[styles.monthTitle, { color: theme.colors.text }]}>
-            {format(displayMonth, "yyyy年M月", { locale: zhCN })}
-          </Text>
-          <Text style={[styles.weekNumber, { color: theme.colors.textTertiary }]}>
-            第{displayWeekNumber}周
-          </Text>
-        </View>
-      </View>
-
       {/* Fixed weekday header */}
       <View style={styles.weekdayHeader}>
         {WEEKDAYS.map((day, idx) => (
@@ -190,36 +240,47 @@ export const MonthView: React.FC = () => {
         ))}
       </View>
 
-      {/* Swipeable month grids */}
-      <GestureDetector gesture={panGesture}>
-        <View style={styles.monthsContainer}>
-          <Animated.View
-            style={[styles.monthPanel, { bottom: insets.bottom + 64 }, prevMonthStyle]}
-          >
-            <MonthGrid
-              year={prevMonth.getFullYear()}
-              month={prevMonth.getMonth()}
-              fidelity="full"
-            />
+      {/* Swipeable month grids with fold gesture - 用 View 包裹整个可折叠区域 */}
+      <GestureDetector gesture={Gesture.Simultaneous(panGesture, foldGesture)}>
+        <View style={styles.foldableArea}>
+          <Animated.View style={[styles.monthsContainer, calendarHeightStyle]}>
+            <Animated.View
+              style={[styles.monthPanel, prevMonthStyle]}
+            >
+              <MonthGrid
+                year={prevMonth.getFullYear()}
+                month={prevMonth.getMonth()}
+                fidelity="full"
+              />
+            </Animated.View>
+
+            <Animated.View style={[styles.monthPanel, animatedStyle]}>
+              <MonthGrid
+                year={displayMonth.getFullYear()}
+                month={displayMonth.getMonth()}
+                fidelity="full"
+              />
+            </Animated.View>
+
+            <Animated.View
+              style={[styles.monthPanel, nextMonthStyle]}
+            >
+              <MonthGrid
+                year={nextMonth.getFullYear()}
+                month={nextMonth.getMonth()}
+                fidelity="full"
+              />
+            </Animated.View>
           </Animated.View>
 
-          <Animated.View style={[styles.monthPanel, { bottom: insets.bottom + 64 }, animatedStyle]}>
-            <MonthGrid
-              year={displayMonth.getFullYear()}
-              month={displayMonth.getMonth()}
-              fidelity="full"
+          {/* Collapse indicator */}
+          <View style={styles.collapseIndicator}>
+            <Ionicons
+              name="remove"
+              size={20}
+              color={theme.colors.textTertiary}
             />
-          </Animated.View>
-
-          <Animated.View
-            style={[styles.monthPanel, { bottom: insets.bottom + 64 }, nextMonthStyle]}
-          >
-            <MonthGrid
-              year={nextMonth.getFullYear()}
-              month={nextMonth.getMonth()}
-              fidelity="full"
-            />
-          </Animated.View>
+          </View>
         </View>
       </GestureDetector>
     </View>
@@ -230,25 +291,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  monthHeader: {
-    marginLeft: 16,
-    marginRight: 16,
-    paddingTop: 16,
-    paddingBottom: 20,
-  },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginLeft: "5%",
-  },
-  monthTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-  },
-  weekNumber: {
-    fontSize: 14,
-    fontWeight: "400",
-    marginLeft: 8,
+  foldableArea: {
+    flex: 1,
   },
   weekdayHeader: {
     flexDirection: "row",
@@ -263,7 +307,6 @@ const styles = StyleSheet.create({
     width: "14.28%",
   },
   monthsContainer: {
-    flex: 1,
     overflow: "hidden",
   },
   monthPanel: {
@@ -271,6 +314,14 @@ const styles = StyleSheet.create({
     top: 0,
     left: 16,
     right: 16,
+    bottom: 100,
+  },
+  collapseIndicator: {
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  collapseText: {
+    fontSize: 16,
   },
 });
 
