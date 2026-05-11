@@ -248,6 +248,7 @@ export default function MonthGrid({
     const progress = foldProgress.value;
     return {
       opacity: 1 - progress,
+      transform: [{ translateY: -progress * targetRowOffset }],
     };
   });
 
