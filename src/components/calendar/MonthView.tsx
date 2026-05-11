@@ -6,13 +6,11 @@ import { Dimensions, StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
-  runOnUI,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
 import { useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
@@ -40,7 +38,6 @@ export const MonthView: React.FC = () => {
     hasNavigatedMonth,
   } = useViewStore();
   const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
-  const _insets = useSafeAreaInsets();
 
   // 从全局状态获取 displayMonth，转换为 Date 对象
   const displayMonth = useMemo(() => {
@@ -130,10 +127,9 @@ export const MonthView: React.FC = () => {
         translateX.value = 0;
         isAnimating.value = false;
         // 下一帧淡入
-        runOnUI(() => {
-          "worklet";
+        scheduleOnRN(() => {
           opacity.value = withTiming(1, { duration: 200 });
-        })();
+        });
       } else {
         // 正常滑动：重置位置
         translateX.value = 0;
