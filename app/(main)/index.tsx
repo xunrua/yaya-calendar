@@ -50,6 +50,7 @@ export default function MainScreen() {
   const insets = useSafeAreaInsets();
   const [menuVisible, setMenuVisible] = useState(false);
   const prevViewRef = useRef(currentView);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // 计算是否显示"今"按钮
   const showTodayButton = useMemo(() => {
@@ -99,6 +100,12 @@ export default function MainScreen() {
     const toYear = curr === "year";
     const fromYear = prev === "year";
     const toMonth = curr === "month";
+
+    // 标记正在过渡（需要同时渲染两个视图）
+    const isMonthYearTransition = (fromMonth && toYear) || (fromYear && toMonth);
+    if (isMonthYearTransition) {
+      setIsTransitioning(true);
+    }
 
     /**
      * 将「格子的绝对坐标」换算成「相对于内容区中心的偏移量」
@@ -192,6 +199,11 @@ export default function MainScreen() {
     }
 
     prevViewRef.current = curr;
+
+    // 动画结束后清除过渡状态
+    if (isMonthYearTransition) {
+      setTimeout(() => setIsTransitioning(false), ANIM_DURATION);
+    }
   }, [
     currentView,
     transitionState,
@@ -293,19 +305,25 @@ export default function MainScreen() {
 
       {showCalendarLayers ? (
         <View style={styles.contentArea} onLayout={handleContentLayout}>
-          <Animated.View
-            style={[styles.layer, yearLayerStyle, yearZoomStyle]}
-            pointerEvents={currentView === "year" ? "auto" : "none"}
-          >
-            <YearView />
-          </Animated.View>
+          {/* 年视图：只在 currentView === "year" 或过渡动画期间渲染 */}
+          {(currentView === "year" || isTransitioning) && (
+            <Animated.View
+              style={[styles.layer, yearLayerStyle, yearZoomStyle]}
+              pointerEvents={currentView === "year" ? "auto" : "none"}
+            >
+              <YearView />
+            </Animated.View>
+          )}
 
-          <Animated.View
-            style={[styles.layer, monthLayerStyle, monthZoomStyle]}
-            pointerEvents={currentView === "month" ? "auto" : "none"}
-          >
-            <MonthView />
-          </Animated.View>
+          {/* 月视图：只在 currentView === "month" 或过渡动画期间渲染 */}
+          {(currentView === "month" || isTransitioning) && (
+            <Animated.View
+              style={[styles.layer, monthLayerStyle, monthZoomStyle]}
+              pointerEvents={currentView === "month" ? "auto" : "none"}
+            >
+              <MonthView />
+            </Animated.View>
+          )}
         </View>
       ) : (
         <View style={styles.content}>
