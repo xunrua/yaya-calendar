@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   daysGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    rowGap: 8,
+    rowGap: 24,
     margin: 0,
     padding: 0,
   },
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     width: "100%",
     flexDirection: "row",
     flexWrap: "wrap",
-    rowGap: 8,
+    rowGap: 24,
   },
   dayCell: {
     width: "14.28%",

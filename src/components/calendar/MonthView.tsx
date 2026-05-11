@@ -650,6 +650,7 @@ const styles = StyleSheet.create({
   },
   monthsContainer: {
     overflow: "hidden",
+    marginTop: 16,
   },
   monthPanel: {
     position: "absolute",

@@ -33,7 +33,7 @@ export function getCalendarRowCount(year: number, month: number): number {
  */
 export function calculateGridHeight(rowCount: number, screenWidth: number): number {
   const HORIZONTAL_MARGIN = 32; // 左右边距各 16dp
-  const ROW_GAP = 8; // 行间距
+  const ROW_GAP = 24; // 行间距
 
   const cellWidth = (screenWidth - HORIZONTAL_MARGIN) / 7;
   const cellHeight = cellWidth; // 宽高比 1:1
@@ -47,7 +47,7 @@ export function calculateGridHeight(rowCount: number, screenWidth: number): numb
  */
 export function calculateSingleRowHeight(screenWidth: number): number {
   const HORIZONTAL_MARGIN = 32; // 左右边距各 16dp
-  const ROW_GAP = 8; // 行间距
+  const ROW_GAP = 24; // 行间距
   const cellWidth = (screenWidth - HORIZONTAL_MARGIN) / 7;
   return cellWidth + ROW_GAP;
 }
