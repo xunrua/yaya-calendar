@@ -73,7 +73,7 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
   return (
     <View style={[styles.container, { bottom: Math.max(insets.bottom, 8) + 8, paddingBottom: 8 }]}>
       <View style={styles.content}>
-        {/* Left Group: Menu Button + Today Button */}
+        {/* Left Group: Menu Button */}
         <View style={styles.leftGroup}>
           <TouchableOpacity
             style={[
@@ -88,26 +88,6 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
           >
             <Ionicons name={menuOpen ? "close" : "menu"} size={24} color={theme.colors.text} />
           </TouchableOpacity>
-
-          {/* Today Button */}
-          {showTodayButton !== undefined && (
-            <Animated.View style={[styles.todayButtonContainer, animatedTodayStyle]}>
-              <TouchableOpacity
-                style={[styles.todayButton, { backgroundColor: theme.colors.primary }]}
-                onPress={onTodayPress}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.todayButtonText,
-                    { color: theme.mode === "dark" ? "#1C1C1E" : "#FAFAFA" },
-                  ]}
-                >
-                  今
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
         </View>
 
         {/* Segmented Control - Centered */}
@@ -130,8 +110,28 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
           inactiveTextColor={theme.colors.textSecondary}
         />
 
-        {/* Right Group: Add Button */}
+        {/* Right Group: Today Button + Add Button */}
         <View style={styles.rightGroup}>
+          {/* Today Button - floating above add button */}
+          {showTodayButton !== undefined && (
+            <Animated.View style={[styles.todayButtonContainer, animatedTodayStyle]}>
+              <TouchableOpacity
+                style={[styles.todayButton, { backgroundColor: theme.colors.primary }]}
+                onPress={onTodayPress}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.todayButtonText,
+                    { color: theme.mode === "dark" ? "#1C1C1E" : "#FAFAFA" },
+                  ]}
+                >
+                  今
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+
           <TouchableOpacity
             style={[
               styles.circleButton,
@@ -192,18 +192,19 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   todayButtonContainer: {
-    marginRight: 8,
+    position: "absolute",
+    bottom: 52,
+    right: 0,
   },
   todayButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    minWidth: 36,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
   todayButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "600",
   },
 });
