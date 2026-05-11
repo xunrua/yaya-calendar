@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { addMonths, startOfMonth, subMonths } from "date-fns";
+import { addMonths, isSameMonth, startOfMonth, subMonths } from "date-fns";
 import type React from "react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
@@ -36,6 +36,7 @@ export const MonthView: React.FC = () => {
     selectedDate,
     displayMonth: displayMonthStr,
     setDisplayMonth,
+    setSelectedDate,
     hasNavigatedMonth,
   } = useViewStore();
   const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
@@ -76,7 +77,17 @@ export const MonthView: React.FC = () => {
     const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, "0")}-01`;
     setDisplayMonth(newMonthStr);
     setHasNavigatedMonth(true);
-  }, [displayMonthStr, setDisplayMonth, setHasNavigatedMonth]);
+
+    // 切换月份时同步选中日期
+    const today = new Date();
+    if (isSameMonth(newMonth, today)) {
+      // 当前月份：选中今天
+      setSelectedDate(today.toISOString().split("T")[0]);
+    } else {
+      // 非当前月份：选中首日
+      setSelectedDate(newMonthStr);
+    }
+  }, [displayMonthStr, setDisplayMonth, setHasNavigatedMonth, setSelectedDate]);
 
   const goToNextJS = useCallback(() => {
     const [year, month] = displayMonthStr.split("-").map(Number);
@@ -85,7 +96,17 @@ export const MonthView: React.FC = () => {
     const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, "0")}-01`;
     setDisplayMonth(newMonthStr);
     setHasNavigatedMonth(true);
-  }, [displayMonthStr, setDisplayMonth, setHasNavigatedMonth]);
+
+    // 切换月份时同步选中日期
+    const today = new Date();
+    if (isSameMonth(newMonth, today)) {
+      // 当前月份：选中今天
+      setSelectedDate(today.toISOString().split("T")[0]);
+    } else {
+      // 非当前月份：选中首日
+      setSelectedDate(newMonthStr);
+    }
+  }, [displayMonthStr, setDisplayMonth, setHasNavigatedMonth, setSelectedDate]);
 
   const toggleCollapse = useCallback(() => {
     setIsCollapsed((prev) => !prev);
