@@ -6,6 +6,15 @@ import type { Event, ViewType } from "../domain/types";
 import * as database from "../services/database";
 
 // ============================================================================
+// 月级事件缓存（避免每次 getEventsForMonth 都新建 Map 引用，导致 MonthGrid memo 失效）
+// ============================================================================
+
+const eventsMonthCache = new Map<string, Map<string, Event[]>>();
+const invalidateEventsMonthCache = () => {
+  eventsMonthCache.clear();
+};
+
+// ============================================================================
 // 事件 Store 状态
 // ============================================================================
 
@@ -43,6 +52,7 @@ export const useEventStore = create<EventState>((set, get) => ({
     try {
       await database.initDatabase();
       const events = await database.getAllEvents();
+      invalidateEventsMonthCache();
       set({ events, loading: false });
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
@@ -53,6 +63,7 @@ export const useEventStore = create<EventState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const event = await database.createEvent(eventData);
+      invalidateEventsMonthCache();
       set((state) => ({
         events: [...state.events, event],
         loading: false,
@@ -68,6 +79,7 @@ export const useEventStore = create<EventState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const event = await database.updateEvent(id, updates);
+      invalidateEventsMonthCache();
       set((state) => ({
         events: state.events.map((e) => (e.id === id ? event : e)),
         loading: false,
@@ -83,6 +95,7 @@ export const useEventStore = create<EventState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       await database.deleteEvent(id);
+      invalidateEventsMonthCache();
       set((state) => ({
         events: state.events.filter((e) => e.id !== id),
         loading: false,
@@ -121,12 +134,18 @@ export const useEventStore = create<EventState>((set, get) => ({
   },
 
   getEventsForMonth: (year, month) => {
+    const cacheKey = `${year}-${month}`;
+    const cached = eventsMonthCache.get(cacheKey);
+    if (cached) return cached;
+
     const monthStart = new Date(year, month, 1);
     monthStart.setHours(0, 0, 0, 0);
     const monthEnd = new Date(year, month + 1, 0);
     monthEnd.setHours(23, 59, 59, 999);
 
-    return getEventOccurrencesInRange(get().events, monthStart, monthEnd);
+    const result = getEventOccurrencesInRange(get().events, monthStart, monthEnd);
+    eventsMonthCache.set(cacheKey, result);
+    return result;
   },
 
   getEventsForDateRange: (startDate, endDate) => {
