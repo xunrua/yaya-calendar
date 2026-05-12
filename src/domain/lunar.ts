@@ -18,6 +18,9 @@ interface CachedLunarInfo {
 /** 月级缓存，key 为 "yyyy-MM"，value 为日期到农历信息的映射 */
 const lunarMonthCache = new Map<string, Map<string, CachedLunarInfo>>();
 
+/** 法定假日月级缓存，key 为 "yyyy-MM" (weekStartsOn:0)，value 为日期字符串 Set */
+const holidayMonthCache = new Map<string, Set<string>>();
+
 /** 最大缓存月份数 */
 const MAX_CACHE_SIZE = 12;
 
@@ -26,6 +29,7 @@ const MAX_CACHE_SIZE = 12;
  */
 export const clearLunarCache = () => {
   lunarMonthCache.clear();
+  holidayMonthCache.clear();
 };
 
 // ============================================================================
@@ -369,6 +373,51 @@ export const getLunarInfoBatch = (year: number, month: number): Map<string, Cach
 };
 
 /**
+ * 批量获取月历范围内的法定假日日期 Set（带缓存）
+ * 用于 YearView 的 MiniMonthGrid 快速判断节假日,避免逐日调用 getHolidays 触发大量 lunar-javascript 计算
+ * 注意：使用 weekStartsOn: 0（周日开始），与 YearView.tsx 中的 MiniMonthGrid 一致
+ * @param year 年份
+ * @param month 月份（0-indexed，0 = 一月）
+ * @returns 日期字符串 (yyyy-MM-dd) 的 Set,包含的日期为法定假日
+ */
+export const getStatutoryHolidaySetForMonth = (year: number, month: number): Set<string> => {
+  const cacheKey = `holiday-${year}-${String(month + 1).padStart(2, "0")}`;
+
+  if (holidayMonthCache.has(cacheKey)) {
+    return holidayMonthCache.get(cacheKey)!;
+  }
+
+  if (holidayMonthCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = holidayMonthCache.keys().next().value;
+    if (firstKey) {
+      holidayMonthCache.delete(firstKey);
+    }
+  }
+
+  const result = new Set<string>();
+  const monthDate = new Date(year, month, 1);
+  const monthStart = startOfMonth(monthDate);
+  const monthEnd = endOfMonth(monthDate);
+  const calStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+  const calEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+
+  const days = eachDayOfInterval({ start: calStart, end: calEnd });
+
+  for (const day of days) {
+    const holidays = getHolidays(day);
+    if (holidays.some((h) => STATUTORY_HOLIDAYS.includes(h.name))) {
+      const y = day.getFullYear();
+      const m = String(day.getMonth() + 1).padStart(2, "0");
+      const d = String(day.getDate()).padStart(2, "0");
+      result.add(`${y}-${m}-${d}`);
+    }
+  }
+
+  holidayMonthCache.set(cacheKey, result);
+  return result;
+};
+
+/**
  * Get Gan-Zhi (干支) representation for a date
  */
 export const getGanZhi = (date: Date): { year: string; month: string; day: string } => {
@@ -400,6 +449,7 @@ export default {
   getHolidayDisplay,
   getLunarInfo,
   getLunarInfoBatch,
+  getStatutoryHolidaySetForMonth,
   clearLunarCache,
   getGanZhi,
   getShengXiao,

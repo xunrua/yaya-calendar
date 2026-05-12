@@ -53,7 +53,6 @@ export const MonthView: React.FC = () => {
   const displayMonthStr = useViewStore((s) => s.displayMonth);
   const setDisplayMonth = useViewStore((s) => s.setDisplayMonth);
   const setSelectedDate = useViewStore((s) => s.setSelectedDate);
-  const hasNavigatedMonth = useViewStore((s) => s.hasNavigatedMonth);
   const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
 
   // 从全局状态获取 displayMonth，转换为 Date 对象
@@ -173,20 +172,20 @@ export const MonthView: React.FC = () => {
 
   // 折叠状态下的农历和事件预计算
   const prevWeekLunarInfoMap = useMemo(
-    () => getLunarInfoBatch(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth()),
-    [prevWeekInfo.month]
+    () => (isCollapsed ? getLunarInfoBatch(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth()) : new Map()),
+    [isCollapsed, prevWeekInfo.month]
   );
   const nextWeekLunarInfoMap = useMemo(
-    () => getLunarInfoBatch(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth()),
-    [nextWeekInfo.month]
+    () => (isCollapsed ? getLunarInfoBatch(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth()) : new Map()),
+    [isCollapsed, nextWeekInfo.month]
   );
   const prevWeekEventsMap = useMemo(
-    () => getEventsForMonth(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth()),
-    [prevWeekInfo.month, getEventsForMonth]
+    () => (isCollapsed ? getEventsForMonth(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth()) : new Map()),
+    [isCollapsed, prevWeekInfo.month, getEventsForMonth]
   );
   const nextWeekEventsMap = useMemo(
-    () => getEventsForMonth(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth()),
-    [nextWeekInfo.month, getEventsForMonth]
+    () => (isCollapsed ? getEventsForMonth(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth()) : new Map()),
+    [isCollapsed, nextWeekInfo.month, getEventsForMonth]
   );
 
   // 初始化三屏高度
@@ -217,14 +216,11 @@ export const MonthView: React.FC = () => {
   }, [isCollapsed, isCollapsedSV]);
 
   // 当 selectedDate 从外部变化时（如从年视图点击月份），同步 displayMonth
-  // 但如果用户已经手动滑动过月份，则不同步
   useLayoutEffect(() => {
-    if (!hasNavigatedMonth) {
-      const [year, month] = selectedDate.split("-").map(Number);
-      const monthStartStr = `${year}-${String(month).padStart(2, "0")}-01`;
-      setDisplayMonth(monthStartStr);
-    }
-  }, [selectedDate, setDisplayMonth, hasNavigatedMonth]);
+    const [year, month] = selectedDate.split("-").map(Number);
+    const monthStartStr = `${year}-${String(month).padStart(2, "0")}-01`;
+    setDisplayMonth(monthStartStr);
+  }, [selectedDate, setDisplayMonth]);
 
   const goToPreviousJS = useCallback(() => {
     const [year, month] = displayMonthStr.split("-").map(Number);
@@ -281,8 +277,7 @@ export const MonthView: React.FC = () => {
       const monthDiff = (currYear - prevYear) * 12 + (currMonthNum - prevMonthNum);
 
       if (Math.abs(monthDiff) > 1) {
-        // 大跨度跳转：使用淡入淡出动画
-        opacity.value = 0;
+        // 大跨度跳转：直接显示，避免淡入淡出导致的闪烁
         translateX.value = 0;
         isAnimating.value = false;
         // 重置高度到当月高度或折叠高度
@@ -293,8 +288,6 @@ export const MonthView: React.FC = () => {
           calendarHeight.value = currentHeight.value;
           foldProgress.value = 0;
         }
-        // 下一帧淡入（使用 withDelay 延迟一帧）
-        opacity.value = withTiming(1, { duration: 200 });
       } else {
         // 正常滑动：重置位置
         translateX.value = 0;
