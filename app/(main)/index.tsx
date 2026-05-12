@@ -1,4 +1,4 @@
-import { getMonth, isSameMonth, parseISO, startOfMonth } from "date-fns";
+import { format, getMonth, isSameMonth, parseISO, startOfMonth } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, StyleSheet, View } from "react-native";
 import Animated, {
@@ -24,7 +24,7 @@ type NavTab = "calendar" | "todo";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
-const ANIM_DURATION = 800;
+const ANIM_DURATION = 300;
 
 const ZOOM_TIMING = {
   duration: ANIM_DURATION,
@@ -38,15 +38,15 @@ export default function MainScreen() {
   const { theme } = useTheme();
   const currentView = useViewStore((s) => s.currentView);
   const setCurrentView = useViewStore((s) => s.setCurrentView);
-  const transitionState = useViewStore((s) => s.transitionState);
   const setTransitionState = useViewStore((s) => s.setTransitionState);
   const selectedDate = useViewStore((s) => s.selectedDate);
+  const setSelectedDate = useViewStore((s) => s.setSelectedDate);
   const displayMonth = useViewStore((s) => s.displayMonth);
   const goToToday = useViewStore((s) => s.goToToday);
   const insets = useSafeAreaInsets();
   const [menuVisible, setMenuVisible] = useState(false);
   const prevViewRef = useRef(currentView);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
 
   // 计算是否显示"今"按钮
   const showTodayButton = useMemo(() => {
@@ -81,103 +81,24 @@ export default function MainScreen() {
     contentLayout.current = { x, y, width, height };
   }, []);
 
-  // ── 核心：计算 origin（偏移量），并驱动动画 ─────────────────────────────────
+  // ── 核心：非月/年切换时重置图层状态 ─────────────────────────────────────────
   useEffect(() => {
     const prev = prevViewRef.current;
     const curr = currentView;
     if (prev === curr) return;
+
+    const isMonthYearTransition = (prev === "month" && curr === "year") || (prev === "year" && curr === "month");
+    if (isMonthYearTransition) {
+      prevViewRef.current = curr;
+      return;
+    }
 
     cancelAnimation(monthZoomScale);
     cancelAnimation(yearZoomScale);
     cancelAnimation(monthOpacity);
     cancelAnimation(yearOpacity);
 
-    const fromMonth = prev === "month";
-    const toYear = curr === "year";
-    const fromYear = prev === "year";
-    const toMonth = curr === "month";
-
-    // 标记正在过渡（需要同时渲染两个视图）
-    const isMonthYearTransition = (fromMonth && toYear) || (fromYear && toMonth);
-    if (isMonthYearTransition) {
-      setIsTransitioning(true);
-    }
-
-    /**
-     * 将「格子的绝对坐标」换算成「相对于内容区中心的偏移量」
-     * transform: [tx(dx), ty(dy), scale(s), tx(-dx), ty(-dy)]
-     * 等价于以 (contentCX + dx, contentCY + dy) 为锚点缩放
-     */
-    const toDelta = (cellCenterX: number, cellCenterY: number) => {
-      const cl = contentLayout.current;
-      return {
-        dx: cellCenterX - cl.width / 2,
-        dy: cellCenterY - cl.height / 2,
-      };
-    };
-
-    if (fromMonth && toYear) {
-      const cl = contentLayout.current;
-      const month = getMonth(parseISO(selectedDate));
-      const storedLayout = useViewStore.getState().yearCellLayouts[month];
-
-      let cellCenterX: number;
-      let cellCenterY: number;
-      let cellScale: number;
-
-      if (storedLayout) {
-        const { x: pageX, y: pageY, width, height } = storedLayout;
-        cellCenterX = pageX + width / 2 - cl.x;
-        cellCenterY = pageY + height / 2 - cl.y;
-        cellScale = width / cl.width;
-      } else {
-        // fallback：用网格估算
-        const col = month % 3;
-        const row = Math.floor(month / 3);
-        const cellWidth = cl.width / 3;
-        const gridH = cl.height - insets.top - YEAR_HEADER_HEIGHT - YEAR_PANEL_BOTTOM;
-        const cellH = gridH / 4;
-        cellCenterX = (col + 0.5) * cellWidth;
-        cellCenterY = insets.top + YEAR_HEADER_HEIGHT + (row + 0.5) * cellH;
-        cellScale = 1 / 3;
-      }
-
-      const { dx, dy } = toDelta(cellCenterX, cellCenterY);
-
-      // 月层：直接跳到收缩态（隐藏）
-      monthZoomOriginX.value = dx;
-      monthZoomOriginY.value = dy;
-      monthZoomScale.value = cellScale;
-      monthOpacity.value = 0;
-
-      // 年层：从格子位置放大到满屏
-      yearZoomOriginX.value = dx;
-      yearZoomOriginY.value = dy;
-      yearZoomScale.value = 1 / cellScale; // 起点：和格子等大
-      yearOpacity.value = 0;
-      yearZoomScale.value = withTiming(1, ZOOM_TIMING);
-      yearOpacity.value = withTiming(1, { duration: ANIM_DURATION });
-    } else if (fromYear && toMonth && transitionState.sourceLayout) {
-      const { x: pageX, y: pageY, width, height } = transitionState.sourceLayout;
-      const cl = contentLayout.current;
-      const cellCenterX = pageX + width / 2 - cl.x;
-      const cellCenterY = pageY + height / 2 - cl.y;
-      const cellScale = width / cl.width;
-
-      const { dx, dy } = toDelta(cellCenterX, cellCenterY);
-
-      // 年层：直接消失
-      yearZoomScale.value = 1;
-      yearOpacity.value = 0;
-
-      // 月层：从格子位置展开到满屏
-      monthZoomOriginX.value = dx;
-      monthZoomOriginY.value = dy;
-      monthZoomScale.value = cellScale; // 起点：和格子等大
-      monthOpacity.value = 0;
-      monthZoomScale.value = withTiming(1, ZOOM_TIMING);
-      monthOpacity.value = withTiming(1, { duration: ANIM_DURATION });
-    } else if (curr === "year") {
+    if (curr === "year") {
       monthZoomScale.value = 1;
       monthOpacity.value = 0;
       yearZoomScale.value = 1;
@@ -195,24 +116,16 @@ export default function MainScreen() {
     }
 
     prevViewRef.current = curr;
-
-    // 动画结束后清除过渡状态
-    if (isMonthYearTransition) {
-      setTimeout(() => setIsTransitioning(false), ANIM_DURATION);
-    }
   }, [
     currentView,
-    transitionState,
     yearZoomScale,
-    yearZoomOriginY, // 年层：从格子位置放大到满屏
+    yearZoomOriginY,
     yearZoomOriginX,
-    selectedDate,
     yearOpacity,
     monthZoomScale,
     monthOpacity,
-    monthZoomOriginY, // 月层：从格子位置展开到满屏
+    monthZoomOriginY,
     monthZoomOriginX,
-    insets.top,
   ]);
 
   // ── Animated styles ────────────────────────────────────────────────────────
@@ -253,6 +166,120 @@ export default function MainScreen() {
 
   const activeTab: NavTab = currentView === "events" ? "todo" : "calendar";
 
+  // ── 同步动画启动（避免子组件渲染阻塞动画）────────────────────────────────
+  const runMonthToYearAnimation = useCallback(() => {
+    const cl = contentLayout.current;
+    if (cl.width === 0) return;
+
+    const month = getMonth(parseISO(selectedDate));
+    const storedLayout = useViewStore.getState().yearCellLayouts[month];
+
+    let cellCenterX: number;
+    let cellCenterY: number;
+    let cellScale: number;
+
+    if (storedLayout) {
+      const { x: pageX, y: pageY, width, height } = storedLayout;
+      cellCenterX = pageX + width / 2 - cl.x;
+      cellCenterY = pageY + height / 2 - cl.y;
+      cellScale = width / cl.width;
+    } else {
+      const col = month % 3;
+      const row = Math.floor(month / 3);
+      const cellWidth = cl.width / 3;
+      const gridH = cl.height - insets.top - YEAR_HEADER_HEIGHT - YEAR_PANEL_BOTTOM;
+      const cellH = gridH / 4;
+      cellCenterX = (col + 0.5) * cellWidth;
+      cellCenterY = insets.top + YEAR_HEADER_HEIGHT + (row + 0.5) * cellH;
+      cellScale = 1 / 3;
+    }
+
+    const dx = cellCenterX - cl.width / 2;
+    const dy = cellCenterY - cl.height / 2;
+
+    cancelAnimation(monthZoomScale);
+    cancelAnimation(yearZoomScale);
+    cancelAnimation(monthOpacity);
+    cancelAnimation(yearOpacity);
+
+    monthZoomOriginX.value = dx;
+    monthZoomOriginY.value = dy;
+    monthZoomScale.value = cellScale;
+    monthOpacity.value = 0;
+
+    yearZoomOriginX.value = dx;
+    yearZoomOriginY.value = dy;
+    yearZoomScale.value = 1 / cellScale;
+    yearOpacity.value = 0;
+    yearZoomScale.value = withTiming(1, ZOOM_TIMING);
+    yearOpacity.value = withTiming(1, { duration: ANIM_DURATION });
+  }, [
+    selectedDate,
+    insets.top,
+    monthZoomScale,
+    monthZoomOriginX,
+    monthZoomOriginY,
+    monthOpacity,
+    yearZoomScale,
+    yearZoomOriginX,
+    yearZoomOriginY,
+    yearOpacity,
+  ]);
+
+  const runYearToMonthAnimation = useCallback(
+    (sourceLayout: { x: number; y: number; width: number; height: number }) => {
+      const cl = contentLayout.current;
+      if (cl.width === 0) return;
+
+      const { x: pageX, y: pageY, width, height } = sourceLayout;
+      const cellCenterX = pageX + width / 2 - cl.x;
+      const cellCenterY = pageY + height / 2 - cl.y;
+      const cellScale = width / cl.width;
+
+      const dx = cellCenterX - cl.width / 2;
+      const dy = cellCenterY - cl.height / 2;
+
+      cancelAnimation(monthZoomScale);
+      cancelAnimation(yearZoomScale);
+      cancelAnimation(monthOpacity);
+      cancelAnimation(yearOpacity);
+
+      yearZoomScale.value = 1;
+      yearOpacity.value = 0;
+
+      monthZoomOriginX.value = dx;
+      monthZoomOriginY.value = dy;
+      monthZoomScale.value = cellScale;
+      monthOpacity.value = 0;
+      monthZoomScale.value = withTiming(1, ZOOM_TIMING);
+      monthOpacity.value = withTiming(1, { duration: ANIM_DURATION });
+    },
+    [
+      monthZoomScale,
+      monthZoomOriginX,
+      monthZoomOriginY,
+      monthOpacity,
+      yearZoomScale,
+      yearOpacity,
+    ]
+  );
+
+  const handleMonthPressFromYear = useCallback(
+    (monthDate: Date, layout: { x: number; y: number; width: number; height: number }) => {
+      const today = new Date();
+      const newSelectedDate = isSameMonth(monthDate, today)
+        ? format(today, "yyyy-MM-dd")
+        : format(monthDate, "yyyy-MM-dd");
+
+      runYearToMonthAnimation(layout);
+      setCurrentView("month");
+      setSelectedDate(newSelectedDate);
+      setHasNavigatedMonth(false);
+      setTransitionState({ sourceLayout: layout });
+    },
+    [setTransitionState, setSelectedDate, setHasNavigatedMonth, setCurrentView, runYearToMonthAnimation]
+  );
+
   /** 月→年切换前，设置过渡动画的起始位置 */
   const prepareYearTransition = useCallback(() => {
     if (currentView !== "month") return;
@@ -285,7 +312,9 @@ export default function MainScreen() {
   };
 
   const handleYearViewPress = () => {
+    if (currentView !== "month") return;
     prepareYearTransition();
+    runMonthToYearAnimation();
     setCurrentView("year");
   };
 
@@ -297,25 +326,19 @@ export default function MainScreen() {
 
       {showCalendarLayers ? (
         <View style={styles.contentArea} onLayout={handleContentLayout}>
-          {/* 年视图：只在 currentView === "year" 或过渡动画期间渲染 */}
-          {(currentView === "year" || isTransitioning) && (
-            <Animated.View
-              style={[styles.layer, yearLayerStyle, yearZoomStyle]}
-              pointerEvents={currentView === "year" ? "auto" : "none"}
-            >
-              <YearView />
-            </Animated.View>
-          )}
+          <Animated.View
+            style={[styles.layer, yearLayerStyle, yearZoomStyle]}
+            pointerEvents={currentView === "year" ? "auto" : "none"}
+          >
+            <YearView onMonthPress={handleMonthPressFromYear} />
+          </Animated.View>
 
-          {/* 月视图：只在 currentView === "month" 或过渡动画期间渲染 */}
-          {(currentView === "month" || isTransitioning) && (
-            <Animated.View
-              style={[styles.layer, monthLayerStyle, monthZoomStyle]}
-              pointerEvents={currentView === "month" ? "auto" : "none"}
-            >
-              <MonthView />
-            </Animated.View>
-          )}
+          <Animated.View
+            style={[styles.layer, monthLayerStyle, monthZoomStyle]}
+            pointerEvents={currentView === "month" ? "auto" : "none"}
+          >
+            <MonthView />
+          </Animated.View>
         </View>
       ) : (
         <View style={styles.content}>
