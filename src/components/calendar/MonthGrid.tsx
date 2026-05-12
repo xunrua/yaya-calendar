@@ -77,13 +77,17 @@ const AnimatedDayCell = memo(function AnimatedDayCell({
   const prevSelected = useSharedValue(false);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     if (isSelected && !prevSelected.value) {
       scale.value = withSpring(1.15, POP_ANIMATION_CONFIG);
-      setTimeout(() => {
+      timer = setTimeout(() => {
         scale.value = withSpring(1, POP_ANIMATION_CONFIG);
       }, 100);
     }
     prevSelected.value = isSelected;
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [isSelected, scale, prevSelected]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -198,7 +202,7 @@ const AnimatedDayCell = memo(function AnimatedDayCell({
   );
 });
 
-export default function MonthGrid({
+const MonthGrid = memo(function MonthGrid({
   year,
   month,
   fidelity = "full",
@@ -334,7 +338,9 @@ export default function MonthGrid({
       )}
     </View>
   );
-}
+});
+
+export default MonthGrid;
 
 const styles = StyleSheet.create({
   daysGrid: {

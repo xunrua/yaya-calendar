@@ -121,22 +121,28 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   // 主题切换动画
   useEffect(() => {
+    const animRef = { current: null as Animated.CompositeAnimation | null };
     if (prevModeRef.current !== mode) {
-      // 淡出
-      Animated.timing(fadeAnim, {
+      animRef.current = Animated.timing(fadeAnim, {
         toValue: 0.8,
         duration: 100, // 淡出时长
         useNativeDriver: true,
-      }).start(() => {
-        // 淡入
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200, // 淡入时长
-          useNativeDriver: true,
-        }).start();
+      });
+      animRef.current.start(({ finished }) => {
+        if (finished) {
+          animRef.current = Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 200, // 淡入时长
+            useNativeDriver: true,
+          });
+          animRef.current.start();
+        }
       });
     }
     prevModeRef.current = mode;
+    return () => {
+      if (animRef.current) animRef.current.stop();
+    };
   }, [mode, fadeAnim]);
 
   // 系统主题变化时更新

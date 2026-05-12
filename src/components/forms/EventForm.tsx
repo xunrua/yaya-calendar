@@ -1,7 +1,7 @@
 import { format, parseISO } from "date-fns";
 import type React from "react";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import type { Event, RecurrenceRule } from "../../domain/types";
 import { useEventStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
@@ -81,8 +81,8 @@ export const EventForm: React.FC<EventFormProps> = ({ event, initialDate, onSave
       }
 
       onSave();
-    } catch (error) {
-      console.error("Failed to save event:", error);
+    } catch {
+      Alert.alert("错误", "保存失败，请重试");
     } finally {
       setLoading(false);
     }

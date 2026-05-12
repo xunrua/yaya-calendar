@@ -1,4 +1,4 @@
-import { addHours, format, isSameDay, parseISO, setHours, setMinutes } from "date-fns";
+import { format, isSameDay, parseISO, setHours, setMinutes } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { useRouter } from "expo-router";
 import type React from "react";
@@ -77,7 +77,8 @@ export const DayView: React.FC = () => {
 
   const handleTimeSlotPress = (hour: number) => {
     const newStartTime = setMinutes(setHours(currentDate, hour), 0);
-    const _newEndTime = addHours(newStartTime, 1);
+    // TODO: 跳转创建事件页面
+    void newStartTime;
   };
 
   const renderTimeSlot = (hour: number) => {

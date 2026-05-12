@@ -47,8 +47,7 @@ export default function EventDetailScreen() {
           try {
             await deleteEvent(event.id);
             router.back();
-          } catch (error) {
-            console.error("Failed to delete event:", error);
+          } catch {
             Alert.alert("错误", "删除失败，请重试");
           } finally {
             setLoading(false);
