@@ -49,6 +49,7 @@ app-example
 
 # VS Code
 .vscode/
+.idea/
 
 # Crush
 .crush/
