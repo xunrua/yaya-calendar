@@ -1,7 +1,15 @@
 import { format, parseISO } from "date-fns";
 import type React from "react";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import type { Event, RecurrenceRule } from "../../domain/types";
 import { useEventStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";

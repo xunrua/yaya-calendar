@@ -326,15 +326,23 @@ export default function MainScreen() {
       {showCalendarLayers ? (
         <View style={styles.contentArea} onLayout={handleContentLayout}>
           <Animated.View
-            style={[styles.layer, yearLayerStyle, yearZoomStyle]}
-            pointerEvents={currentView === "year" ? "auto" : "none"}
+            style={[
+              styles.layer,
+              yearLayerStyle,
+              yearZoomStyle,
+              { pointerEvents: currentView === "year" ? "auto" : "none" },
+            ]}
           >
             <YearView onMonthPress={handleMonthPressFromYear} />
           </Animated.View>
 
           <Animated.View
-            style={[styles.layer, monthLayerStyle, monthZoomStyle]}
-            pointerEvents={currentView === "month" ? "auto" : "none"}
+            style={[
+              styles.layer,
+              monthLayerStyle,
+              monthZoomStyle,
+              { pointerEvents: currentView === "month" ? "auto" : "none" },
+            ]}
           >
             <MonthView />
           </Animated.View>
