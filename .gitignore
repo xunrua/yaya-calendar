@@ -53,3 +53,5 @@ app-example
 
 # Crush
 .crush/
+lib/
+.claude/
