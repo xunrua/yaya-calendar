@@ -12,6 +12,7 @@
     "build:android:apk": "cd android && ./gradlew assembleRelease",
     "build:android:aab": "cd android && ./gradlew bundleRelease",
     "build:android": "npm run build:android:apk && npm run build:android:aab",
+    "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "fix": "biome check --write --unsafe ."
   },
