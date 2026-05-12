@@ -72,6 +72,13 @@ export const MonthView: React.FC = () => {
   const opacity = useSharedValue(1);
   const isAnimating = useSharedValue(false);
   const prevDisplayMonthRef = useRef(displayMonthStr);
+  // 标记本次 displayMonth 变化是由用户横向滑动触发，
+  // useLayoutEffect 据此做 panel "角色重映射"，避免视觉跳变
+  const swipeDirectionRef = useRef<"next" | "prev" | null>(null);
+  // 滑动期间允许 selectedDate 月份 与 displayMonth 临时不同步：
+  // Header 立即响应（selectedDate 先更新），panel 动画结束后再写 displayMonth。
+  // 兜底 sync useLayoutEffect 在此期间需跳过。
+  const isSwipingRef = useRef(false);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   // 默认不渲染前后月份，rAF 后再恢复，减少初始 commit 工作量
@@ -292,8 +299,10 @@ export const MonthView: React.FC = () => {
 
   // 当 selectedDate 月份与 displayMonth 不同步时兜底同步
   //（正常路径 setSelectedDateAndMonth 已经同时写入，此 effect 永不触发；
-  //   仅当上游漏调组合 setter 时进入修复分支，避免双轮渲染）
+  //   滑动场景下 isSwipingRef = true，故意让 selectedDate 先于 displayMonth 更新，
+  //   panel 动画完成后才 setDisplayMonth；此时需跳过兜底 sync）
   useLayoutEffect(() => {
+    if (isSwipingRef.current) return;
     const selectedMonth = selectedDate.slice(0, 7); // "yyyy-MM"
     const displayMonthSlice = displayMonthStr.slice(0, 7);
     if (selectedMonth === displayMonthSlice) return;
@@ -301,35 +310,59 @@ export const MonthView: React.FC = () => {
     setDisplayMonth(monthStartStr);
   }, [selectedDate, displayMonthStr, setDisplayMonth]);
 
-  const goToPreviousJS = useCallback(() => {
-    const [year, month] = displayMonthStr.split("-").map(Number);
-    const currentDisplayMonth = new Date(year, month - 1, 1);
-    const newMonth = subMonths(currentDisplayMonth, 1);
-    const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, "0")}-01`;
-    setHasNavigatedMonth(true);
-
-    // 一次性更新 selectedDate + displayMonth，避免双轮渲染
-    const today = new Date();
-    const targetDate = isSameMonth(newMonth, today)
-      ? today.toISOString().split("T")[0]
-      : newMonthStr;
-    setSelectedDateAndMonth(targetDate);
-  }, [displayMonthStr, setHasNavigatedMonth, setSelectedDateAndMonth]);
-
-  const goToNextJS = useCallback(() => {
+  // 用户横向滑动 → 两阶段更新（Header 立即响应，MonthGrid 延迟到动画完成）：
+  //   阶段 1（onEnd 立即）：只更新 selectedDate，Header / 高亮立即响应
+  //     - 中间状态：selectedDate 在新月，displayMonth 在旧月，
+  //       由 isSwipingRef 让兜底 sync effect 跳过
+  //     - 新月份内容已在旧 next/prev panel 中渲染，用户看到的"切到下一月"
+  //       由 panel 滑动动画完成（旧 next panel 滑到屏幕中心）
+  //   阶段 2（panel 动画完成 callback）：写 displayMonth，触发 useLayoutEffect
+  //     的 swipe 重映射分支，把 translateX 重置为 0
+  const startSwipeNext = useCallback(() => {
+    isSwipingRef.current = true;
     const [year, month] = displayMonthStr.split("-").map(Number);
     const currentDisplayMonth = new Date(year, month - 1, 1);
     const newMonth = addMonths(currentDisplayMonth, 1);
     const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, "0")}-01`;
     setHasNavigatedMonth(true);
-
-    // 一次性更新 selectedDate + displayMonth，避免双轮渲染
     const today = new Date();
     const targetDate = isSameMonth(newMonth, today)
       ? today.toISOString().split("T")[0]
       : newMonthStr;
-    setSelectedDateAndMonth(targetDate);
-  }, [displayMonthStr, setHasNavigatedMonth, setSelectedDateAndMonth]);
+    setSelectedDate(targetDate);
+  }, [displayMonthStr, setHasNavigatedMonth, setSelectedDate]);
+
+  const startSwipePrev = useCallback(() => {
+    isSwipingRef.current = true;
+    const [year, month] = displayMonthStr.split("-").map(Number);
+    const currentDisplayMonth = new Date(year, month - 1, 1);
+    const newMonth = subMonths(currentDisplayMonth, 1);
+    const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, "0")}-01`;
+    setHasNavigatedMonth(true);
+    const today = new Date();
+    const targetDate = isSameMonth(newMonth, today)
+      ? today.toISOString().split("T")[0]
+      : newMonthStr;
+    setSelectedDate(targetDate);
+  }, [displayMonthStr, setHasNavigatedMonth, setSelectedDate]);
+
+  const commitSwipeNext = useCallback(() => {
+    const [year, month] = displayMonthStr.split("-").map(Number);
+    const currentDisplayMonth = new Date(year, month - 1, 1);
+    const newMonth = addMonths(currentDisplayMonth, 1);
+    const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, "0")}-01`;
+    swipeDirectionRef.current = "next";
+    setDisplayMonth(newMonthStr);
+  }, [displayMonthStr, setDisplayMonth]);
+
+  const commitSwipePrev = useCallback(() => {
+    const [year, month] = displayMonthStr.split("-").map(Number);
+    const currentDisplayMonth = new Date(year, month - 1, 1);
+    const newMonth = subMonths(currentDisplayMonth, 1);
+    const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, "0")}-01`;
+    swipeDirectionRef.current = "prev";
+    setDisplayMonth(newMonthStr);
+  }, [displayMonthStr, setDisplayMonth]);
 
   const toggleCollapse = useCallback(() => {
     setIsCollapsed((prev) => !prev);
@@ -341,6 +374,27 @@ export const MonthView: React.FC = () => {
   useLayoutEffect(() => {
     const prevMonth = prevDisplayMonthRef.current;
     prevDisplayMonthRef.current = displayMonthStr;
+
+    // 用户横向滑动触发的更新（commitSwipe 调用时，panel 动画已完成）：
+    //   panel 当前位置 = ±SCREEN_WIDTH，旧 next/prev panel 在屏幕中心
+    //   commit 后 panel 角色重映射：旧 next/prev → 新 current
+    //   将 translateX 重置为 0，新 current panel（同一内容）回到屏幕中心
+    //   视觉无跳变（内容相同，位置相同）
+    if (swipeDirectionRef.current) {
+      swipeDirectionRef.current = null;
+      isSwipingRef.current = false;
+
+      translateX.value = 0;
+      isAnimating.value = false;
+
+      if (isCollapsedSV.value) {
+        calendarHeight.value = COLLAPSED_HEIGHT;
+        foldProgress.value = 1;
+      } else {
+        calendarHeight.value = currentHeight.value;
+      }
+      return;
+    }
 
     if (prevMonth && displayMonthStr) {
       const [prevYear, prevMonthNum] = prevMonth.split("-").map(Number);
@@ -364,7 +418,7 @@ export const MonthView: React.FC = () => {
         const id = requestAnimationFrame(() => setShowAdjacent(true));
         return () => cancelAnimationFrame(id);
       } else {
-        // 正常滑动：重置位置
+        // 程序化（非滑动）跳转，相邻月：重置位置
         translateX.value = 0;
         isAnimating.value = false;
         // 折叠状态下保持折叠高度
@@ -496,35 +550,49 @@ export const MonthView: React.FC = () => {
       }
 
       // 展开状态：切换月份
+      // 阶段 1（立即）：runOnJS startSwipe → setSelectedDate
+      //   - Header / 高亮立即响应（不依赖 MonthGrid 重渲染）
+      //   - 兜底 sync effect 被 isSwipingRef 跳过，displayMonth 暂时不变
+      // 阶段 2（动画完成 callback）：runOnJS commitSwipe → setDisplayMonth
+      //   - 触发 useLayoutEffect 的 swipe 重映射分支
+      //   - 此时 panel 已视觉滑到位（旧 next/prev panel 在屏幕中心），
+      //     用户看到的内容连续；MonthGrid 重渲染开销不影响用户感知
       if (shouldSwipeLeft) {
         isAnimating.value = true;
-        translateX.value = withTiming(-SCREEN_WIDTH, {
-          duration: 200,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-        });
-        // 高度动画到下月高度
+        runOnJS(startSwipeNext)();
         calendarHeight.value = withTiming(nextHeight.value, {
           duration: 200,
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
-        // 延迟执行跳转，让动画完成
-        setTimeout(() => {
-          runOnJS(goToNextJS)();
-        }, 200);
+        translateX.value = withTiming(
+          -SCREEN_WIDTH,
+          {
+            duration: 200,
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          },
+          (finished) => {
+            "worklet";
+            if (finished) runOnJS(commitSwipeNext)();
+          }
+        );
       } else if (shouldSwipeRight) {
         isAnimating.value = true;
-        translateX.value = withTiming(SCREEN_WIDTH, {
-          duration: 200,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-        });
-        // 高度动画到上月高度
+        runOnJS(startSwipePrev)();
         calendarHeight.value = withTiming(prevHeight.value, {
           duration: 200,
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
-        setTimeout(() => {
-          runOnJS(goToPreviousJS)();
-        }, 200);
+        translateX.value = withTiming(
+          SCREEN_WIDTH,
+          {
+            duration: 200,
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          },
+          (finished) => {
+            "worklet";
+            if (finished) runOnJS(commitSwipePrev)();
+          }
+        );
       } else {
         // 取消滑动：回弹到当前位置
         translateX.value = withSpring(0, SPRING_CONFIG);
