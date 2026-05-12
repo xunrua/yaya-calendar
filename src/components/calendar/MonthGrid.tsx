@@ -227,7 +227,7 @@ const MonthGrid = memo(function MonthGrid({
   lunarInfoMap,
   eventsMap,
 }: MonthGridProps) {
-  const mgT0 = performance.now();
+  const t0 = performance.now();
   const selectedDate = useViewStore((state) => state.selectedDate);
   const setSelectedDate = useViewStore((state) => state.setSelectedDate);
 
@@ -326,13 +326,13 @@ const MonthGrid = memo(function MonthGrid({
 
   // 无折叠动画时，使用原有渲染方式
   if (!foldProgress || targetRowIndex === undefined) {
-    const grid = <View style={styles.daysGrid}>{calendarDays.map(renderDayCell)}</View>;
-    console.log("[perf] MonthGrid render", year, month + 1, "took", (performance.now() - mgT0).toFixed(2), "ms");
-    return grid;
+    console.log("[perf] MonthGrid", year, month + 1, performance.now() - t0);
+    return <View style={styles.daysGrid}>{calendarDays.map(renderDayCell)}</View>;
   }
 
   // 有折叠动画时，分区域渲染
-  const foldGrid = (
+  console.log("[perf] MonthGrid", year, month + 1, performance.now() - t0);
+  return (
     <View style={styles.daysGridFold}>
       {/* 上方区域 */}
       {upperRows.length > 0 && (
@@ -356,8 +356,6 @@ const MonthGrid = memo(function MonthGrid({
       )}
     </View>
   );
-  console.log("[perf] MonthGrid render (fold)", year, month + 1, "took", (performance.now() - mgT0).toFixed(2), "ms");
-  return foldGrid;
 });
 
 export default MonthGrid;

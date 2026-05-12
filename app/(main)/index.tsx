@@ -60,13 +60,8 @@ export default function MainScreen() {
 
   const contentLayout = useRef({ x: 0, y: 0, width: SCREEN_WIDTH, height: 0 });
 
-  // 缓存 YearView 的 selectedDate，避免切换到月视图时 YearView 因 selectedDate 变化而重渲染
+  // 缓存 YearView 的 selectedDate，在切换到年视图时冻结，避免月视图下 YearView 因 selectedDate 变化而重渲染
   const yearViewSelectedDateRef = useRef(selectedDate);
-  useEffect(() => {
-    if (currentView === "year") {
-      yearViewSelectedDateRef.current = selectedDate;
-    }
-  }, [selectedDate, currentView]);
 
   // ── Shared values ──────────────────────────────────────────────────────────
   // ⚠️ origin 存的是「格子中心 相对于 内容区中心」的偏移量
@@ -227,8 +222,7 @@ export default function MainScreen() {
 
   const runYearToMonthAnimation = useCallback(
     (sourceLayout: { x: number; y: number; width: number; height: number }) => {
-      const t0 = performance.now();
-      console.log("[perf] runYearToMonthAnimation START", t0);
+      console.log("[perf] anim", performance.now());
       const cl = contentLayout.current;
       if (cl.width === 0) return;
 
@@ -252,11 +246,9 @@ export default function MainScreen() {
       monthZoomOriginY.value = dy;
       monthZoomScale.value = cellScale;
       monthOpacity.value = 0;
-      const t1 = performance.now();
-      console.log("[perf] runYearToMonthAnimation before withTiming", t1, "delta", (t1 - t0).toFixed(2), "ms");
+      console.log("[perf] anim-before", performance.now());
       monthZoomScale.value = withTiming(1, ZOOM_TIMING);
       monthOpacity.value = withTiming(1, { duration: ANIM_DURATION });
-      console.log("[perf] runYearToMonthAnimation END", performance.now(), "total", (performance.now() - t0).toFixed(2), "ms");
     },
     [monthZoomScale, monthZoomOriginX, monthZoomOriginY, monthOpacity, yearZoomScale, yearOpacity]
   );
@@ -264,7 +256,7 @@ export default function MainScreen() {
   const handleMonthPressFromYear = useCallback(
     (monthDate: Date, layout: { x: number; y: number; width: number; height: number }) => {
       const t0 = performance.now();
-      console.log("[perf] handleMonthPressFromYear START", t0);
+      console.log("[perf] click", t0);
       const today = new Date();
       const newSelectedDate = isSameMonth(monthDate, today)
         ? format(today, "yyyy-MM-dd")
@@ -278,14 +270,13 @@ export default function MainScreen() {
       setHasNavigatedMonth(false);
       setTransitionState({ sourceLayout: layout });
 
-      // 2) 用 setTimeout(0) 推迟 zoom 动画启动到下一个 task：
-      //    React commit（~100ms）先完成 → MonthView 已是新月份 →
+      // 2) 用 requestAnimationFrame 推迟 zoom 动画启动到下一帧：
+      //    React commit 先完成 → MonthView 已是新月份 →
       //    再启动 reanimated zoom，动画过程中显示的就是新月份内容，无尾部闪烁。
-      setTimeout(() => {
-        const t1 = performance.now();
-        console.log("[perf] setTimeout callback", t1, "delta", (t1 - t0).toFixed(2), "ms");
+      requestAnimationFrame(() => {
+        console.log("[perf] rAF", performance.now(), "delta", (performance.now() - t0).toFixed(1));
         runYearToMonthAnimation(layout);
-      }, 0);
+      });
     },
     [
       setTransitionState,
@@ -329,6 +320,8 @@ export default function MainScreen() {
 
   const handleYearViewPress = () => {
     if (currentView !== "month") return;
+    // 切换到年视图前冻结当前 selectedDate，让 YearView 在月视图下使用稳定 prop
+    yearViewSelectedDateRef.current = selectedDate;
     prepareYearTransition();
     runMonthToYearAnimation();
     setCurrentView("year");

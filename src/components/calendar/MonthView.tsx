@@ -47,8 +47,7 @@ const FOLD_VELOCITY_THRESHOLD = 300; // 折叠速度阈值
 const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05; // 折叠距离阈值
 
 export const MonthView: React.FC = () => {
-  const renderT0 = performance.now();
-  console.log("[perf] MonthView render START", renderT0);
+  const t0 = performance.now();
   const { theme } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
   const selectedDate = useViewStore((s) => s.selectedDate);
@@ -70,7 +69,13 @@ export const MonthView: React.FC = () => {
   const prevDisplayMonthRef = useRef(displayMonthStr);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [showAdjacent, setShowAdjacent] = useState(true);
+  // 默认不渲染前后月份，rAF 后再恢复，减少初始 commit 工作量
+  const [showAdjacent, setShowAdjacent] = useState(false);
+  // 首屏先渲染当前月份，下一帧再挂 prev/next 以减少初始 commit 工作量
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShowAdjacent(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
   const calendarHeight = useSharedValue(320); // 初始值，会在 useLayoutEffect 中更新
   const dragStartHeight = useSharedValue(320);
 
@@ -280,8 +285,7 @@ export const MonthView: React.FC = () => {
   // 这确保在浏览器绘制之前完成重置，避免闪烁
   // 同时处理大跨度跳转的淡入淡出动画
   useLayoutEffect(() => {
-    const t0 = performance.now();
-    console.log("[perf] MonthView useLayoutEffect[displayMonthStr] START", t0, "displayMonthStr:", displayMonthStr);
+    console.log("[perf] effect", performance.now());
     const prevMonth = prevDisplayMonthRef.current;
     prevDisplayMonthRef.current = displayMonthStr;
 
@@ -302,11 +306,10 @@ export const MonthView: React.FC = () => {
           calendarHeight.value = currentHeight.value;
           foldProgress.value = 0;
         }
-        // 大跨度跳转时（年→月），先只渲染当前月份，减少初始渲染量
-        // 动画完成后再渲染前后月份
+        // 大跨度跳转时（年→月），只渲染当前月份，rAF 后再恢复前后月份
         setShowAdjacent(false);
-        const timer = setTimeout(() => setShowAdjacent(true), 350);
-        return () => clearTimeout(timer);
+        const id = requestAnimationFrame(() => setShowAdjacent(true));
+        return () => cancelAnimationFrame(id);
       } else {
         // 正常滑动：重置位置
         translateX.value = 0;
@@ -321,8 +324,7 @@ export const MonthView: React.FC = () => {
       translateX.value = 0;
       isAnimating.value = false;
     }
-    const t1 = performance.now();
-    console.log("[perf] MonthView useLayoutEffect[displayMonthStr] END", t1, "took", (t1 - t0).toFixed(2), "ms");
+    console.log("[perf] effect-end", performance.now(), "took", (performance.now() - t0).toFixed(1));
   }, [
     displayMonthStr,
     translateX,
@@ -590,7 +592,7 @@ export const MonthView: React.FC = () => {
     }
   });
 
-  console.log("[perf] MonthView render END", performance.now(), "took", (performance.now() - renderT0).toFixed(2), "ms");
+  console.log("[perf] MonthView", performance.now() - t0);
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Fixed weekday header */}

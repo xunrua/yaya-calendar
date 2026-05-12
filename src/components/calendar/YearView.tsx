@@ -176,6 +176,7 @@ export const YearView: React.FC<YearViewProps> = React.memo(function YearView({
   onMonthPress: externalOnMonthPress,
   selectedDate,
 }) {
+  console.log("[perf] YearView", performance.now());
   const { theme } = useTheme();
   const setSelectedDate = useViewStore((s) => s.setSelectedDate);
   const setSelectedDateAndMonth = useViewStore((s) => s.setSelectedDateAndMonth);
