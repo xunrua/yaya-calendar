@@ -77,7 +77,7 @@ export const DayView: React.FC = () => {
 
   const handleTimeSlotPress = (hour: number) => {
     const newStartTime = setMinutes(setHours(currentDate, hour), 0);
-    const newEndTime = addHours(newStartTime, 1);
+    const _newEndTime = addHours(newStartTime, 1);
   };
 
   const renderTimeSlot = (hour: number) => {

@@ -73,10 +73,7 @@ const MiniMonthGrid = React.memo<MiniMonthGridProps>(function MiniMonthGrid({
     return eachDayOfInterval({ start: calStart, end: calEnd });
   }, [monthDate]);
 
-  const holidaySet = useMemo(
-    () => getStatutoryHolidaySetForMonth(year, month),
-    [year, month]
-  );
+  const holidaySet = useMemo(() => getStatutoryHolidaySetForMonth(year, month), [year, month]);
 
   const today = useMemo(() => new Date(), []);
   const isSelectedMonth = isSameMonth(monthDate, selectedDate);
@@ -311,32 +308,30 @@ export const YearView: React.FC<YearViewProps> = ({ onMonthPress: externalOnMont
     transform: [{ translateX: translateX.value + SCREEN_WIDTH }],
   }));
 
-  const renderYearGrid = useCallback((year: number, isCurrentYear: boolean) => {
-    const months = Array.from({ length: 12 }, (_, i) => i);
+  const renderYearGrid = useCallback(
+    (year: number, isCurrentYear: boolean) => {
+      const months = Array.from({ length: 12 }, (_, i) => i);
 
-    return (
-      <View style={styles.yearGrid}>
-        {months.map((month) => (
-          <MiniMonthGrid
-            key={`${year}-${month}`}
-            year={year}
-            month={month}
-            onMonthPress={handleMonthPress}
-            onMeasure={isCurrentYear ? handleCellMeasure : undefined}
-            selectedDate={currentSelectedDate}
-          />
-        ))}
-      </View>
-    );
-  }, [handleMonthPress, handleCellMeasure, currentSelectedDate]);
+      return (
+        <View style={styles.yearGrid}>
+          {months.map((month) => (
+            <MiniMonthGrid
+              key={`${year}-${month}`}
+              year={year}
+              month={month}
+              onMonthPress={handleMonthPress}
+              onMeasure={isCurrentYear ? handleCellMeasure : undefined}
+              selectedDate={currentSelectedDate}
+            />
+          ))}
+        </View>
+      );
+    },
+    [handleMonthPress, handleCellMeasure, currentSelectedDate]
+  );
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: theme.colors.background },
-      ]}
-    >
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* <View style={styles.yearHeader}>
         <Text style={[styles.yearTitle, { color: theme.colors.text }]}>
           {displayYear}年

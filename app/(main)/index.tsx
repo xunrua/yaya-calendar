@@ -87,7 +87,8 @@ export default function MainScreen() {
     const curr = currentView;
     if (prev === curr) return;
 
-    const isMonthYearTransition = (prev === "month" && curr === "year") || (prev === "year" && curr === "month");
+    const isMonthYearTransition =
+      (prev === "month" && curr === "year") || (prev === "year" && curr === "month");
     if (isMonthYearTransition) {
       prevViewRef.current = curr;
       return;
@@ -116,17 +117,7 @@ export default function MainScreen() {
     }
 
     prevViewRef.current = curr;
-  }, [
-    currentView,
-    yearZoomScale,
-    yearZoomOriginY,
-    yearZoomOriginX,
-    yearOpacity,
-    monthZoomScale,
-    monthOpacity,
-    monthZoomOriginY,
-    monthZoomOriginX,
-  ]);
+  }, [currentView, yearZoomScale, yearOpacity, monthZoomScale, monthOpacity]);
 
   // ── Animated styles ────────────────────────────────────────────────────────
   // 三明治公式：translate(dx,dy) → scale → translate(-dx,-dy)
@@ -254,14 +245,7 @@ export default function MainScreen() {
       monthZoomScale.value = withTiming(1, ZOOM_TIMING);
       monthOpacity.value = withTiming(1, { duration: ANIM_DURATION });
     },
-    [
-      monthZoomScale,
-      monthZoomOriginX,
-      monthZoomOriginY,
-      monthOpacity,
-      yearZoomScale,
-      yearOpacity,
-    ]
+    [monthZoomScale, monthZoomOriginX, monthZoomOriginY, monthOpacity, yearZoomScale, yearOpacity]
   );
 
   const handleMonthPressFromYear = useCallback(
@@ -277,7 +261,13 @@ export default function MainScreen() {
       setHasNavigatedMonth(false);
       setTransitionState({ sourceLayout: layout });
     },
-    [setTransitionState, setSelectedDate, setHasNavigatedMonth, setCurrentView, runYearToMonthAnimation]
+    [
+      setTransitionState,
+      setSelectedDate,
+      setHasNavigatedMonth,
+      setCurrentView,
+      runYearToMonthAnimation,
+    ]
   );
 
   /** 月→年切换前，设置过渡动画的起始位置 */

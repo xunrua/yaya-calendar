@@ -172,19 +172,31 @@ export const MonthView: React.FC = () => {
 
   // 折叠状态下的农历和事件预计算
   const prevWeekLunarInfoMap = useMemo(
-    () => (isCollapsed ? getLunarInfoBatch(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth()) : new Map()),
+    () =>
+      isCollapsed
+        ? getLunarInfoBatch(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth())
+        : new Map(),
     [isCollapsed, prevWeekInfo.month]
   );
   const nextWeekLunarInfoMap = useMemo(
-    () => (isCollapsed ? getLunarInfoBatch(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth()) : new Map()),
+    () =>
+      isCollapsed
+        ? getLunarInfoBatch(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth())
+        : new Map(),
     [isCollapsed, nextWeekInfo.month]
   );
   const prevWeekEventsMap = useMemo(
-    () => (isCollapsed ? getEventsForMonth(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth()) : new Map()),
+    () =>
+      isCollapsed
+        ? getEventsForMonth(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth())
+        : new Map(),
     [isCollapsed, prevWeekInfo.month, getEventsForMonth]
   );
   const nextWeekEventsMap = useMemo(
-    () => (isCollapsed ? getEventsForMonth(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth()) : new Map()),
+    () =>
+      isCollapsed
+        ? getEventsForMonth(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth())
+        : new Map(),
     [isCollapsed, nextWeekInfo.month, getEventsForMonth]
   );
 
@@ -305,7 +317,6 @@ export const MonthView: React.FC = () => {
   }, [
     displayMonthStr,
     translateX,
-    opacity,
     isAnimating,
     calendarHeight,
     currentHeight,
