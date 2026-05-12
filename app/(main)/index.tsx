@@ -222,7 +222,6 @@ export default function MainScreen() {
 
   const runYearToMonthAnimation = useCallback(
     (sourceLayout: { x: number; y: number; width: number; height: number }) => {
-      console.log("[perf] anim", performance.now());
       const cl = contentLayout.current;
       if (cl.width === 0) return;
 
@@ -246,7 +245,6 @@ export default function MainScreen() {
       monthZoomOriginY.value = dy;
       monthZoomScale.value = cellScale;
       monthOpacity.value = 0;
-      console.log("[perf] anim-before", performance.now());
       monthZoomScale.value = withTiming(1, ZOOM_TIMING);
       monthOpacity.value = withTiming(1, { duration: ANIM_DURATION });
     },
@@ -255,8 +253,6 @@ export default function MainScreen() {
 
   const handleMonthPressFromYear = useCallback(
     (monthDate: Date, layout: { x: number; y: number; width: number; height: number }) => {
-      const t0 = performance.now();
-      console.log("[perf] click", t0);
       const today = new Date();
       const newSelectedDate = isSameMonth(monthDate, today)
         ? format(today, "yyyy-MM-dd")
@@ -272,7 +268,6 @@ export default function MainScreen() {
 
       // 2) 直接启动动画，与 React commit 并行执行
       //    动画开始时 scale 很小（~0.33），MonthView 内容更新前用户看不清细节
-      console.log("[perf] anim-direct", performance.now(), "delta", (performance.now() - t0).toFixed(1));
       runYearToMonthAnimation(layout);
     },
     [

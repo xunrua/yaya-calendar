@@ -47,7 +47,6 @@ const FOLD_VELOCITY_THRESHOLD = 300; // 折叠速度阈值
 const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05; // 折叠距离阈值
 
 export const MonthView: React.FC = () => {
-  const t0 = performance.now();
   const { theme } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
   const selectedDate = useViewStore((s) => s.selectedDate);
@@ -295,7 +294,6 @@ export const MonthView: React.FC = () => {
   // 这确保在浏览器绘制之前完成重置，避免闪烁
   // 同时处理大跨度跳转的淡入淡出动画
   useLayoutEffect(() => {
-    console.log("[perf] effect", performance.now());
     const prevMonth = prevDisplayMonthRef.current;
     prevDisplayMonthRef.current = displayMonthStr;
 
@@ -334,7 +332,6 @@ export const MonthView: React.FC = () => {
       translateX.value = 0;
       isAnimating.value = false;
     }
-    console.log("[perf] effect-end", performance.now(), "took", (performance.now() - t0).toFixed(1));
   }, [
     displayMonthStr,
     translateX,
@@ -348,8 +345,6 @@ export const MonthView: React.FC = () => {
 
   // 折叠高度动画
   useLayoutEffect(() => {
-    const t0 = performance.now();
-    console.log("[perf] MonthView useLayoutEffect[isCollapsed] START", t0, "isCollapsed:", isCollapsed);
     calendarHeight.value = withTiming(isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT, {
       duration: 250,
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
@@ -358,8 +353,6 @@ export const MonthView: React.FC = () => {
       duration: 250,
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     });
-    const t1 = performance.now();
-    console.log("[perf] MonthView useLayoutEffect[isCollapsed] END", t1, "took", (t1 - t0).toFixed(2), "ms");
   }, [isCollapsed, EXPANDED_HEIGHT, COLLAPSED_HEIGHT, calendarHeight, foldProgress]);
 
   // 切换周的回调（折叠状态下使用）
@@ -602,7 +595,6 @@ export const MonthView: React.FC = () => {
     }
   });
 
-  console.log("[perf] MonthView", performance.now() - t0);
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Fixed weekday header */}
