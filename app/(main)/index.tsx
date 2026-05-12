@@ -40,7 +40,7 @@ export default function MainScreen() {
   const setCurrentView = useViewStore((s) => s.setCurrentView);
   const setTransitionState = useViewStore((s) => s.setTransitionState);
   const selectedDate = useViewStore((s) => s.selectedDate);
-  const setSelectedDate = useViewStore((s) => s.setSelectedDate);
+  const setSelectedDateAndMonth = useViewStore((s) => s.setSelectedDateAndMonth);
   const displayMonth = useViewStore((s) => s.displayMonth);
   const goToToday = useViewStore((s) => s.goToToday);
   const insets = useSafeAreaInsets();
@@ -85,15 +85,24 @@ export default function MainScreen() {
   useEffect(() => {
     const prev = prevViewRef.current;
     const curr = currentView;
+    console.log("[ViewEffect] currentView changed", {
+      prev,
+      curr,
+      monthZoomScale: monthZoomScale.value,
+      monthOpacity: monthOpacity.value,
+      yearOpacity: yearOpacity.value,
+    });
     if (prev === curr) return;
 
     const isMonthYearTransition =
       (prev === "month" && curr === "year") || (prev === "year" && curr === "month");
     if (isMonthYearTransition) {
+      console.log("[ViewEffect] month↔year transition, skip reset");
       prevViewRef.current = curr;
       return;
     }
 
+    console.log("[ViewEffect] NON-zoom transition, resetting layers");
     cancelAnimation(monthZoomScale);
     cancelAnimation(yearZoomScale);
     cancelAnimation(monthOpacity);
@@ -220,7 +229,15 @@ export default function MainScreen() {
   const runYearToMonthAnimation = useCallback(
     (sourceLayout: { x: number; y: number; width: number; height: number }) => {
       const cl = contentLayout.current;
-      if (cl.width === 0) return;
+      console.log("[Y→M] enter runYearToMonthAnimation", {
+        sourceLayout,
+        contentLayout: cl,
+        t: Date.now(),
+      });
+      if (cl.width === 0) {
+        console.warn("[Y→M] contentLayout.width === 0, animation skipped");
+        return;
+      }
 
       const { x: pageX, y: pageY, width, height } = sourceLayout;
       const cellCenterX = pageX + width / 2 - cl.x;
@@ -229,6 +246,14 @@ export default function MainScreen() {
 
       const dx = cellCenterX - cl.width / 2;
       const dy = cellCenterY - cl.height / 2;
+
+      console.log("[Y→M] computed", {
+        cellCenterX,
+        cellCenterY,
+        cellScale,
+        dx,
+        dy,
+      });
 
       cancelAnimation(monthZoomScale);
       cancelAnimation(yearZoomScale);
@@ -242,28 +267,56 @@ export default function MainScreen() {
       monthZoomOriginY.value = dy;
       monthZoomScale.value = cellScale;
       monthOpacity.value = 0;
-      monthZoomScale.value = withTiming(1, ZOOM_TIMING);
-      monthOpacity.value = withTiming(1, { duration: ANIM_DURATION });
+      console.log("[Y→M] shared values set (before withTiming)", {
+        monthZoomScale: monthZoomScale.value,
+        monthOpacity: monthOpacity.value,
+        monthZoomOriginX: monthZoomOriginX.value,
+        monthZoomOriginY: monthZoomOriginY.value,
+      });
+      monthZoomScale.value = withTiming(1, ZOOM_TIMING, (finished) => {
+        "worklet";
+        console.log("[Y→M] scale animation finished?", finished);
+      });
+      monthOpacity.value = withTiming(1, { duration: ANIM_DURATION }, (finished) => {
+        "worklet";
+        console.log("[Y→M] opacity animation finished?", finished);
+      });
     },
     [monthZoomScale, monthZoomOriginX, monthZoomOriginY, monthOpacity, yearZoomScale, yearOpacity]
   );
 
   const handleMonthPressFromYear = useCallback(
     (monthDate: Date, layout: { x: number; y: number; width: number; height: number }) => {
+      console.log("[Y→M] handleMonthPressFromYear", {
+        monthDate: monthDate.toISOString(),
+        layout,
+        currentView: useViewStore.getState().currentView,
+      });
       const today = new Date();
       const newSelectedDate = isSameMonth(monthDate, today)
         ? format(today, "yyyy-MM-dd")
         : format(monthDate, "yyyy-MM-dd");
 
+      // 1) 同步启动动画（仅改 shared value，不触发 React render）
       runYearToMonthAnimation(layout);
+
+      // 2) 立刻切换轻量 state（不会触发 MonthView 重渲染）
       setCurrentView("month");
-      setSelectedDate(newSelectedDate);
       setHasNavigatedMonth(false);
       setTransitionState({ sourceLayout: layout });
+
+      // 3) selectedDate + displayMonth 推迟到动画结束后一次性切换
+      //    setSelectedDateAndMonth 一次 set 同步两个字段，避免 MonthView 内
+      //    selectedDate → setDisplayMonth 的 effect 触发第二轮渲染。
+      console.log("[Y→M] schedule setSelectedDate after", ANIM_DURATION, "ms");
+      setTimeout(() => {
+        console.log("[Y→M] applying setSelectedDateAndMonth now", newSelectedDate);
+        setSelectedDateAndMonth(newSelectedDate);
+      }, ANIM_DURATION);
     },
     [
       setTransitionState,
-      setSelectedDate,
+      setSelectedDateAndMonth,
       setHasNavigatedMonth,
       setCurrentView,
       runYearToMonthAnimation,

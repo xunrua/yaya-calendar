@@ -175,6 +175,7 @@ export const YearView: React.FC<YearViewProps> = ({ onMonthPress: externalOnMont
   const { theme } = useTheme();
   const selectedDate = useViewStore((s) => s.selectedDate);
   const setSelectedDate = useViewStore((s) => s.setSelectedDate);
+  const setSelectedDateAndMonth = useViewStore((s) => s.setSelectedDateAndMonth);
   const setCurrentView = useViewStore((s) => s.setCurrentView);
   const setTransitionState = useViewStore((s) => s.setTransitionState);
   const hasNavigatedMonth = useViewStore((s) => s.hasNavigatedMonth);
@@ -220,16 +221,15 @@ export const YearView: React.FC<YearViewProps> = ({ onMonthPress: externalOnMont
       setTransitionState({
         sourceLayout: layout,
       });
-      // 当前月份：选中今天；非当前月份：选中首日
+      // 当前月份：选中今天；非当前月份：选中首日。一次性写入 selectedDate + displayMonth。
       const today = new Date();
-      if (isSameMonth(monthDate, today)) {
-        setSelectedDate(format(today, "yyyy-MM-dd"));
-      } else {
-        setSelectedDate(format(monthDate, "yyyy-MM-dd"));
-      }
+      const targetDate = isSameMonth(monthDate, today)
+        ? format(today, "yyyy-MM-dd")
+        : format(monthDate, "yyyy-MM-dd");
+      setSelectedDateAndMonth(targetDate);
       setCurrentView("month");
     },
-    [setSelectedDate, setCurrentView, setTransitionState, externalOnMonthPress]
+    [setSelectedDateAndMonth, setCurrentView, setTransitionState, externalOnMonthPress]
   );
 
   // Collect cell measurements for Month→Year animation

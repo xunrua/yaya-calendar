@@ -165,6 +165,8 @@ interface ViewState {
   displayMonth: string; // 显示月份（ISO 格式，月初日期）
   setCurrentView: (view: ViewType) => void;
   setSelectedDate: (date: string) => void;
+  /** 同时更新 selectedDate 和 displayMonth（月初对齐），避免触发组件层的二次渲染 effect */
+  setSelectedDateAndMonth: (date: string) => void;
   setHasNavigatedMonth: (value: boolean) => void;
   setTransitionState: (state: ViewTransitionState) => void;
   setYearCellLayouts: (
@@ -210,6 +212,12 @@ export const useViewStore = create<ViewState>((set, get) => ({
 
   setSelectedDate: (date) => {
     set({ selectedDate: date });
+  },
+
+  setSelectedDateAndMonth: (date) => {
+    const [y, m] = date.split("-");
+    const monthStart = `${y}-${m}-01`;
+    set({ selectedDate: date, displayMonth: monthStart });
   },
 
   setHasNavigatedMonth: (value) => {

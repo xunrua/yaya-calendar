@@ -53,6 +53,7 @@ export const MonthView: React.FC = () => {
   const displayMonthStr = useViewStore((s) => s.displayMonth);
   const setDisplayMonth = useViewStore((s) => s.setDisplayMonth);
   const setSelectedDate = useViewStore((s) => s.setSelectedDate);
+  const setSelectedDateAndMonth = useViewStore((s) => s.setSelectedDateAndMonth);
   const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
 
   // 从全局状态获取 displayMonth，转换为 Date 对象
@@ -227,50 +228,46 @@ export const MonthView: React.FC = () => {
     isCollapsedSV.value = isCollapsed;
   }, [isCollapsed, isCollapsedSV]);
 
-  // 当 selectedDate 从外部变化时（如从年视图点击月份），同步 displayMonth
+  // 当 selectedDate 月份与 displayMonth 不同步时兜底同步
+  //（正常路径 setSelectedDateAndMonth 已经同时写入，此 effect 永不触发；
+  //   仅当上游漏调组合 setter 时进入修复分支，避免双轮渲染）
   useLayoutEffect(() => {
-    const [year, month] = selectedDate.split("-").map(Number);
-    const monthStartStr = `${year}-${String(month).padStart(2, "0")}-01`;
+    const selectedMonth = selectedDate.slice(0, 7); // "yyyy-MM"
+    const displayMonthSlice = displayMonthStr.slice(0, 7);
+    if (selectedMonth === displayMonthSlice) return;
+    const monthStartStr = `${selectedMonth}-01`;
     setDisplayMonth(monthStartStr);
-  }, [selectedDate, setDisplayMonth]);
+  }, [selectedDate, displayMonthStr, setDisplayMonth]);
 
   const goToPreviousJS = useCallback(() => {
     const [year, month] = displayMonthStr.split("-").map(Number);
     const currentDisplayMonth = new Date(year, month - 1, 1);
     const newMonth = subMonths(currentDisplayMonth, 1);
     const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, "0")}-01`;
-    setDisplayMonth(newMonthStr);
     setHasNavigatedMonth(true);
 
-    // 切换月份时同步选中日期
+    // 一次性更新 selectedDate + displayMonth，避免双轮渲染
     const today = new Date();
-    if (isSameMonth(newMonth, today)) {
-      // 当前月份：选中今天
-      setSelectedDate(today.toISOString().split("T")[0]);
-    } else {
-      // 非当前月份：选中首日
-      setSelectedDate(newMonthStr);
-    }
-  }, [displayMonthStr, setDisplayMonth, setHasNavigatedMonth, setSelectedDate]);
+    const targetDate = isSameMonth(newMonth, today)
+      ? today.toISOString().split("T")[0]
+      : newMonthStr;
+    setSelectedDateAndMonth(targetDate);
+  }, [displayMonthStr, setHasNavigatedMonth, setSelectedDateAndMonth]);
 
   const goToNextJS = useCallback(() => {
     const [year, month] = displayMonthStr.split("-").map(Number);
     const currentDisplayMonth = new Date(year, month - 1, 1);
     const newMonth = addMonths(currentDisplayMonth, 1);
     const newMonthStr = `${newMonth.getFullYear()}-${String(newMonth.getMonth() + 1).padStart(2, "0")}-01`;
-    setDisplayMonth(newMonthStr);
     setHasNavigatedMonth(true);
 
-    // 切换月份时同步选中日期
+    // 一次性更新 selectedDate + displayMonth，避免双轮渲染
     const today = new Date();
-    if (isSameMonth(newMonth, today)) {
-      // 当前月份：选中今天
-      setSelectedDate(today.toISOString().split("T")[0]);
-    } else {
-      // 非当前月份：选中首日
-      setSelectedDate(newMonthStr);
-    }
-  }, [displayMonthStr, setDisplayMonth, setHasNavigatedMonth, setSelectedDate]);
+    const targetDate = isSameMonth(newMonth, today)
+      ? today.toISOString().split("T")[0]
+      : newMonthStr;
+    setSelectedDateAndMonth(targetDate);
+  }, [displayMonthStr, setHasNavigatedMonth, setSelectedDateAndMonth]);
 
   const toggleCollapse = useCallback(() => {
     setIsCollapsed((prev) => !prev);
@@ -347,16 +344,19 @@ export const MonthView: React.FC = () => {
     const today = new Date();
     const weekStart = startOfWeek(nextWeek, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(nextWeek, { weekStartsOn: 1 });
-    if (today >= weekStart && today <= weekEnd) {
-      setSelectedDate(format(today, "yyyy-MM-dd"));
-    } else {
-      setSelectedDate(format(weekStart, "yyyy-MM-dd"));
-    }
+    const targetDate =
+      today >= weekStart && today <= weekEnd
+        ? format(today, "yyyy-MM-dd")
+        : format(weekStart, "yyyy-MM-dd");
 
-    if (!isSameMonth(nextWeek, displayMonth)) {
-      setDisplayMonth(format(startOfMonth(nextWeek), "yyyy-MM-dd"));
+    if (isSameMonth(nextWeek, displayMonth)) {
+      // 同月：只改 selectedDate（displayMonth 不变）
+      setSelectedDate(targetDate);
+    } else {
+      // 跨月：一次性改 selectedDate + displayMonth
+      setSelectedDateAndMonth(targetDate);
     }
-  }, [selectedDate, displayMonth, setSelectedDate, setDisplayMonth, translateX]);
+  }, [selectedDate, displayMonth, setSelectedDate, setSelectedDateAndMonth, translateX]);
 
   const goToPrevWeekJS = useCallback(() => {
     translateX.value = 0;
@@ -367,16 +367,17 @@ export const MonthView: React.FC = () => {
     const today = new Date();
     const weekStart = startOfWeek(prevWeek, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(prevWeek, { weekStartsOn: 1 });
-    if (today >= weekStart && today <= weekEnd) {
-      setSelectedDate(format(today, "yyyy-MM-dd"));
-    } else {
-      setSelectedDate(format(weekStart, "yyyy-MM-dd"));
-    }
+    const targetDate =
+      today >= weekStart && today <= weekEnd
+        ? format(today, "yyyy-MM-dd")
+        : format(weekStart, "yyyy-MM-dd");
 
-    if (!isSameMonth(prevWeek, displayMonth)) {
-      setDisplayMonth(format(startOfMonth(prevWeek), "yyyy-MM-dd"));
+    if (isSameMonth(prevWeek, displayMonth)) {
+      setSelectedDate(targetDate);
+    } else {
+      setSelectedDateAndMonth(targetDate);
     }
-  }, [selectedDate, displayMonth, setSelectedDate, setDisplayMonth, translateX]);
+  }, [selectedDate, displayMonth, setSelectedDate, setSelectedDateAndMonth, translateX]);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
