@@ -14,7 +14,9 @@
     "build:android": "npm run build:android:apk && npm run build:android:aab",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "fix": "biome check --write --unsafe ."
+    "fix": "biome check --write --unsafe .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -42,10 +44,12 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.14",
     "@types/react": "~19.1.0",
+    "@vitest/ui": "^4.1.6",
     "babel-plugin-transform-remove-console": "^6.9.4",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^4.1.6"
   },
   "private": true
 }
