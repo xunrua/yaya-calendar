@@ -1,5 +1,4 @@
 import { describe, test, expect } from "vitest";
-// @ts-expect-error — legacy CommonJS module, no .d.ts
 import { Solar as LegacySolar } from "../lib/lunar-javascript/index.js";
 import {
   toLunarDate,
