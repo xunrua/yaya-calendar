@@ -71,10 +71,12 @@ const AnimatedDayCell = memo(function AnimatedDayCell({
   lunarInfo,
   events = [],
 }: AnimatedDayCellProps) {
+  const cellT0 = performance.now();
   const { theme } = useTheme();
   const c = theme.colors;
   const scale = useSharedValue(1);
   const prevSelected = useSharedValue(false);
+  const afterHooks = performance.now();
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -104,6 +106,7 @@ const AnimatedDayCell = memo(function AnimatedDayCell({
         ? useEventStore.getState().getEventsForDate(dateStr)
         : [];
   const workStatus = fidelity === "full" ? getWorkStatus(day) : null;
+  const afterCompute = performance.now();
 
   const getBackgroundColor = () => {
     if (isDimmed) return "transparent";
@@ -190,6 +193,18 @@ const AnimatedDayCell = memo(function AnimatedDayCell({
     </>
   );
 
+  const total = performance.now() - cellT0;
+  if (total > 0.5) {
+    console.log(
+      "[perf] DayCell",
+      dateStr,
+      "total:", total.toFixed(2),
+      "hooks:", (afterHooks - cellT0).toFixed(2),
+      "compute:", (afterCompute - afterHooks).toFixed(2),
+      "jsx:", (performance.now() - afterCompute).toFixed(2)
+    );
+  }
+
   // 非当月日期（isDimmed）不可交互
   if (isDimmed || !onPress) {
     return <View style={styles.dayCell}>{cellContent}</View>;
@@ -212,6 +227,7 @@ const MonthGrid = memo(function MonthGrid({
   lunarInfoMap,
   eventsMap,
 }: MonthGridProps) {
+  const mgT0 = performance.now();
   const selectedDate = useViewStore((state) => state.selectedDate);
   const setSelectedDate = useViewStore((state) => state.setSelectedDate);
 
@@ -310,11 +326,13 @@ const MonthGrid = memo(function MonthGrid({
 
   // 无折叠动画时，使用原有渲染方式
   if (!foldProgress || targetRowIndex === undefined) {
-    return <View style={styles.daysGrid}>{calendarDays.map(renderDayCell)}</View>;
+    const grid = <View style={styles.daysGrid}>{calendarDays.map(renderDayCell)}</View>;
+    console.log("[perf] MonthGrid render", year, month + 1, "took", (performance.now() - mgT0).toFixed(2), "ms");
+    return grid;
   }
 
   // 有折叠动画时，分区域渲染
-  return (
+  const foldGrid = (
     <View style={styles.daysGridFold}>
       {/* 上方区域 */}
       {upperRows.length > 0 && (
@@ -338,6 +356,8 @@ const MonthGrid = memo(function MonthGrid({
       )}
     </View>
   );
+  console.log("[perf] MonthGrid render (fold)", year, month + 1, "took", (performance.now() - mgT0).toFixed(2), "ms");
+  return foldGrid;
 });
 
 export default MonthGrid;

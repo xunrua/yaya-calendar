@@ -169,16 +169,19 @@ interface YearViewProps {
     date: Date,
     layout: { x: number; y: number; width: number; height: number }
   ) => void;
+  selectedDate: string; // 通过 prop 接收，避免内部订阅导致不必要的重渲染
 }
 
-export const YearView: React.FC<YearViewProps> = ({ onMonthPress: externalOnMonthPress }) => {
+export const YearView: React.FC<YearViewProps> = React.memo(function YearView({
+  onMonthPress: externalOnMonthPress,
+  selectedDate,
+}) {
   const { theme } = useTheme();
-  const selectedDate = useViewStore((s) => s.selectedDate);
   const setSelectedDate = useViewStore((s) => s.setSelectedDate);
   const setSelectedDateAndMonth = useViewStore((s) => s.setSelectedDateAndMonth);
   const setCurrentView = useViewStore((s) => s.setCurrentView);
   const setTransitionState = useViewStore((s) => s.setTransitionState);
-  const hasNavigatedMonth = useViewStore((s) => s.hasNavigatedMonth);
+  // 用 getState() 避免渲染期订阅，防止 setHasNavigatedMonth 触发 YearView 重渲染
 
   const currentSelectedDate = useMemo(() => parseISO(selectedDate), [selectedDate]);
   const [displayYear, setDisplayYear] = useState(getYear(currentSelectedDate));
@@ -200,16 +203,16 @@ export const YearView: React.FC<YearViewProps> = ({ onMonthPress: externalOnMont
   const goToPreviousYearJS = useCallback(() => {
     const newYear = displayYear - 1;
     setDisplayYear(newYear);
-    const month = hasNavigatedMonth ? getMonth(parseISO(selectedDate)) : 0;
+    const month = useViewStore.getState().hasNavigatedMonth ? getMonth(parseISO(selectedDate)) : 0;
     setSelectedDate(format(new Date(newYear, month, 1), "yyyy-MM-dd"));
-  }, [displayYear, selectedDate, setSelectedDate, hasNavigatedMonth]);
+  }, [displayYear, selectedDate, setSelectedDate]);
 
   const goToNextYearJS = useCallback(() => {
     const newYear = displayYear + 1;
     setDisplayYear(newYear);
-    const month = hasNavigatedMonth ? getMonth(parseISO(selectedDate)) : 0;
+    const month = useViewStore.getState().hasNavigatedMonth ? getMonth(parseISO(selectedDate)) : 0;
     setSelectedDate(format(new Date(newYear, month, 1), "yyyy-MM-dd"));
-  }, [displayYear, selectedDate, setSelectedDate, hasNavigatedMonth]);
+  }, [displayYear, selectedDate, setSelectedDate]);
 
   const handleMonthPress = useCallback(
     (monthDate: Date, layout: { x: number; y: number; width: number; height: number }) => {
@@ -355,7 +358,7 @@ export const YearView: React.FC<YearViewProps> = ({ onMonthPress: externalOnMont
       </GestureDetector>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -47,6 +47,8 @@ const FOLD_VELOCITY_THRESHOLD = 300; // 折叠速度阈值
 const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05; // 折叠距离阈值
 
 export const MonthView: React.FC = () => {
+  const renderT0 = performance.now();
+  console.log("[perf] MonthView render START", renderT0);
   const { theme } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
   const selectedDate = useViewStore((s) => s.selectedDate);
@@ -68,6 +70,7 @@ export const MonthView: React.FC = () => {
   const prevDisplayMonthRef = useRef(displayMonthStr);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showAdjacent, setShowAdjacent] = useState(true);
   const calendarHeight = useSharedValue(320); // 初始值，会在 useLayoutEffect 中更新
   const dragStartHeight = useSharedValue(320);
 
@@ -277,6 +280,8 @@ export const MonthView: React.FC = () => {
   // 这确保在浏览器绘制之前完成重置，避免闪烁
   // 同时处理大跨度跳转的淡入淡出动画
   useLayoutEffect(() => {
+    const t0 = performance.now();
+    console.log("[perf] MonthView useLayoutEffect[displayMonthStr] START", t0, "displayMonthStr:", displayMonthStr);
     const prevMonth = prevDisplayMonthRef.current;
     prevDisplayMonthRef.current = displayMonthStr;
 
@@ -297,6 +302,11 @@ export const MonthView: React.FC = () => {
           calendarHeight.value = currentHeight.value;
           foldProgress.value = 0;
         }
+        // 大跨度跳转时（年→月），先只渲染当前月份，减少初始渲染量
+        // 动画完成后再渲染前后月份
+        setShowAdjacent(false);
+        const timer = setTimeout(() => setShowAdjacent(true), 350);
+        return () => clearTimeout(timer);
       } else {
         // 正常滑动：重置位置
         translateX.value = 0;
@@ -311,6 +321,8 @@ export const MonthView: React.FC = () => {
       translateX.value = 0;
       isAnimating.value = false;
     }
+    const t1 = performance.now();
+    console.log("[perf] MonthView useLayoutEffect[displayMonthStr] END", t1, "took", (t1 - t0).toFixed(2), "ms");
   }, [
     displayMonthStr,
     translateX,
@@ -324,6 +336,8 @@ export const MonthView: React.FC = () => {
 
   // 折叠高度动画
   useLayoutEffect(() => {
+    const t0 = performance.now();
+    console.log("[perf] MonthView useLayoutEffect[isCollapsed] START", t0, "isCollapsed:", isCollapsed);
     calendarHeight.value = withTiming(isCollapsed ? COLLAPSED_HEIGHT : EXPANDED_HEIGHT, {
       duration: 250,
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
@@ -332,6 +346,8 @@ export const MonthView: React.FC = () => {
       duration: 250,
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     });
+    const t1 = performance.now();
+    console.log("[perf] MonthView useLayoutEffect[isCollapsed] END", t1, "took", (t1 - t0).toFixed(2), "ms");
   }, [isCollapsed, EXPANDED_HEIGHT, COLLAPSED_HEIGHT, calendarHeight, foldProgress]);
 
   // 切换周的回调（折叠状态下使用）
@@ -574,6 +590,7 @@ export const MonthView: React.FC = () => {
     }
   });
 
+  console.log("[perf] MonthView render END", performance.now(), "took", (performance.now() - renderT0).toFixed(2), "ms");
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Fixed weekday header */}
@@ -639,15 +656,17 @@ export const MonthView: React.FC = () => {
           ) : (
             // 展开状态：月份级别三屏渲染
             <>
-              <Animated.View style={[styles.monthPanel, prevMonthStyle]}>
-                <MonthGrid
-                  year={prevMonth.getFullYear()}
-                  month={prevMonth.getMonth()}
-                  fidelity="full"
-                  lunarInfoMap={prevLunarInfoMap}
-                  eventsMap={prevEventsMap}
-                />
-              </Animated.View>
+              {showAdjacent && (
+                <Animated.View style={[styles.monthPanel, prevMonthStyle]}>
+                  <MonthGrid
+                    year={prevMonth.getFullYear()}
+                    month={prevMonth.getMonth()}
+                    fidelity="full"
+                    lunarInfoMap={prevLunarInfoMap}
+                    eventsMap={prevEventsMap}
+                  />
+                </Animated.View>
+              )}
 
               <Animated.View style={[styles.monthPanel, animatedStyle]}>
                 <MonthGrid
@@ -662,15 +681,17 @@ export const MonthView: React.FC = () => {
                 />
               </Animated.View>
 
-              <Animated.View style={[styles.monthPanel, nextMonthStyle]}>
-                <MonthGrid
-                  year={nextMonth.getFullYear()}
-                  month={nextMonth.getMonth()}
-                  fidelity="full"
-                  lunarInfoMap={nextLunarInfoMap}
-                  eventsMap={nextEventsMap}
-                />
-              </Animated.View>
+              {showAdjacent && (
+                <Animated.View style={[styles.monthPanel, nextMonthStyle]}>
+                  <MonthGrid
+                    year={nextMonth.getFullYear()}
+                    month={nextMonth.getMonth()}
+                    fidelity="full"
+                    lunarInfoMap={nextLunarInfoMap}
+                    eventsMap={nextEventsMap}
+                  />
+                </Animated.View>
+              )}
             </>
           )}
         </Animated.View>
