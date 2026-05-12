@@ -255,22 +255,20 @@ export default function MainScreen() {
         ? format(today, "yyyy-MM-dd")
         : format(monthDate, "yyyy-MM-dd");
 
-      // 1) 同步启动 zoom 动画（仅改 shared value，不触发 React render）
-      runYearToMonthAnimation(layout);
-
-      // 2) 立刻切换轻量 state（不阻塞 reanimated RAF）
+      // 1) 先同步触发 React state，让 MonthView 重渲染新月份内容
+      //    此时 monthOpacity 仍为 0（来自上次 month→year 动画），月图层不可见，
+      //    用户看到的依然是 year view，没有视觉跳变。
       setCurrentView("month");
+      setSelectedDateAndMonth(newSelectedDate);
       setHasNavigatedMonth(false);
       setTransitionState({ sourceLayout: layout });
 
-      // 3) selectedDate + displayMonth 推迟到动画结束后再一次性写入。
-      //    Web 上 reanimated 与 React 共享 JS 主线程，若同步写入会让
-      //    MonthView 重渲染（~100ms）压住整个 zoom 动画的 RAF。
-      //    setSelectedDateAndMonth 单轮渲染开销已被 Step 1+3 压缩，
-      //    动画结束后只多 ~100ms 内容才切到新月份。
+      // 2) 用 setTimeout(0) 推迟 zoom 动画启动到下一个 task：
+      //    React commit（~100ms）先完成 → MonthView 已是新月份 →
+      //    再启动 reanimated zoom，动画过程中显示的就是新月份内容，无尾部闪烁。
       setTimeout(() => {
-        setSelectedDateAndMonth(newSelectedDate);
-      }, ANIM_DURATION);
+        runYearToMonthAnimation(layout);
+      }, 0);
     },
     [
       setTransitionState,
