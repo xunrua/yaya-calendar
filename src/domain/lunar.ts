@@ -1,6 +1,14 @@
 import { eachDayOfInterval, endOfMonth, endOfWeek, startOfMonth, startOfWeek } from "date-fns";
-import { Lunar, Solar, SolarMonth } from "lunar-javascript";
+
 import type { Holiday, LunarDate, SolarTerm } from "../domain/types";
+import {
+  lunarFromSolar,
+  lunarFromYmd,
+  solarFromDate,
+  solarFestivals,
+  getSolarMonthDays,
+  type SolarDate,
+} from "./lunarCalc";
 
 // ============================================================================
 // Lunar Calendar Cache
@@ -33,6 +41,16 @@ export const clearLunarCache = () => {
 };
 
 // ============================================================================
+// 内部 helper
+// ============================================================================
+
+const solarToDate = (s: SolarDate): Date =>
+  new Date(s.year, s.month - 1, s.day, s.hour, s.minute, s.second);
+
+const solarToIsoDate = (s: SolarDate): string =>
+  `${String(s.year).padStart(4, "0")}-${String(s.month).padStart(2, "0")}-${String(s.day).padStart(2, "0")}`;
+
+// ============================================================================
 // Lunar Calendar Service
 // ============================================================================
 
@@ -40,20 +58,20 @@ export const clearLunarCache = () => {
  * Convert a Gregorian date to Chinese lunar date
  */
 export const toLunarDate = (date: Date): LunarDate => {
-  const solar = Solar.fromDate(date);
-  const lunar = solar.getLunar();
+  const solar = solarFromDate(date);
+  const lunar = lunarFromSolar(solar);
 
   return {
-    year: lunar.getYear(),
-    month: lunar.getMonth(),
-    day: lunar.getDay(),
-    isLeapMonth: lunar.getMonth() < 0, // Negative month indicates leap month
-    monthName: lunar.getMonthInChinese(),
-    dayName: lunar.getDayInChinese(),
-    yearGanZhi: lunar.getYearInGanZhi(),
-    monthGanZhi: lunar.getMonthInGanZhi(),
-    dayGanZhi: lunar.getDayInGanZhi(),
-    yearShengXiao: lunar.getYearShengXiao(),
+    year: lunar.year,
+    month: lunar.month,
+    day: lunar.day,
+    isLeapMonth: lunar.month < 0, // Negative month indicates leap month
+    monthName: lunar.monthInChinese,
+    dayName: lunar.dayInChinese,
+    yearGanZhi: lunar.yearGanZhi,
+    monthGanZhi: lunar.monthGanZhi,
+    dayGanZhi: lunar.dayGanZhi,
+    yearShengXiao: lunar.shengXiao,
   };
 };
 
@@ -66,9 +84,8 @@ export const toSolarDate = (
   lunarDay: number,
   isLeapMonth = false
 ): Date => {
-  const lunar = Lunar.fromYmd(lunarYear, isLeapMonth ? -lunarMonth : lunarMonth, lunarDay);
-  const solar = lunar.getSolar();
-  return solar.getDate();
+  const lunar = lunarFromYmd(lunarYear, isLeapMonth ? -lunarMonth : lunarMonth, lunarDay);
+  return solarToDate(lunar.solar);
 };
 
 /**
@@ -120,9 +137,9 @@ const SOLAR_TERMS = [
  * Get the solar term for a specific date (if any)
  */
 export const getSolarTerm = (date: Date): SolarTerm | null => {
-  const solar = Solar.fromDate(date);
-  const lunar = solar.getLunar();
-  const jieQi = lunar.getJieQi();
+  const solar = solarFromDate(date);
+  const lunar = lunarFromSolar(solar);
+  const jieQi = lunar.jieQi;
 
   if (jieQi) {
     return {
@@ -139,45 +156,18 @@ export const getSolarTerm = (date: Date): SolarTerm | null => {
  */
 export const getSolarTermsForYear = (year: number): SolarTerm[] => {
   const terms: SolarTerm[] = [];
-  const solarTermsNames = [
-    "小寒",
-    "大寒",
-    "立春",
-    "雨水",
-    "惊蛰",
-    "春分",
-    "清明",
-    "谷雨",
-    "立夏",
-    "小满",
-    "芒种",
-    "夏至",
-    "小暑",
-    "大暑",
-    "立秋",
-    "处暑",
-    "白露",
-    "秋分",
-    "寒露",
-    "霜降",
-    "立冬",
-    "小雪",
-    "大雪",
-    "冬至",
-  ];
 
   // Iterate through the year to find solar terms
-  for (let month = 0; month < 12; month++) {
-    const solarMonth = SolarMonth.fromYm(year, month + 1);
-    const days = solarMonth.getDays();
+  for (let month = 1; month <= 12; month++) {
+    const days = getSolarMonthDays(year, month);
     for (const day of days) {
-      const lunar = day.getLunar();
-      const jieQi = lunar.getJieQi();
+      const lunar = lunarFromSolar(day);
+      const jieQi = lunar.jieQi;
       if (jieQi) {
         terms.push({
           name: jieQi,
-          date: day.toString(),
-          index: solarTermsNames.indexOf(jieQi),
+          date: solarToIsoDate(day),
+          index: SOLAR_TERMS.indexOf(jieQi),
         });
       }
     }
@@ -194,13 +184,12 @@ export const getSolarTermsForYear = (year: number): SolarTerm[] => {
  * Get holidays/festivals for a specific date
  */
 export const getHolidays = (date: Date): Holiday[] => {
-  const solar = Solar.fromDate(date);
-  const lunar = solar.getLunar();
+  const solar = solarFromDate(date);
+  const lunar = lunarFromSolar(solar);
   const holidays: Holiday[] = [];
 
   // Check lunar festivals (traditional Chinese holidays)
-  const lunarFestivals = lunar.getFestivals();
-  for (const festival of lunarFestivals) {
+  for (const festival of lunar.festivals) {
     holidays.push({
       name: festival,
       date: date.toISOString().split("T")[0],
@@ -210,8 +199,7 @@ export const getHolidays = (date: Date): Holiday[] => {
   }
 
   // Check solar festivals
-  const solarFestivals = solar.getFestivals();
-  for (const festival of solarFestivals) {
+  for (const festival of solarFestivals(solar)) {
     holidays.push({
       name: festival,
       date: date.toISOString().split("T")[0],
@@ -221,10 +209,9 @@ export const getHolidays = (date: Date): Holiday[] => {
   }
 
   // Check solar term
-  const jieQi = lunar.getJieQi();
-  if (jieQi) {
+  if (lunar.jieQi) {
     holidays.push({
-      name: jieQi,
+      name: lunar.jieQi,
       date: date.toISOString().split("T")[0],
       type: "solar_term",
       isHoliday: false,
@@ -264,9 +251,9 @@ export const isHoliday = (date: Date): boolean => {
  * Check if a date is a solar term
  */
 export const isSolarTermDay = (date: Date): boolean => {
-  const solar = Solar.fromDate(date);
-  const lunar = solar.getLunar();
-  return lunar.getJieQi() !== null;
+  const solar = solarFromDate(date);
+  const lunar = lunarFromSolar(solar);
+  return lunar.jieQi !== null;
 };
 
 /**
@@ -374,7 +361,7 @@ export const getLunarInfoBatch = (year: number, month: number): Map<string, Cach
 
 /**
  * 批量获取月历范围内的法定假日日期 Set（带缓存）
- * 用于 YearView 的 MiniMonthGrid 快速判断节假日,避免逐日调用 getHolidays 触发大量 lunar-javascript 计算
+ * 用于 YearView 的 MiniMonthGrid 快速判断节假日,避免逐日调用 getHolidays 触发大量农历计算
  * 注意：使用 weekStartsOn: 0（周日开始），与 YearView.tsx 中的 MiniMonthGrid 一致
  * @param year 年份
  * @param month 月份（0-indexed，0 = 一月）
@@ -433,8 +420,8 @@ export const getGanZhi = (date: Date): { year: string; month: string; day: strin
  * Get ShengXiao (生肖) for a year
  */
 export const getShengXiao = (year: number): string => {
-  const lunar = Lunar.fromYmd(year, 1, 1);
-  return lunar.getYearShengXiao();
+  const lunar = lunarFromYmd(year, 1, 1);
+  return lunar.shengXiao;
 };
 
 export default {
