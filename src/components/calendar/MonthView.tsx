@@ -76,6 +76,16 @@ export const MonthView: React.FC = () => {
     const id = requestAnimationFrame(() => setShowAdjacent(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
+  // 在渲染阶段直接判断大跨度跳转，避免第一次渲染就渲染前后月份
+  const isLargeJump = useMemo(() => {
+    const prev = prevDisplayMonthRef.current;
+    if (!prev || !displayMonthStr) return false;
+    const [prevYear, prevMonthNum] = prev.split("-").map(Number);
+    const [currYear, currMonthNum] = displayMonthStr.split("-").map(Number);
+    return Math.abs((currYear - prevYear) * 12 + (currMonthNum - prevMonthNum)) > 1;
+  }, [displayMonthStr]);
+
   const calendarHeight = useSharedValue(320); // 初始值，会在 useLayoutEffect 中更新
   const dragStartHeight = useSharedValue(320);
 
@@ -658,7 +668,7 @@ export const MonthView: React.FC = () => {
           ) : (
             // 展开状态：月份级别三屏渲染
             <>
-              {showAdjacent && (
+              {showAdjacent && !isLargeJump && (
                 <Animated.View style={[styles.monthPanel, prevMonthStyle]}>
                   <MonthGrid
                     year={prevMonth.getFullYear()}
@@ -683,7 +693,7 @@ export const MonthView: React.FC = () => {
                 />
               </Animated.View>
 
-              {showAdjacent && (
+              {showAdjacent && !isLargeJump && (
                 <Animated.View style={[styles.monthPanel, nextMonthStyle]}>
                   <MonthGrid
                     year={nextMonth.getFullYear()}

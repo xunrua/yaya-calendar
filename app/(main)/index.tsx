@@ -270,13 +270,10 @@ export default function MainScreen() {
       setHasNavigatedMonth(false);
       setTransitionState({ sourceLayout: layout });
 
-      // 2) 用 requestAnimationFrame 推迟 zoom 动画启动到下一帧：
-      //    React commit 先完成 → MonthView 已是新月份 →
-      //    再启动 reanimated zoom，动画过程中显示的就是新月份内容，无尾部闪烁。
-      requestAnimationFrame(() => {
-        console.log("[perf] rAF", performance.now(), "delta", (performance.now() - t0).toFixed(1));
-        runYearToMonthAnimation(layout);
-      });
+      // 2) 直接启动动画，与 React commit 并行执行
+      //    动画开始时 scale 很小（~0.33），MonthView 内容更新前用户看不清细节
+      console.log("[perf] anim-direct", performance.now(), "delta", (performance.now() - t0).toFixed(1));
+      runYearToMonthAnimation(layout);
     },
     [
       setTransitionState,
