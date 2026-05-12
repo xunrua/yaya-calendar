@@ -25,10 +25,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { getLunarInfoBatch } from "../../domain/lunar";
-import {
-  getLunarInfoBatchAsync,
-  type SerializableLunarInfo,
-} from "../../services/lunarWorker";
+import { getLunarInfoBatchAsync, type SerializableLunarInfo } from "../../services/lunarWorker";
 import { useEventStore, useViewStore } from "../../stores/eventStore";
 import { useTheme } from "../../stores/themeStore";
 import {
@@ -223,27 +220,29 @@ export const MonthView: React.FC = () => {
 
   // 折叠状态下的农历和事件预计算
   // prevWeek/nextWeek 使用异步计算（worklet 线程）
-  const [prevWeekLunarInfoMap, setPrevWeekLunarInfoMap] = useState<LunarInfoMap>(EMPTY_LUNAR_MAP as any);
-  const [nextWeekLunarInfoMap, setNextWeekLunarInfoMap] = useState<LunarInfoMap>(EMPTY_LUNAR_MAP as any);
+  const [prevWeekLunarInfoMap, setPrevWeekLunarInfoMap] = useState<LunarInfoMap>(
+    EMPTY_LUNAR_MAP as any
+  );
+  const [nextWeekLunarInfoMap, setNextWeekLunarInfoMap] = useState<LunarInfoMap>(
+    EMPTY_LUNAR_MAP as any
+  );
 
   useEffect(() => {
     if (!isCollapsed) return;
 
     let cancelled = false;
 
-    getLunarInfoBatchAsync(
-      prevWeekInfo.month.getFullYear(),
-      prevWeekInfo.month.getMonth()
-    ).then((map) => {
-      if (!cancelled) setPrevWeekLunarInfoMap(map);
-    });
+    getLunarInfoBatchAsync(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth()).then(
+      (map) => {
+        if (!cancelled) setPrevWeekLunarInfoMap(map);
+      }
+    );
 
-    getLunarInfoBatchAsync(
-      nextWeekInfo.month.getFullYear(),
-      nextWeekInfo.month.getMonth()
-    ).then((map) => {
-      if (!cancelled) setNextWeekLunarInfoMap(map);
-    });
+    getLunarInfoBatchAsync(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth()).then(
+      (map) => {
+        if (!cancelled) setNextWeekLunarInfoMap(map);
+      }
+    );
 
     return () => {
       cancelled = true;
