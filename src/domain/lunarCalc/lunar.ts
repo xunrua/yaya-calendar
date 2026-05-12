@@ -6,15 +6,18 @@
 // - 干支月: 立春版(monthGanIndex/monthZhiIndex,_computeMonth 第一段),对应 getMonthInGanZhi。
 // - 干支日: 正午版(dayGanIndex/dayZhiIndex,非 23:00 漂移),对应 getDayInGanZhi。
 
-import { GAN, ZHI, LUNAR_MONTH_CN, LUNAR_DAY_CN, SHENGXIAO, JIE_QI_IN_USE, BASE_MONTH_ZHI_INDEX } from './constants';
-import { LUNAR_FESTIVALS } from './festivals';
 import {
-  type SolarDate,
-  solarFromJulianDay,
-  getJulianDay,
-  solarFromYmd,
-} from './solar';
-import { getLunarYear, type LunarYearData } from './lunarYear';
+  BASE_MONTH_ZHI_INDEX,
+  GAN,
+  JIE_QI_IN_USE,
+  LUNAR_DAY_CN,
+  LUNAR_MONTH_CN,
+  SHENGXIAO,
+  ZHI,
+} from "./constants";
+import { LUNAR_FESTIVALS } from "./festivals";
+import { getLunarYear, type LunarYearData } from "./lunarYear";
+import { getJulianDay, type SolarDate, solarFromJulianDay, solarFromYmd } from "./solar";
 
 export interface LunarDate {
   year: number;
@@ -33,13 +36,13 @@ export interface LunarDate {
 
 // 节气英文 token → 中文映射 — lunar.js _convertJieQi (L1246-1263)
 const JIE_QI_NAME_BY_TOKEN: Record<string, string> = {
-  DA_XUE: '大雪',
-  DONG_ZHI: '冬至',
-  XIAO_HAN: '小寒',
-  DA_HAN: '大寒',
-  LI_CHUN: '立春',
-  YU_SHUI: '雨水',
-  JING_ZHE: '惊蛰',
+  DA_XUE: "大雪",
+  DONG_ZHI: "冬至",
+  XIAO_HAN: "小寒",
+  DA_HAN: "大寒",
+  LI_CHUN: "立春",
+  YU_SHUI: "雨水",
+  JING_ZHE: "惊蛰",
 };
 
 const convertJieQi = (key: string): string => JIE_QI_NAME_BY_TOKEN[key] ?? key;
@@ -61,7 +64,7 @@ interface YearGz {
 function computeYearGanZhi(
   jieQi: Record<string, SolarDate>,
   solar: SolarDate,
-  lunarYear: number,
+  lunarYear: number
 ): YearGz {
   const offset = lunarYear - 4;
   let yearGanIndex = offset % 10;
@@ -76,9 +79,9 @@ function computeYearGanZhi(
   const solarYmd = ymd(solar);
 
   // 立春的阳历日期(优先用中文,fallback 用英文 token)
-  let liChun = jieQi['立春'];
+  let liChun = jieQi.立春;
   if (!liChun || liChun.year !== solarYear) {
-    liChun = jieQi['LI_CHUN'];
+    liChun = jieQi.LI_CHUN;
   }
   const liChunYmd = ymd(liChun);
 
@@ -106,7 +109,7 @@ function computeYearGanZhi(
 function computeMonthGanZhi(
   jieQi: Record<string, SolarDate>,
   solar: SolarDate,
-  yearGanIndexByLiChun: number,
+  yearGanIndexByLiChun: number
 ): { monthGanIndex: number; monthZhiIndex: number } {
   // 序号:大雪以前 -3, 大雪到小寒之间 -2, 小寒到立春之间 -1, 立春之后 0...
   let start: SolarDate | null = null;
@@ -122,9 +125,9 @@ function computeMonthGanZhi(
     start = end;
     index++;
   }
-  const offset = (((yearGanIndexByLiChun + (index < 0 ? 1 : 0)) % 5) + 1) * 2 % 10;
-  const monthGanIndex = (((index < 0 ? index + 10 : index) + offset)) % 10;
-  const monthZhiIndex = (((index < 0 ? index + 12 : index) + BASE_MONTH_ZHI_INDEX)) % 12;
+  const offset = ((((yearGanIndexByLiChun + (index < 0 ? 1 : 0)) % 5) + 1) * 2) % 10;
+  const monthGanIndex = ((index < 0 ? index + 10 : index) + offset) % 10;
+  const monthZhiIndex = ((index < 0 ? index + 12 : index) + BASE_MONTH_ZHI_INDEX) % 12;
   return { monthGanIndex, monthZhiIndex };
 }
 
@@ -140,10 +143,7 @@ function computeDayGanZhi(solar: SolarDate): { dayGanIndex: number; dayZhiIndex:
 }
 
 // L1285-1293 / L1246-1263 — 当日节气名(或 null)
-function findJieQiOfDay(
-  jieQi: Record<string, SolarDate>,
-  solar: SolarDate,
-): string | null {
+function findJieQiOfDay(jieQi: Record<string, SolarDate>, solar: SolarDate): string | null {
   for (const key in jieQi) {
     const d = jieQi[key];
     if (d.year === solar.year && d.month === solar.month && d.day === solar.day) {
@@ -158,10 +158,10 @@ function lunarFestivalsOf(
   month: number,
   day: number,
   lunarYear: number,
-  ly: LunarYearData,
+  ly: LunarYearData
 ): string[] {
   const l: string[] = [];
-  const key = month + '-' + day;
+  const key = `${month}-${day}`;
   const f = LUNAR_FESTIVALS[key as keyof typeof LUNAR_FESTIVALS];
   if (f) l.push(f);
   // 除夕:腊月 29/30 且次日不在本农历年(即本月是年末)
@@ -169,7 +169,7 @@ function lunarFestivalsOf(
     // 求次日的农历年,如果不同则今日是除夕
     const nextLunarYear = nextDayLunarYear(lunarYear, month, day, ly);
     if (lunarYear !== nextLunarYear) {
-      l.push('除夕');
+      l.push("除夕");
     }
   }
   return l;
@@ -179,7 +179,7 @@ function nextDayLunarYear(
   lunarYear: number,
   month: number,
   day: number,
-  ly: LunarYearData,
+  ly: LunarYearData
 ): number {
   // 找本月,看 day+1 是否超过 dayCount;超过则查 ly 月表的下一个月
   const ms = ly.months;
@@ -205,11 +205,11 @@ function nextDayLunarYear(
 // 内部 ymd 字符串助手(year-month-day,padding 后可字典序比较)
 function ymd(s: SolarDate): string {
   return (
-    String(s.year).padStart(4, '0') +
-    '-' +
-    String(s.month).padStart(2, '0') +
-    '-' +
-    String(s.day).padStart(2, '0')
+    String(s.year).padStart(4, "0") +
+    "-" +
+    String(s.month).padStart(2, "0") +
+    "-" +
+    String(s.day).padStart(2, "0")
   );
 }
 
@@ -239,7 +239,7 @@ function assemble(
   lunarMonth: number,
   lunarDay: number,
   solar: SolarDate,
-  ly: LunarYearData,
+  ly: LunarYearData
 ): LunarDate {
   const jieQi = buildJieQiMap(ly);
   const y = computeYearGanZhi(jieQi, solar, lunarYear);
@@ -251,8 +251,7 @@ function assemble(
   const dayGanZhi = GAN[d.dayGanIndex + 1] + ZHI[d.dayZhiIndex + 1];
 
   const shengXiao = SHENGXIAO[y.yearZhiIndex + 1];
-  const monthInChinese =
-    (lunarMonth < 0 ? '闰' : '') + LUNAR_MONTH_CN[Math.abs(lunarMonth)];
+  const monthInChinese = (lunarMonth < 0 ? "闰" : "") + LUNAR_MONTH_CN[Math.abs(lunarMonth)];
   const dayInChinese = LUNAR_DAY_CN[lunarDay];
 
   const jq = findJieQiOfDay(jieQi, solar);
@@ -316,18 +315,18 @@ export function lunarFromSolar(solar: SolarDate): LunarDate {
 
 // L808-866 — 从农历 ymd 反求公历
 export function lunarFromYmd(year: number, month: number, day: number): LunarDate {
-  if (!Number.isFinite(year)) throw new Error('wrong lunar year ' + year);
-  if (!Number.isFinite(month)) throw new Error('wrong lunar month ' + month);
-  if (!Number.isFinite(day)) throw new Error('wrong lunar day ' + day);
-  if (day < 1) throw new Error('lunar day must bigger than 0');
+  if (!Number.isFinite(year)) throw new Error(`wrong lunar year ${year}`);
+  if (!Number.isFinite(month)) throw new Error(`wrong lunar month ${month}`);
+  if (!Number.isFinite(day)) throw new Error(`wrong lunar day ${day}`);
+  if (day < 1) throw new Error("lunar day must bigger than 0");
 
   let ly = getLunarYear(year);
-  let target = ly.months.find((m) => m.year === year && m.month === month);
+  const target = ly.months.find((m) => m.year === year && m.month === month);
   if (!target) {
-    throw new Error('wrong lunar year ' + year + ' month ' + month);
+    throw new Error(`wrong lunar year ${year} month ${month}`);
   }
   if (day > target.dayCount) {
-    throw new Error('only ' + target.dayCount + ' days in lunar year ' + year + ' month ' + month);
+    throw new Error(`only ${target.dayCount} days in lunar year ${year} month ${month}`);
   }
   // firstJulianDay 为该月初一的 noon julian day(LunarYear 的 hs[i] + J2000 是中午)
   const noon = solarFromJulianDay(target.firstJulianDay + day - 1);

@@ -24,7 +24,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { getStatutoryHolidaySetForMonth } from "@/src/domain/lunar";
+import { getStatutoryHolidaySetForMonthAsync } from "@/src/services/lunarWorker";
 import { useViewStore } from "@/src/stores/eventStore";
 import { useTheme } from "@/src/stores/themeStore";
 
@@ -73,7 +73,18 @@ const MiniMonthGrid = React.memo<MiniMonthGridProps>(function MiniMonthGrid({
     return eachDayOfInterval({ start: calStart, end: calEnd });
   }, [monthDate]);
 
-  const holidaySet = useMemo(() => getStatutoryHolidaySetForMonth(year, month), [year, month]);
+  // 异步加载法定假日集合（worklet 线程）
+  const [holidaySet, setHolidaySet] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+    getStatutoryHolidaySetForMonthAsync(year, month).then((set) => {
+      if (!cancelled) setHolidaySet(set);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [year, month]);
 
   const today = useMemo(() => new Date(), []);
   const isSelectedMonth = isSameMonth(monthDate, selectedDate);

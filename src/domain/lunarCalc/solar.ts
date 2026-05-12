@@ -1,5 +1,5 @@
 // 公历 Solar 模块 - 端口自 lib/lunar-javascript/lunar.js Solar / SolarUtil
-import { SOLAR_FESTIVALS, WEEK_FESTIVALS } from './festivals';
+import { SOLAR_FESTIVALS, WEEK_FESTIVALS } from "./festivals";
 
 export interface SolarDate {
   year: number;
@@ -40,20 +40,20 @@ function buildSolar(
   d: number,
   hour: number,
   minute: number,
-  second: number,
+  second: number
 ): SolarDate {
-  if (!Number.isFinite(y)) throw new Error('wrong solar year ' + y);
-  if (!Number.isFinite(m)) throw new Error('wrong solar month ' + m);
-  if (!Number.isFinite(d)) throw new Error('wrong solar day ' + d);
-  if (!Number.isFinite(hour)) throw new Error('wrong hour ' + hour);
-  if (!Number.isFinite(minute)) throw new Error('wrong minute ' + minute);
-  if (!Number.isFinite(second)) throw new Error('wrong second ' + second);
+  if (!Number.isFinite(y)) throw new Error(`wrong solar year ${y}`);
+  if (!Number.isFinite(m)) throw new Error(`wrong solar month ${m}`);
+  if (!Number.isFinite(d)) throw new Error(`wrong solar day ${d}`);
+  if (!Number.isFinite(hour)) throw new Error(`wrong hour ${hour}`);
+  if (!Number.isFinite(minute)) throw new Error(`wrong minute ${minute}`);
+  if (!Number.isFinite(second)) throw new Error(`wrong second ${second}`);
   if (y === 1582 && m === 10) {
     if (d > 4 && d < 15) {
-      throw new Error('wrong solar year ' + y + ' month ' + m + ' day ' + d);
+      throw new Error(`wrong solar year ${y} month ${m} day ${d}`);
     }
   }
-  if (m < 1 || m > 12) throw new Error('wrong month ' + m);
+  if (m < 1 || m > 12) throw new Error(`wrong month ${m}`);
   return { year: y, month: m, day: d, hour, minute, second };
 }
 
@@ -64,7 +64,7 @@ export function solarFromDate(date: Date): SolarDate {
     date.getDate(),
     date.getHours(),
     date.getMinutes(),
-    date.getSeconds(),
+    date.getSeconds()
   );
 }
 
@@ -74,7 +74,7 @@ export function solarFromYmd(
   d: number,
   hour = 0,
   minute = 0,
-  second = 0,
+  second = 0
 ): SolarDate {
   return buildSolar(y, m, d, hour, minute, second);
 }
@@ -156,21 +156,21 @@ export function getWeek(s: SolarDate): number {
 // L238-256
 export function solarFestivals(s: SolarDate): string[] {
   const l: string[] = [];
-  const key = s.month + '-' + s.day;
+  const key = `${s.month}-${s.day}`;
   const f = SOLAR_FESTIVALS[key as keyof typeof SOLAR_FESTIVALS];
   if (f) {
     l.push(f);
   }
   const weeks = Math.ceil(s.day / 7);
   const week = getWeek(s);
-  const wfKey = s.month + '-' + weeks + '-' + week;
+  const wfKey = `${s.month}-${weeks}-${week}`;
   const wf = WEEK_FESTIVALS[wfKey as keyof typeof WEEK_FESTIVALS];
   if (wf) {
     l.push(wf);
   }
   // 月末最后一周特判: m-0-weekday
   if (s.day + 7 > getDaysOfMonth(s.year, s.month)) {
-    const lastKey = s.month + '-0-' + week;
+    const lastKey = `${s.month}-0-${week}`;
     const lf = WEEK_FESTIVALS[lastKey as keyof typeof WEEK_FESTIVALS];
     if (lf) {
       l.push(lf);

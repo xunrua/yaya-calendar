@@ -3,9 +3,9 @@
 // 输出每年节气 julian day 列表 + 该年的 15 个农历月份记录(用于跨年首尾月对齐)。
 // 含闰月判定(查 LEAP_11/LEAP_12 表,否则按"无中气定闰"递推)。
 
-import { JIE_QI_IN_USE } from './constants';
-import { calcQi, calcShuo, qiAccurate2, J2000 } from './shouXingUtil';
-import { LEAP_11, LEAP_12, YMC } from './leapYears';
+import { JIE_QI_IN_USE } from "./constants";
+import { LEAP_11, LEAP_12, YMC } from "./leapYears";
+import { calcQi, calcShuo, J2000, qiAccurate2 } from "./shouXingUtil";
 
 export interface LunarMonth {
   year: number;
@@ -34,7 +34,7 @@ const inLeap = (arr: readonly number[], n: number): boolean => {
 
 // 不缓存的原始计算 — 对应 lunar.js _fromYear (L2474-2774)
 function computeRaw(lunarYear: number): LunarYearData {
-  if (!Number.isFinite(lunarYear)) throw new Error('wrong lunar year ' + lunarYear);
+  if (!Number.isFinite(lunarYear)) throw new Error(`wrong lunar year ${lunarYear}`);
 
   const offset = lunarYear - 4;
   let ganIndex = offset % 10;
@@ -51,7 +51,7 @@ function computeRaw(lunarYear: number): LunarYearData {
   const dayCounts: number[] = [];
   const months: number[] = [];
 
-  let jd = Math.floor((lunarYear - 2000) * 365.2422 + 180);
+  const jd = Math.floor((lunarYear - 2000) * 365.2422 + 180);
   // 355 是 2000.12 冬至,得到靠近 jd 的冬至估计
   let w = Math.floor((jd - 355 + 183) / 365.2422) * 365.2422 + 355;
   if (calcQi(w) > jd) {
@@ -115,9 +115,9 @@ function computeRaw(lunarYear: number): LunarYearData {
     let mc = YMC[((v2 % 12) + 12) % 12];
     // 历史校正窗口 — lunar.js L2747-2753
     if (1724360 <= dm && dm < 1729794) {
-      mc = YMC[((v2 + 1) % 12 + 12) % 12];
+      mc = YMC[(((v2 + 1) % 12) + 12) % 12];
     } else if (1807724 <= dm && dm < 1808699) {
-      mc = YMC[((v2 + 1) % 12 + 12) % 12];
+      mc = YMC[(((v2 + 1) % 12) + 12) % 12];
     } else if (dm === 1729794 || dm === 1808699) {
       mc = 12;
     }

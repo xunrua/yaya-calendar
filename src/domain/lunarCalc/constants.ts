@@ -11,19 +11,7 @@
 // - NUMBER[0]          = '〇'(不是 '零')           — lunar.js n.zero='〇'
 
 // 天干 — lunar.js LunarUtil.GAN (L4001),1-indexed,[0]=空字符串
-export const GAN = [
-  "",
-  "甲",
-  "乙",
-  "丙",
-  "丁",
-  "戊",
-  "己",
-  "庚",
-  "辛",
-  "壬",
-  "癸",
-] as const;
+export const GAN = ["", "甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"] as const;
 
 // 地支 — lunar.js LunarUtil.ZHI (L4087),1-indexed,[0]=空字符串
 export const ZHI = [

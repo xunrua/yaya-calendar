@@ -1,10 +1,6 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import { Solar as LegacySolar } from "../lib/lunar-javascript/index.js";
-import {
-  toLunarDate,
-  getSolarTerm,
-  getGanZhi,
-} from "../src/domain/lunar";
+import { getGanZhi, getSolarTerm, toLunarDate } from "../src/domain/lunar";
 
 interface LegacyLunar {
   getYear(): number;
