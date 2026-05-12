@@ -13,7 +13,7 @@ import {
   startOfWeek,
   subYears,
 } from "date-fns";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -60,7 +60,52 @@ const WEEKDAY_LABELS = ["日", "一", "二", "三", "四", "五", "六"];
 const GRID_MARGIN = 16;
 const CELL_WIDTH = ((SCREEN_WIDTH - GRID_MARGIN * 2) / 3 - 12) / 7;
 
-const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
+// 预计算一个月的天数数据（避免在渲染时计算）
+const computeMonthDays = (year: number, month: number) => {
+  const monthDate = new Date(year, month, 1);
+  const monthStart = startOfMonth(monthDate);
+  const monthEnd = endOfMonth(monthDate);
+  const calStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+  const calEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+  return eachDayOfInterval({ start: calStart, end: calEnd });
+};
+
+// 缓存月份天数数据
+const monthDaysCache = new Map<string, Date[]>();
+const getMonthDays = (year: number, month: number) => {
+  const key = `${year}-${month}`;
+  if (!monthDaysCache.has(key)) {
+    monthDaysCache.set(key, computeMonthDays(year, month));
+  }
+  return monthDaysCache.get(key)!;
+};
+
+// 缓存假日判断结果
+const holidayCache = new Map<string, boolean>();
+const isStatutoryHolidayCached = (date: Date): boolean => {
+  const key = format(date, "yyyy-MM-dd");
+  if (!holidayCache.has(key)) {
+    const holidays = getHolidays(date);
+    holidayCache.set(key, holidays.some((h) => STATUTORY_HOLIDAYS.includes(h.name)));
+  }
+  return holidayCache.get(key)!;
+};
+
+interface MiniMonthGridProps {
+  year: number;
+  month: number;
+  onMonthPress: (
+    date: Date,
+    layout: { x: number; y: number; width: number; height: number }
+  ) => void;
+  selectedDate: Date;
+  onMeasure?: (
+    month: number,
+    layout: { x: number; y: number; width: number; height: number }
+  ) => void;
+}
+
+const MiniMonthGrid: React.FC<MiniMonthGridProps> = memo(({
   year,
   month,
   onMonthPress,
@@ -71,12 +116,10 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
   const ref = useRef<View>(null);
   const onMeasureRef = useRef(onMeasure);
   onMeasureRef.current = onMeasure;
-  const monthDate = new Date(year, month, 1);
-  const monthStart = startOfMonth(monthDate);
-  const monthEnd = endOfMonth(monthDate);
-  const calStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-  const calEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
-  const days = eachDayOfInterval({ start: calStart, end: calEnd });
+
+  // 使用缓存的天数数据
+  const days = useMemo(() => getMonthDays(year, month), [year, month]);
+  const monthDate = useMemo(() => new Date(year, month, 1), [year, month]);
 
   const today = new Date();
   const isSelectedMonth = isSameMonth(monthDate, selectedDate);
@@ -87,13 +130,37 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
     });
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     requestAnimationFrame(() => {
       ref.current?.measure((_x, _y, width, height, pageX, pageY) => {
         onMeasureRef.current?.(month, { x: pageX, y: pageY, width, height });
       });
     });
   }, [month]);
+
+  // 预计算当月日期的显示数据
+  const dayElements = useMemo(() => {
+    return days.map((day) => {
+      const isCurrentMonth = isSameMonth(day, monthDate);
+      const isToday = isSameDay(day, today);
+      const isHolidayDay = isStatutoryHolidayCached(day);
+      const dayKey = format(day, "yyyy-MM-dd");
+
+      if (!isCurrentMonth) {
+        return { key: dayKey, isCurrentMonth: false };
+      }
+
+      const textColor = isToday ? "#FFFFFF" : isHolidayDay ? PRIMARY_COLOR : theme.colors.text;
+
+      return {
+        key: dayKey,
+        isCurrentMonth: true,
+        day: format(day, "d"),
+        isToday,
+        textColor,
+      };
+    });
+  }, [days, monthDate, today, theme.colors.text]);
 
   return (
     <TouchableOpacity
@@ -124,24 +191,17 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
       </View>
 
       <View style={styles.miniDaysGrid}>
-        {days.map((day) => {
-          const isCurrentMonth = isSameMonth(day, monthDate);
-          const isToday = isSameDay(day, today);
-          const isHolidayDay = isStatutoryHoliday(day);
-          const dayKey = format(day, "yyyy-MM-dd");
-
-          if (!isCurrentMonth) {
-            return <View key={dayKey} style={styles.miniCell} />;
+        {dayElements.map((item) => {
+          if (!item.isCurrentMonth) {
+            return <View key={item.key} style={styles.miniCell} />;
           }
-
-          const textColor = isToday ? "#FFFFFF" : isHolidayDay ? PRIMARY_COLOR : theme.colors.text;
 
           return (
             <View
-              key={dayKey}
+              key={item.key}
               style={[
                 styles.miniCell,
-                isToday && {
+                item.isToday && {
                   backgroundColor: PRIMARY_COLOR,
                   borderRadius: 10,
                 },
@@ -150,12 +210,10 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
               <Text
                 style={[
                   styles.miniDayText,
-                  {
-                    color: textColor,
-                  },
+                  { color: item.textColor },
                 ]}
               >
-                {format(day, "d")}
+                {item.day}
               </Text>
             </View>
           );
@@ -163,7 +221,7 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 export const YearView: React.FC = () => {
   const { theme } = useTheme();
@@ -173,7 +231,7 @@ export const YearView: React.FC = () => {
   const setTransitionState = useViewStore((s) => s.setTransitionState);
   const hasNavigatedMonth = useViewStore((s) => s.hasNavigatedMonth);
 
-  const currentSelectedDate = parseISO(selectedDate);
+  const currentSelectedDate = useMemo(() => parseISO(selectedDate), [selectedDate]);
   const [displayYear, setDisplayYear] = useState(getYear(currentSelectedDate));
   const translateX = useSharedValue(0);
   const isAnimating = useSharedValue(false);
@@ -288,7 +346,7 @@ export const YearView: React.FC = () => {
     transform: [{ translateX: translateX.value + SCREEN_WIDTH }],
   }));
 
-  const renderYearGrid = (year: number, isCurrentYear: boolean) => {
+  const renderYearGrid = useCallback((year: number, isCurrentYear: boolean) => {
     const months = Array.from({ length: 12 }, (_, i) => i);
 
     return (
@@ -305,7 +363,7 @@ export const YearView: React.FC = () => {
         ))}
       </View>
     );
-  };
+  }, [handleMonthPress, handleCellMeasure, currentSelectedDate]);
 
   return (
     <View

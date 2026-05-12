@@ -410,12 +410,12 @@ export const MonthView: React.FC = () => {
         if (shouldSwipeLeft) {
           translateX.value = withTiming(-SCREEN_WIDTH, { duration: 150 });
           setTimeout(() => {
-            goToNextWeekJS();
+            runOnJS(goToNextWeekJS)();
           }, 150);
         } else if (shouldSwipeRight) {
           translateX.value = withTiming(SCREEN_WIDTH, { duration: 150 });
           setTimeout(() => {
-            goToPrevWeekJS();
+            runOnJS(goToPrevWeekJS)();
           }, 150);
         } else {
           // 取消滑动：回弹到当前位置
@@ -438,7 +438,7 @@ export const MonthView: React.FC = () => {
         });
         // 延迟执行跳转，让动画完成
         setTimeout(() => {
-          goToNextJS();
+          runOnJS(goToNextJS)();
         }, 200);
       } else if (shouldSwipeRight) {
         isAnimating.value = true;
@@ -452,7 +452,7 @@ export const MonthView: React.FC = () => {
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
         setTimeout(() => {
-          goToPreviousJS();
+          runOnJS(goToPreviousJS)();
         }, 200);
       } else {
         // 取消滑动：回弹到当前位置
