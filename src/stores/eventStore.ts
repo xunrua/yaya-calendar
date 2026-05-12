@@ -321,34 +321,6 @@ export const useViewStore = create<ViewState>((set, get) => ({
 // ============================================================================
 
 /**
- * 获取事件数据的 Hook
- * @param startDate 可选，开始日期
- * @param endDate 可选，结束日期
- * @returns 事件数据、加载状态、刷新方法
- */
-export const useEvents = (startDate?: Date, endDate?: Date) => {
-  const { events, loading, error, loadEvents } = useEventStore();
-
-  // Load events on mount
-  if (events.length === 0 && !loading) {
-    loadEvents();
-  }
-
-  const getEventsForRange = () => {
-    if (!startDate || !endDate) return events;
-    return getEventOccurrencesInRange(events, startDate, endDate);
-  };
-
-  return {
-    events,
-    loading,
-    error,
-    refresh: loadEvents,
-    getEventsForRange,
-  };
-};
-
-/**
  * 获取当前选中事件的 Hook
  * @returns 选中的事件、事件 ID、选择方法
  */

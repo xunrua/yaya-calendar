@@ -42,6 +42,9 @@ const SWIPE_VELOCITY_THRESHOLD = 500; // 滑动速度阈值（px/s）
 const SWIPE_DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.3; // 滑动距离阈值
 const SPRING_CONFIG = { damping: 20, stiffness: 100 };
 
+const EMPTY_LUNAR_MAP: ReadonlyMap<string, never> = new Map<string, never>();
+const EMPTY_EVENTS_MAP: ReadonlyMap<string, never> = new Map<string, never>();
+
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
 const FOLD_VELOCITY_THRESHOLD = 300; // 折叠速度阈值
 const FOLD_DISTANCE_THRESHOLD = SCREEN_HEIGHT * 0.05; // 折叠距离阈值
@@ -160,32 +163,44 @@ export const MonthView: React.FC = () => {
   }, [currentWeekTargetDate]);
 
   // 预计算三屏农历信息
-  const prevLunarInfoMap = useMemo(() => {
-    const result = getLunarInfoBatch(prevMonth.getFullYear(), prevMonth.getMonth());
-    return result;
-  }, [prevMonth]);
+  const prevLunarInfoMap = useMemo(
+    () =>
+      showAdjacent
+        ? getLunarInfoBatch(prevMonth.getFullYear(), prevMonth.getMonth())
+        : (EMPTY_LUNAR_MAP as any),
+    [showAdjacent, prevMonth]
+  );
   const currentLunarInfoMap = useMemo(() => {
     const result = getLunarInfoBatch(displayMonth.getFullYear(), displayMonth.getMonth());
     return result;
   }, [displayMonth]);
-  const nextLunarInfoMap = useMemo(() => {
-    const result = getLunarInfoBatch(nextMonth.getFullYear(), nextMonth.getMonth());
-    return result;
-  }, [nextMonth]);
+  const nextLunarInfoMap = useMemo(
+    () =>
+      showAdjacent
+        ? getLunarInfoBatch(nextMonth.getFullYear(), nextMonth.getMonth())
+        : (EMPTY_LUNAR_MAP as any),
+    [showAdjacent, nextMonth]
+  );
 
   // 预计算三屏事件数据
   const getEventsForMonth = useEventStore((s) => s.getEventsForMonth);
   const prevEventsMap = useMemo(
-    () => getEventsForMonth(prevMonth.getFullYear(), prevMonth.getMonth()),
-    [prevMonth, getEventsForMonth]
+    () =>
+      showAdjacent
+        ? getEventsForMonth(prevMonth.getFullYear(), prevMonth.getMonth())
+        : (EMPTY_EVENTS_MAP as any),
+    [showAdjacent, prevMonth, getEventsForMonth]
   );
   const currentEventsMap = useMemo(
     () => getEventsForMonth(displayMonth.getFullYear(), displayMonth.getMonth()),
     [displayMonth, getEventsForMonth]
   );
   const nextEventsMap = useMemo(
-    () => getEventsForMonth(nextMonth.getFullYear(), nextMonth.getMonth()),
-    [nextMonth, getEventsForMonth]
+    () =>
+      showAdjacent
+        ? getEventsForMonth(nextMonth.getFullYear(), nextMonth.getMonth())
+        : (EMPTY_EVENTS_MAP as any),
+    [showAdjacent, nextMonth, getEventsForMonth]
   );
 
   // 折叠状态下的农历和事件预计算
@@ -193,28 +208,28 @@ export const MonthView: React.FC = () => {
     () =>
       isCollapsed
         ? getLunarInfoBatch(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth())
-        : new Map(),
+        : (EMPTY_LUNAR_MAP as any),
     [isCollapsed, prevWeekInfo.month]
   );
   const nextWeekLunarInfoMap = useMemo(
     () =>
       isCollapsed
         ? getLunarInfoBatch(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth())
-        : new Map(),
+        : (EMPTY_LUNAR_MAP as any),
     [isCollapsed, nextWeekInfo.month]
   );
   const prevWeekEventsMap = useMemo(
     () =>
       isCollapsed
         ? getEventsForMonth(prevWeekInfo.month.getFullYear(), prevWeekInfo.month.getMonth())
-        : new Map(),
+        : (EMPTY_EVENTS_MAP as any),
     [isCollapsed, prevWeekInfo.month, getEventsForMonth]
   );
   const nextWeekEventsMap = useMemo(
     () =>
       isCollapsed
         ? getEventsForMonth(nextWeekInfo.month.getFullYear(), nextWeekInfo.month.getMonth())
-        : new Map(),
+        : (EMPTY_EVENTS_MAP as any),
     [isCollapsed, nextWeekInfo.month, getEventsForMonth]
   );
 

@@ -1,6 +1,6 @@
 import { format, getMonth, isSameMonth, parseISO, startOfMonth } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Dimensions, StyleSheet, View } from "react-native";
+import { Dimensions, InteractionManager, StyleSheet, View } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -46,6 +46,7 @@ export default function MainScreen() {
   const insets = useSafeAreaInsets();
   const [menuVisible, setMenuVisible] = useState(false);
   const prevViewRef = useRef(currentView);
+  const [yearMounted, setYearMounted] = useState(currentView === "year");
   const setHasNavigatedMonth = useViewStore((s) => s.setHasNavigatedMonth);
 
   // 计算是否显示"今"按钮
@@ -121,6 +122,16 @@ export default function MainScreen() {
 
     prevViewRef.current = curr;
   }, [currentView, yearZoomScale, yearOpacity, monthZoomScale, monthOpacity]);
+
+  useEffect(() => {
+    if (yearMounted) return;
+    const handle = InteractionManager.runAfterInteractions(() => setYearMounted(true));
+    const fallback = setTimeout(() => setYearMounted(true), 300);
+    return () => {
+      handle.cancel();
+      clearTimeout(fallback);
+    };
+  }, [yearMounted]);
 
   // ── Animated styles ────────────────────────────────────────────────────────
   // 三明治公式：translate(dx,dy) → scale → translate(-dx,-dy)
@@ -316,6 +327,7 @@ export default function MainScreen() {
     yearViewSelectedDateRef.current = selectedDate;
     prepareYearTransition();
     runMonthToYearAnimation();
+    setYearMounted(true);
     setCurrentView("year");
   };
 
@@ -335,10 +347,12 @@ export default function MainScreen() {
               { pointerEvents: currentView === "year" ? "auto" : "none" },
             ]}
           >
-            <YearView
-              onMonthPress={handleMonthPressFromYear}
-              selectedDate={yearViewSelectedDateRef.current}
-            />
+            {yearMounted && (
+              <YearView
+                onMonthPress={handleMonthPressFromYear}
+                selectedDate={yearViewSelectedDateRef.current}
+              />
+            )}
           </Animated.View>
 
           <Animated.View

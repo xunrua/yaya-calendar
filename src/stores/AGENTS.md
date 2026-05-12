@@ -30,7 +30,7 @@ Zustand 状态管理目录，管理应用全局状态：事件数据、主题设
 ### Common Patterns
 - Store 分离：数据状态 vs UI 状态
 - 使用 persist 中间件持久化设置
-- 提供 selector hooks 如 `useEvents()`、`useTheme()`
+- 提供 selector hooks 如 `useTheme()`
 
 ## Dependencies
 
